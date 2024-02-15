@@ -3,6 +3,10 @@ Ongoing project to add robustness to libc for improved programming of C applicat
 
 ## Changelog
 
+### 0.1.1
+- Forgot a `.gitignore` when I pushed the Linux version of the repo yesterday, resulting in a bunch of binaries being written to the repo. Fixed this.
+- Fixed `display_time` so it correctly handles seconds-to-minutes and minutes-to-hours overflow.
+
 ### 0.1.0
 - Added `core/thread.h` and `core/mutex.h` to provide multithreading utilities.
 - Added `container/hashtable.h` and corresponding tests to provide a hashtable data structure.

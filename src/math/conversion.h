@@ -70,8 +70,8 @@ display_time
 )
 {
     *hours = elapsed / 3600;
-    *minutes = elapsed / 60;
-    *seconds = elapsed;
+    *minutes = ( ( ( u64 ) elapsed ) / 60 ) % 60;
+    *seconds = ( ( u64 ) elapsed ) % 60;
     *fractional = elapsed - ( ( f64 ) *seconds );
 }
 

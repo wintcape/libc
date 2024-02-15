@@ -82,7 +82,7 @@ file_open
     FILE* file = fopen ( path , mode );
     if ( !file )
     {
-        LOGERROR ( "file_open: fopen failed for filepath:  %s.\n\tReason:  %s\n\tCode:  %i"
+        LOGERROR ( "file_open: fopen failed for filepath:  %s.\n\tReason:  %s\n\tCode:    %i"
                  , path
                  , strerror ( errno )
                  , errno
@@ -141,7 +141,7 @@ file_read
     *read = fread ( dst , 1 , size , file );
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_read: fread failed for file %@.\n\tReason:  %s\n\tCode:  %i"
+        LOGERROR ( "file_read: fread failed for file %@.\n\tReason:  %s\n\tCode:    %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -178,7 +178,7 @@ file_read_line
     *dst = string;
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_read_line: fgets failed for file %@.\n\tReason:  %s\n\tCode:  %i"
+        LOGERROR ( "file_read_line: fgets failed for file %@.\n\tReason:  %s\n\tCode:    %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -207,7 +207,7 @@ file_read_all
     *dst = string;
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_read_all: fread failed for file %@.\n\tReason:  %s\n\tCode:  %i"
+        LOGERROR ( "file_read_all: fread failed for file %@.\n\tReason:  %s\n\tCode:    %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -234,7 +234,7 @@ file_write
     fflush ( file );
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_write: fwrite failed for file %@.\n\tReason:  %s\n\tCode:  %i"
+        LOGERROR ( "file_write: fwrite failed for file %@.\n\tReason:  %s\n\tCode:    %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -263,7 +263,7 @@ file_write_line
     fflush ( file );
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_write: fwrite failed for file %@.\n\tReason:  %s\n\tCode:  %i"
+        LOGERROR ( "file_write: fwrite failed for file %@.\n\tReason:  %s\n\tCode:    %i"
                  , file
                  , strerror ( errno )
                  , errno

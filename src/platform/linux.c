@@ -176,7 +176,7 @@ platform_thread_create
             }
             default:
             {
-                LOGERROR ( "platform_thread_create: Thread creation failed.\n\tReason:  %s\n\tCode:  %i"
+                LOGERROR ( "platform_thread_create: Thread creation failed.\n\tReason:  %s\n\tCode:    %i"
                          , strerror ( errno )
                          , errno
                          );
@@ -208,7 +208,7 @@ platform_thread_create
                 }
                 default:
                 {
-                    LOGERROR ( "platform_thread_create: Failed to detach the new thread.\n\tReason:  %s\n\tCode:  %i"
+                    LOGERROR ( "platform_thread_create: Failed to detach the new thread.\n\tReason:  %s\n\tCode:    %i"
                              , strerror ( errno )
                              , errno
                              );
@@ -266,7 +266,7 @@ platform_thread_detach
             }
             default:
             {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  %s\n\tCode:  %i"
+                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  %s\n\tCode:    %i"
                          , ( *thread ).id
                          , strerror ( errno )
                          , errno
@@ -302,7 +302,7 @@ platform_thread_cancel
             }
             default:
             {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  %s\n\tCode:  %i"
+                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  %s\n\tCode:    %i"
                          , ( *thread ).id
                          , strerror ( errno )
                          , errno
@@ -434,7 +434,7 @@ platform_mutex_destroy
 
         default:
         {
-            LOGERROR ( "platform_mutex_destroy: Failed to destroy mutex %@.\n\tReason:  %s\n\tCode:  %i"
+            LOGERROR ( "platform_mutex_destroy: Failed to destroy mutex %@.\n\tReason:  %s\n\tCode:    %i"
                      , ( *mutex ).internal
                      , strerror ( errno )
                      , errno
@@ -498,7 +498,7 @@ platform_mutex_lock
         }
         default:
         {
-            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  %s\n\tCode:  %i"
+            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  %s\n\tCode:    %i"
                      , ( *mutex ).internal
                      , strerror ( errno )
                      , errno
@@ -544,7 +544,7 @@ platform_mutex_unlock
         }
         default:
         {
-            LOGERROR ( "platform_mutex_unlock: pthread_mutex_unlock failed on mutex %@.\n\tReason:  %s\n\tCode:  %i"
+            LOGERROR ( "platform_mutex_unlock: pthread_mutex_unlock failed on mutex %@.\n\tReason:  %s\n\tCode:    %i"
                      , ( *mutex ).internal
                      , strerror ( errno )
                      , errno
