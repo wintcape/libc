@@ -19,6 +19,7 @@ Ongoing project to add robustness to libc for improved programming of C applicat
 - Added new `string_format` format specifiers `%d` for floating point mantissa and `%P` for minimum width padding. Added a couple of tests for these, as well as `%e` which was previously missing any tests whatsoever.
 - Fixed documentation in `memory/linear_allocator.h` and `memory/dynamic_allocator.h` (and possibly a few other places) that was incorrect or contained typos.
 - Confirmed that all tests pass when using the GNU/Linux platform layer, and added a Linux makefile.
+- Removed extra aliases for calling `_array_field_set`, since this function should really only ever be called if you know what you're getting into.
 
 ### 0.0.9
 - Hotfixes adding some faulty functionality of `string_format` due to missing tests (forgot to make sure integers worked with sign format modifier, forgot to invalidate multiple redundant format modifiers which overwrite each other). Also cleaned up the implementation a bit, improving some clarity in the code.

@@ -146,7 +146,7 @@ file_write
  * @brief Writes a string to file and appends the `\n` character.
  * 
  * Use file_write_line to explicitly specify string length, or _file_write_line
- * to calculate the length of a null-terminated string before passing it to
+ * to compute the length of a null-terminated string before passing it to
  * file_write_line.
  * 
  * @param file Handle to the file to write to.

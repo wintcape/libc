@@ -17,7 +17,10 @@
 #define STRING_DEFAULT_CAPACITY 64
 
 /**
- * @brief Creates a mutable string.
+ * @brief Generates a handle to an empty mutable string.
+ * 
+ * Use _string_create to explicitly specify initial capacity, or string_create
+ * to use the default.
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
@@ -33,12 +36,14 @@ _string_create
     _string_create ( STRING_DEFAULT_CAPACITY )
 
 /**
- * @brief Creates a mutable string from an existing string of precalculated
- * length.
+ * @brief Creates a mutable copy of an existing string.
  * 
- * Use string_copy to explicitly specify string length, or string_create_from
- * to calculate the length of a null-terminated string before passing it to
- * _string_copy.
+ * Use _string_copy to explicitly specify string length, or string_create_from
+ * to compute the length of a null-terminated string before passing it to
+ * _string_copy ( O(n) ). If the string being copied is itself a mutable string
+ * (i.e. a string created via the string_create class of functions), string_copy
+ * may be used to implicitly fetch the current length of the mutable string
+ * before passing it to _string_copy ( O(1) ).
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
@@ -69,7 +74,7 @@ string_destroy
 );
 
 /**
- * @brief Reads the length of a mutable string. O(1).
+ * @brief Reads the current length of a mutable string. O(1).
  * 
  * @param string A mutable string.
  * @return The number of characters currently contained by string.
@@ -83,7 +88,7 @@ string_length
  * @brief Appends to a mutable string.
  * 
  * Use string_push to explicitly specify string length, or _string_push
- * to calculate the length of a null-terminated string before passing it to
+ * to compute the length of a null-terminated string before passing it to
  * __string_push.
  * 
  * @param string The mutable string to append to.
@@ -115,7 +120,7 @@ __string_push
  * @brief Inserts into a mutable string.
  * 
  * Use string_insert to explicitly specify string length, or _string_insert
- * to calculate the length of a null-terminated string before passing it to
+ * to compute the length of a null-terminated string before passing it to
  * __string_insert.
  * 
  * @param string The mutable string to append to.

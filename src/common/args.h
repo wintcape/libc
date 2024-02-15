@@ -1,6 +1,6 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
- * @file common/pragma.h
+ * @file common/args.h
  * @brief Defines a preprocessor binding for handling functions which may accept
  * a variable number of arguments.
  */
@@ -29,8 +29,11 @@
  * LIMITATIONS :
  * 
  * Currently doesn't support f32, and f64 has to be passed by address, not
- * value. More fixes and format specifier functionality hopefully coming soon.
+ * value; this is due to C's implicit flooring behavior when casting float types
+ * to int types.
  * 
+ * More fixes and format specifier functionality hopefully coming soon.
+ *
  * EXAMPLE USAGE :
  * 
  *     i32 _my_function ( u8 a , u8 b , u64 arg_count , u64* args );

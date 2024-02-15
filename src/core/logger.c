@@ -70,8 +70,8 @@ _print
  * @brief Appends a message to the log file.
  * 
  * Use logger_file_append to explicitly specify string length, or 
- * _logger_file_append to calculate the lengths of null-terminated strings
- * before passing them to logger_file_append.
+ * _logger_file_append to compute the lengths of null-terminated strings before
+ * passing them to logger_file_append.
  * 
  * @param mesg The message string to append.
  * @param mesg_length The message length (in characters).

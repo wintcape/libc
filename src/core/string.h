@@ -46,7 +46,7 @@ _string_length_clamped
  * @brief String equality test predicate.
  * 
  * Use string_equal to explicitly specify string length, or _string_equal
- * to calculate the lengths of null-terminated strings before passing them to
+ * to compute the lengths of null-terminated strings before passing them to
  * string_equal.
  * 
  * @param s1 A string.
@@ -81,7 +81,7 @@ string_empty
  * @brief Searches a string for a substring.
  * 
  * Use string_contains to explicitly specify string length, or _string_contains
- * to calculate the lengths of null-terminated strings before passing them to
+ * to compute the lengths of null-terminated strings before passing them to
  * string_contains.
  * 
  * @param search The string to search.
