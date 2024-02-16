@@ -49,6 +49,9 @@ As such, there are some standard libc headers that this library assumes are avai
 
 ## Changelog
 
+### 0.1.3
+- Improved error handling in `core/memory.h`.
+
 ### 0.1.2
 - Improvements to `core/memory.h` to verify thread safety using mutual exclusion operations.
 - Added a Mac OS platform layer and makefile, although I cannot test it because I do not have a machine that runs Mac OS (pretty please someone tell me if this works, especially because I have no idea how Mac OS and Objective-C works and basically copied all the non-POSIX sections of the implementation directly from here: https://github.com/travisvroman/kohi/blob/main/engine/src/platform/platform_macos.m).

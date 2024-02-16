@@ -64,7 +64,7 @@ memory_startup
 {
     if ( state )
     {
-        LOGFATAL ( "memory_startup: Called more than once." );
+        LOGERROR ( "memory_startup: Called more than once." );
         return false;
     }
 
@@ -156,7 +156,7 @@ memory_allocate_aligned
 {
     if ( tag == MEMORY_TAG_UNKNOWN )
     {
-        LOGWARN ( "memory_allocate: called with MEMORY_TAG_UNKNOWN." );
+        LOGWARN ( "memory_allocate: Called with MEMORY_TAG_UNKNOWN." );
     }
 
     void* memory;
@@ -217,7 +217,7 @@ memory_free_aligned
 {
     if ( tag == MEMORY_TAG_UNKNOWN )
     {
-        LOGWARN ( "memory_free: called with MEMORY_TAG_UNKNOWN." );
+        LOGWARN ( "memory_free: Called with MEMORY_TAG_UNKNOWN." );
     }
 
     if ( state )
@@ -338,11 +338,17 @@ char*
 memory_stat
 ( void )
 {
-    char* lines[ MEMORY_TAG_COUNT+2 ];
+    if ( !state )
+    {
+        LOGERROR ( "memory_stat: Called before the memory subsystem was initialized." );
+        return 0;
+    }
+
+    char* lines[ MEMORY_TAG_COUNT + 2 ];
     char* string = string_create_from ( "System memory usage:\n" );
     const char* unit;
     f64 amount;
-    u32 i = 0;
+    u64 i = 0;
     while ( i < MEMORY_TAG_COUNT )
     {
         unit = string_bytesize ( ( *state ).stat.tagged_allocations[ i ]
@@ -396,20 +402,20 @@ u64
 memory_allocation_count
 ( void )
 {
-    if ( state )
+    if ( !state )
     {
-        return ( *state ).stat.allocation_count;
+        return 0;
     }
-    return 0;
+    return ( *state ).stat.allocation_count;
 }
 
 u64
 memory_free_count
 ( void )
 {
-    if ( state )
+    if ( !state )
     {
-        return ( *state ).stat.free_count;
+        return 0;
     }
-    return 0;
+    return ( *state ).stat.free_count;
 }
