@@ -5,7 +5,7 @@
  */
 #ifndef COMMON_H
 #define COMMON_H
-#include <stdio.h>
+
 #include "common/align.h"
 #include "common/ansicc.h"
 #include "common/args.h"

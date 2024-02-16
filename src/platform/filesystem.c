@@ -26,8 +26,8 @@ file_exists
 (   const char* path
 )
 {
-    struct stat filestat;
-    return !stat ( path , &filestat );
+    struct stat file_stat;
+    return !stat ( path , &file_stat );
 }
 
 bool

@@ -1,11 +1,57 @@
 # libc wrapper / replacement
 Ongoing project to add robustness to libc for improved programming of C applications.
 
+## About
+
+This project is not intended to reinvent the wheel. There are some standard libc functions whose implementation is typically already highly optimized for the target platform, and other features which provide detailed platform-specific error messages out-of-the-box.
+
+As such, there are some standard libc headers that this library assumes are available on the host platform, regardless of what platform layer is used:
+
+### `<stdlib.h>`
+- `malloc`
+- `free`
+- `rand`
+- `srand`
+### `<stdio.h>`
+- `fopen`
+- `fclose`
+- `ferror`
+- `fread`
+- `fwrite`
+- `fflush`
+- `fseek`
+- `ftell`
+- `rewind`
+- `fgets`
+- `stdin`
+- `stdout`
+- `stderr`
+### `<string.h>`
+- `strlen`
+- `strnlen`
+- `memset`
+- `memcpy`
+- `memmove`
+- `strerror`
+### `<math.h>`
+- `fabsf`
+- `sqrtf`
+- `sinf`
+- `cosf`
+- `tanf`
+- `asinf`
+- `acosf`
+- `atanf`
+### `<sys/stat.h>`
+- `stat`
+### `<errno.h>`
+- `errno`
+
 ## Changelog
 
 ### 0.1.2
 - Improvements to `core/memory.h` to verify thread safety using mutual exclusion operations.
-- Added a Mac OS platform layer and makefile, although I cannot test it because I do not have a machine that runs Mac OS (pretty please someone tell me if this works, especially because I have no idea how Mac OS and Objective-C works and basically copied all the non-POSIX sections of the implementation directly from here: ).
+- Added a Mac OS platform layer and makefile, although I cannot test it because I do not have a machine that runs Mac OS (pretty please someone tell me if this works, especially because I have no idea how Mac OS and Objective-C works and basically copied all the non-POSIX sections of the implementation directly from here: https://github.com/travisvroman/kohi/blob/main/engine/src/platform/platform_macos.m).
 - Added function `platform_processor_core_count` to query host platform processor count.
 - Truncated function signature, for consistency with `platform_processor_core_count`: `platform_get_absolute_time` -> `platform_absolute_time`.
 - Removed unused memory tag.
@@ -29,7 +75,7 @@ Ongoing project to add robustness to libc for improved programming of C applicat
 - Removed extra aliases for calling `_array_field_set`, since this function should really only ever be called if you know what you're getting into.
 
 ### 0.0.9
-- Hotfixes adding some faulty functionality of `string_format` due to missing tests (forgot to make sure integers worked with sign format modifier, forgot to invalidate multiple redundant format modifiers which overwrite each other). Also cleaned up the implementation a bit, improving some clarity in the code.
+- Hotfixes to resolve some faulty functionality of `string_format` due to missing tests (forgot to make sure integers worked with sign format modifier, forgot to invalidate multiple redundant format modifiers which overwrite each other). Also cleaned up the implementation a bit, improving some clarity in the code.
 - Added `string_format` support for `%e` abbreviated notation floating-point format specifier.
 
 ### 0.0.8
