@@ -80,11 +80,11 @@ queue_push
     {
         if ( !queue )
         {
-            LOGERROR ( "queue_push: Missing argument: queue.");
+            LOGERROR ( "queue_push: Missing argument: queue." );
         }
         if ( !src )
         {
-            LOGERROR ( "queue_push: Missing argument: src.");
+            LOGERROR ( "queue_push: Missing argument: src." );
         }
         return false;
     }
@@ -141,11 +141,11 @@ queue_pop
     {
         if ( !queue )
         {
-            LOGERROR ( "queue_pop: Missing argument: queue.");
+            LOGERROR ( "queue_pop: Missing argument: queue." );
         }
         if ( !dst )
         {
-            LOGERROR ( "queue_pop: Missing argument: dst.");
+            LOGERROR ( "queue_pop: Missing argument: dst." );
         }
         return false;
     }

@@ -11,13 +11,15 @@
 // Begin platform layer.
 #if PLATFORM_WINDOWS == 1
 
-#include <windows.h>
-#include <windowsx.h>
-
 #include "container/string.h"
 
 #include "core/logger.h"
 
+// Platform layer dependencies.
+#include <windows.h>
+#include <windowsx.h>
+
+// Standard libc dependencies.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,7 +109,7 @@ platform_string_length_clamped
 }
 
 f64
-platform_get_absolute_time
+platform_absolute_time
 ( void )
 {    
     if ( !platform_clock_frequency )
@@ -128,12 +130,24 @@ platform_sleep
     Sleep ( ms );
 }
 
+i32
+platform_processor_core_count
+( void )
+{
+    SYSTEM_INFO system_info;
+    GetSystemInfo ( &system_info );
+    LOGINFO ( "platform_processor_core_count: %i cores available."
+            , system_info.dwNumberOfProcessors
+            );
+    return system_info.dwNumberOfProcessors;
+}
+
 bool
 platform_thread_create
-(   PFN_thread_start    function
-,   void*               args
-,   bool                auto_detach
-,   thread_t*           thread
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
 )
 {
     if ( !function || !thread )

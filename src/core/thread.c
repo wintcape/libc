@@ -10,10 +10,10 @@
 
 bool
 thread_create
-(   PFN_thread_start    function
-,   void*               args
-,   bool                auto_detach
-,   thread_t*           thread
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
 )
 {
     return platform_thread_create ( function , args , auto_detach , thread );

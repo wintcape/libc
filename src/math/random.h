@@ -9,11 +9,10 @@
 #include "common.h"
 
 /**
- * @brief Defines an alias for the random function. This avoids function
- * signatures which cause name conflicts with those included by the standard
- * libc headers.
+ * @brief Defines an alias for the random function. This resolves a name
+ * conflict with the random function included by the standard libc headers.
  */
-#define random()  ( _random () )
+#define random() _random ()
 
 /**
  * @brief Generates a random integer.

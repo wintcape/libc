@@ -26,12 +26,12 @@ test_startup
 
 void
 test_register
-(   u8      ( *PFN_test )()
+(   u8      ( *test_function_t )()
 ,   char*   description
 )
 {
     test_entry_t entry;
-    entry.function = PFN_test;
+    entry.function = test_function_t;
     entry.description = description;
     array_push ( tests , entry );
 }
@@ -129,7 +129,7 @@ test_run_all
                  );
 
     LOGINFO ( "Results: %u passed, %u failed, %u skipped.\n\t"
-              "Took %Pl02u:%pl02u:%pl02u.%.6d seconds."
+              "Took %Pl02u:%pl02u:%pl02u.%.6d seconds.\n"
             , pass
             , fail
             , skip

@@ -15,11 +15,10 @@
 #define DIV_SQRT3       0.57735026918962576450f /** @brief 1 / sqrt(3). */
 
 /**
- * @brief Defines an alias for the square root function. This avoids function
- * signatures which cause name conflicts with those included by the standard
- * libc headers.
+ * @brief Defines an alias for the square root function. This resolves a name
+ * conflict with the square root function included by the standard libc headers.
  */
-#define sqrt(X) ( _sqrt ( X ) )
+#define sqrt(X) _sqrt ( X )
 
 /**
  * @brief Square root function.

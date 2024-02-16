@@ -3,3 +3,4 @@
 obj/*
 bin/*
 console.log
+test/assets/out-file

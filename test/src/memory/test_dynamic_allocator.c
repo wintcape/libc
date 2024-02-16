@@ -427,7 +427,7 @@ test_dynamic_allocator_util_free
 {
     if ( !dynamic_allocator_free_aligned ( allocator , ( *data ).block ) )
     {
-        LOGERROR( "test_dynamic_allocator_util_free:  dynamic_allocator_free_aligned failed.");
+        LOGERROR( "test_dynamic_allocator_util_free:  dynamic_allocator_free_aligned failed." );
         return false;
     }
     ( *data ).block = 0;

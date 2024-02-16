@@ -69,7 +69,7 @@ display_time
 ,   f64*        fractional
 )
 {
-    *hours = elapsed / 3600;
+    *hours = ( ( u64 ) elapsed ) / ( 60 * 60 );
     *minutes = ( ( ( u64 ) elapsed ) / 60 ) % 60;
     *seconds = ( ( u64 ) elapsed ) % 60;
     *fractional = elapsed - ( ( f64 ) *seconds );

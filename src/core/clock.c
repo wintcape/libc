@@ -15,7 +15,7 @@ clock_update
 {
     if ( ( *clock ).start )
     {
-        ( *clock ).elapsed = platform_get_absolute_time () - ( *clock ).start;
+        ( *clock ).elapsed = platform_absolute_time () - ( *clock ).start;
     }
 }
 
@@ -24,7 +24,7 @@ clock_start
 (   clock_t* clock
 )
 {
-    ( *clock ).start = platform_get_absolute_time ();
+    ( *clock ).start = platform_absolute_time ();
     ( *clock ).elapsed = 0;
 }
 

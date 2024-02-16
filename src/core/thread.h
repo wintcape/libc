@@ -20,7 +20,7 @@ typedef struct
 thread_t;
 
 /** @brief Type definition for a 'thread start' callback function. */
-typedef u32 ( *PFN_thread_start )( void* );
+typedef u32 ( *thread_start_function_t )( void* );
 
 /**
  * @brief Creates a new thread.
@@ -36,10 +36,10 @@ typedef u32 ( *PFN_thread_start )( void* );
  */
 bool
 thread_create
-(   PFN_thread_start    function
-,   void*               args
-,   bool                auto_detach
-,   thread_t*           thread
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
 );
 
 /**

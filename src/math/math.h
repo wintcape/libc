@@ -16,36 +16,44 @@
 #include "math/trig.h"
 
 /**
- * @brief Computes the minimum of two integer values.
+ * @brief Computes the minimum of two numeric values.
+ * 
+ * @param a A numeric value.
+ * @param b A numeric value.
+ * @return The minimum of a and b.
  */
-#define MIN(a_,b_)                  \
-   ({ __typeof__ (a_) a__ = (a_);   \
-      __typeof__ (b_) b__ = (b_);   \
-     ( a__ < b__ ) ? a__ : b__;     \
+#define MIN(a,b)                 \
+   ({ __typeof__ (a) a__ = (a);  \
+      __typeof__ (b) b__ = (b);  \
+      ( a__ < b__ ) ? a__ : b__; \
     })
 
 /**
  * @brief Computes the maximum of two integer values.
+ * 
+ * @param a A numeric value.
+ * @param b A numeric value.
+ * @return The maximum of a and b.
  */
-#define MAX(a_,b_)                  \
-   ({ __typeof__ (a_) a__ = (a_);   \
-      __typeof__ (b_) b__ = (b_);   \
-      ( a__ > b__ ) ? a__ : b__;    \
+#define MAX(a,b)                 \
+   ({ __typeof__ (a) a__ = (a);  \
+      __typeof__ (b) b__ = (b);  \
+      ( a__ > b__ ) ? a__ : b__; \
     })
 
 /**
- * @brief Clamps an integer value between a min and max (inclusive).
+ * @brief Clamps a numeric value between an upper and lower bound (inclusive).
  * 
  * @param value The value to be clamped.
- * @param min The minimum value of the range.
- * @param max The maximum value of the range.
+ * @param min Lower bound (inclusive).
+ * @param max Upper bound (inclusive).
  * @return The clamped value.
  */
-#define CLAMP(value_,min_,max_)                                                 \
-    ({ __typeof__ (value_) value__ = (value_);                                  \
-       __typeof__ (min_) min__ = (min_);                                        \
-       __typeof__ (max_) max__ = (max_);                                        \
-       ( value__ <= min__ ) ? min__ : ( value__ >= max__ ) ? max__ : value__;   \
+#define CLAMP(value,min,max)                                                  \
+    ({ __typeof__ (value) value__ = (value);                                  \
+       __typeof__ (min) min__ = (min);                                        \
+       __typeof__ (max) max__ = (max);                                        \
+       ( value__ <= min__ ) ? min__ : ( value__ >= max__ ) ? max__ : value__; \
     })
 
 #endif  // MATH_H

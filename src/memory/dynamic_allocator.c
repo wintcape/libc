@@ -163,7 +163,7 @@ dynamic_allocator_allocate_aligned
         f64 amount;
         const char* unit = string_bytesize ( MAX_SINGLE_ALLOCATION_SIZE , &amount );
         LOGERROR ( "dynamic_allocator_allocate: Cannot request block size larger than MAX_SINGLE_ALLOCATION_SIZE (%.2f %s)."
-                 , amount
+                 , &amount
                  , unit
                  );
         return 0;

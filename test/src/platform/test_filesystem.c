@@ -251,7 +251,7 @@ test_file_read_all
     file_handle_t file;
     u64 written;
     u64 read;
-    LOGDEBUG ( "Writing it to a file on the host platform. . .");
+    LOGDEBUG ( "Writing it to a file on the host platform. . ." );
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , true , &file ) );
     EXPECT ( file_write ( &file , file_size_ , content , &written ) );
     EXPECT_EQ ( file_size_ , file_size ( &file ) );

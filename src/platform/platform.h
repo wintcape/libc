@@ -126,7 +126,7 @@ platform_string_length_clamped
  * @return The system time.
  */
 f64
-platform_get_absolute_time
+platform_absolute_time
 ( void );
 
 /**
@@ -138,6 +138,17 @@ void
 platform_sleep
 (   u64 ms
 );
+
+/**
+ * @brief Queries the number of logical cores which are available for processing
+ * on the host platform.
+ * 
+ * @return The number of logical cores which are available for processing on the
+ * host platform.
+ */
+i32
+platform_processor_core_count
+( void );
 
 /**
  * @brief Platform-independent 'thread create' function (see core/thread.h).
@@ -153,10 +164,10 @@ platform_sleep
  */
 bool
 platform_thread_create
-(   PFN_thread_start    function
-,   void*               args
-,   bool                auto_detach
-,   thread_t*           thread
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
 );
 
 /**

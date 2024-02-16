@@ -19,15 +19,15 @@
 
 /**
  * @brief Defines an alias for each trigonometric function. This avoids function
- * signatures which cause name conflicts with those included by the standard
+ * signatures which cause name conflicts with those provided by the standard
  * libc headers.
  */
-#define sin(X)  ( _sin ( X ) )  /** @brief Defines an alias for the sine function. This avoids a name conflict with the sine function included by the standard libc headers. */
-#define cos(X)  ( _cos ( X ) )  /** @brief Defines an alias for the cosine function. This avoids a name conflict with the cosine function included by the standard libc headers. */
-#define tan(X)  ( _tan ( X ) )  /** @brief Defines an alias for the tangent function. This avoids a name conflict with the tangent function included by the standard libc headers. */
-#define asin(X) ( _asin ( X ) ) /** @brief Defines an alias for the sine inverse function. This avoids a name conflict with the sine inverse function included by the standard libc headers. */
-#define acos(X) ( _acos ( X ) ) /** @brief Defines an alias for the cosine inverse function. This avoids a name conflict with the cosine inverse function included by the standard libc headers. */
-#define atan(X) ( _atan ( X ) ) /** @brief Defines an alias for the tangent inverse function. This avoids a name conflict with the tangent inverse function included by the standard libc headers. */
+#define sin(X)  _sin ( X )  /** @brief Defines an alias for the sine function. This resolves a name conflict with the sine function provided by the standard libc headers. */
+#define cos(X)  _cos ( X )  /** @brief Defines an alias for the cosine function. This resolves a name conflict with the cosine function provided by the standard libc headers. */
+#define tan(X)  _tan ( X )  /** @brief Defines an alias for the tangent function. This resolves a name conflict with the tangent function provided by the standard libc headers. */
+#define asin(X) _asin ( X ) /** @brief Defines an alias for the sine inverse function. This resolves a name conflict with the sine inverse function provided by the standard libc headers. */
+#define acos(X) _acos ( X ) /** @brief Defines an alias for the cosine inverse function. This resolves a name conflict with the cosine inverse function provided by the standard libc headers. */
+#define atan(X) _atan ( X ) /** @brief Defines an alias for the tangent inverse function. This resolves a name conflict with the tangent inverse function provided by the standard libc headers. */
 
 /**
  * @brief Sine function.

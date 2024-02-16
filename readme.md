@@ -3,6 +3,13 @@ Ongoing project to add robustness to libc for improved programming of C applicat
 
 ## Changelog
 
+### 0.1.2
+- Improvements to `core/memory.h` to verify thread safety using mutual exclusion operations.
+- Added a Mac OS platform layer and makefile, although I cannot test it because I do not have a machine that runs Mac OS (pretty please someone tell me if this works, especially because I have no idea how Mac OS and Objective-C works and basically copied all the non-POSIX sections of the implementation directly from here: ).
+- Added function `platform_processor_core_count` to query host platform processor count.
+- Truncated function signature, for consistency with `platform_processor_core_count`: `platform_get_absolute_time` -> `platform_absolute_time`.
+- Removed unused memory tag.
+
 ### 0.1.1
 - Forgot a `.gitignore` when I pushed the Linux version of the repo yesterday, resulting in a bunch of binaries being written to the repo. Fixed this.
 - Fixed `display_time` so it correctly handles seconds-to-minutes and minutes-to-hours overflow.

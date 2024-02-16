@@ -1,8 +1,8 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
  * @file core/memory.h
- * @brief Provides an interface for an application subsystem which handles
- * memory allocation and management.
+ * @brief Provides an interface for a thread-safe application subsystem which
+ * handles memory allocation and management.
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -21,7 +21,6 @@ typedef enum
 ,   MEMORY_TAG_DYNAMIC_ALLOCATOR
 ,   MEMORY_TAG_THREAD
 ,   MEMORY_TAG_MUTEX
-,   MEMORY_TAG_SEMAPHORE
 
 ,   MEMORY_TAG_COUNT
 }

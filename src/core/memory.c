@@ -9,6 +9,7 @@
 #include "container/string.h"
 
 #include "core/logger.h"
+#include "core/mutex.h"
 
 #include "memory/dynamic_allocator.h"
 
@@ -24,7 +25,6 @@ static const char* memory_tags[ MEMORY_TAG_COUNT ] = { "UNKNOWN           "
                                                      , "DYNAMIC_ALLOCATOR "
                                                      , "THREAD            "
                                                      , "MUTEX             "
-                                                     , "SEMAPHORE         "
                                                      };
 
 /** @brief Type definition for a container to hold global statistics. */
@@ -49,6 +49,8 @@ typedef struct
 
     u64                 capacity;
     void*               memory;
+
+    mutex_t             allocation_mutex;
 }
 state_t;
 
@@ -99,6 +101,12 @@ memory_startup
         return false;
     }
 
+    if ( !mutex_create ( &( *state ).allocation_mutex ) )
+    {
+        LOGFATAL ( "Memory subsystem failed to initialize the mutex data structure employed by thread-safe memory operations." );
+        return false;
+    }
+
     LOGDEBUG ( "  Success." );
 
     return true;
@@ -112,6 +120,8 @@ memory_shutdown
     {
         return;
     }
+
+    mutex_destroy ( &( *state ).allocation_mutex );
 
     dynamic_allocator_clear ( &( *state ).allocator );
 
@@ -144,42 +154,46 @@ memory_allocate_aligned
 ,   MEMORY_TAG  tag
 )
 {
-    // Warn if tag unknown.
     if ( tag == MEMORY_TAG_UNKNOWN )
     {
         LOGWARN ( "memory_allocate: called with MEMORY_TAG_UNKNOWN." );
     }
 
-    // Perform the memory allocation.
     void* memory;
     if ( state )
     {
+        if ( !mutex_lock ( &( *state ).allocation_mutex ) )
+        {
+            LOGFATAL ( "memory_allocate: Could not obtain mutex lock. Aborting operation." );
+            return 0;
+        }
         memory = dynamic_allocator_allocate_aligned ( &( *state ).allocator
                                                     , size
                                                     , alignment
                                                     );
+        if ( memory )
+        {
+            ( *state ).stat.allocated += size;
+            ( *state ).stat.tagged_allocations[ tag ] += size;
+            ( *state ).stat.allocation_count += 1;
+        }
+        if ( !mutex_unlock ( &( *state ).allocation_mutex ) )
+        {
+            LOGERROR ( "memory_allocate: Failed to release the mutex lock." );
+        }
     }
     else
-    {   // Failsafe for if memory subsystem is not yet initialized.
+    {   // Failsafe for if memory subsystem is not initialized.
         memory = platform_memory_allocate ( size );
     }
-
-    if ( !memory )
+    if ( memory )
+    {
+        memory_clear ( memory , size );
+    }
+    else
     {
         LOGFATAL ( "memory_allocate: Failed to allocate memory." );
-        return 0;
     }
-    
-    memory_clear ( memory , size );
-
-    // Update statistics.
-    if ( state )
-    {
-        ( *state ).stat.allocated += size;
-        ( *state ).stat.tagged_allocations[ tag ] += size;
-        ( *state ).stat.allocation_count += 1;
-    }
-
     return memory;
 }
 
@@ -201,30 +215,45 @@ memory_free_aligned
 ,   MEMORY_TAG  tag
 )
 {
-    // Warn if tag unknown.
     if ( tag == MEMORY_TAG_UNKNOWN )
     {
         LOGWARN ( "memory_free: called with MEMORY_TAG_UNKNOWN." );
     }
 
-    // Perform the memory free.
-    if ( state && dynamic_allocator_free_aligned ( &( *state ).allocator
-                                                 , memory
-                                                 ))
+    if ( state )
     {
-        // Update statistics.
-        ( *state ).stat.allocated -= size;
-        ( *state ).stat.tagged_allocations[ tag ] -= size;
-        ( *state ).stat.free_count += 1;
+        if ( !mutex_lock ( &( *state ).allocation_mutex ) )
+        {
+            LOGFATAL ( "memory_free: Could not obtain mutex lock. Heap corruption is likely." );
+            return;
+        }
+        bool success = dynamic_allocator_free_aligned ( &( *state ).allocator
+                                                      , memory
+                                                      );
+        if ( success )
+        {
+            ( *state ).stat.allocated -= size;
+            ( *state ).stat.tagged_allocations[ tag ] -= size;
+            ( *state ).stat.free_count += 1;
+        }
+        if ( !mutex_unlock ( &( *state ).allocation_mutex ) )
+        {
+            LOGFATAL ( "memory_free: Failed to release mutex lock." );
+        }
+        if ( !success )
+        {
+            /**
+             * If the free operation failed, try freeing the memory on the
+             * platform level as a failsafe.
+             */
+            platform_memory_free ( memory );
+            // . . .gee, I sure hope that worked. . .
+        }
     }
     else
-    {
-        /**
-         * If the call failed or the subsystem is not yet initialized,
-         * try freeing the memory on the platform level as a failsafe.
-         */
+    {   // Failsafe for if memory subsystem is not initialized.
         platform_memory_free ( memory );
-    }   // . . .gee, I sure hope that worked. . .
+    }
 }
 
 void*

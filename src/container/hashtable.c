@@ -35,15 +35,15 @@ hashtable_create
     {
         if ( !hashtable )
         {
-            LOGERROR ( "hashtable_create: Missing argument: hashtable (output buffer).");
+            LOGERROR ( "hashtable_create: Missing argument: hashtable (output buffer)." );
         }
         if ( !capacity )
         {
-            LOGERROR ( "hashtable_create: value of capacity argument must be non-zero.");
+            LOGERROR ( "hashtable_create: value of capacity argument must be non-zero." );
         }
         if ( !stride && !pointer )
         {
-            LOGERROR ( "hashtable_create: value of stride argument must be non-zero.");
+            LOGERROR ( "hashtable_create: value of stride argument must be non-zero." );
         }
         return false;
     }
@@ -105,11 +105,11 @@ hashtable_set
     {
         if ( !hashtable )
         {
-            LOGERROR ( "hashtable_set: Missing argument: hashtable.");
+            LOGERROR ( "hashtable_set: Missing argument: hashtable." );
         }
         if ( !key )
         {
-            LOGERROR ( "hashtable_set: Missing argument: key.");
+            LOGERROR ( "hashtable_set: Missing argument: key." );
         }
         if ( hashtable && !( *hashtable ).memory )
         {
@@ -119,7 +119,7 @@ hashtable_set
         }
         if ( !value && hashtable && !( *hashtable ).pointer )
         {
-            LOGERROR ( "hashtable_set: Missing argument: value.");
+            LOGERROR ( "hashtable_set: Missing argument: value." );
         }
         return false;
     }
@@ -153,15 +153,15 @@ hashtable_get
     {
         if ( !hashtable )
         {
-            LOGERROR ( "hashtable_get: Missing argument: hashtable.");
+            LOGERROR ( "hashtable_get: Missing argument: hashtable." );
         }
         if ( !key )
         {
-            LOGERROR ( "hashtable_get: Missing argument: key.");
+            LOGERROR ( "hashtable_get: Missing argument: key." );
         }
         if ( !value )
         {
-            LOGERROR ( "hashtable_get: Missing argument: value (output buffer).");
+            LOGERROR ( "hashtable_get: Missing argument: value (output buffer)." );
         }
         if ( hashtable && !( *hashtable ).memory )
         {
@@ -190,11 +190,11 @@ hashtable_fill
     {
         if ( !hashtable )
         {
-            LOGERROR ( "hashtable_fill: Missing argument: hashtable.");
+            LOGERROR ( "hashtable_fill: Missing argument: hashtable." );
         }
         if ( !value )
         {
-            LOGERROR ( "hashtable_fill: Missing argument: value.");
+            LOGERROR ( "hashtable_fill: Missing argument: value." );
         }
         if ( hashtable && !( *hashtable ).memory )
         {

@@ -12,13 +12,13 @@
 #define BYPASS 2
 
 /** @brief Type definition for a test callback function. */
-typedef u8 ( *PFN_test )();
+typedef u8 ( *test_function_t )();
 
 /** @brief Type definition for a container to hold test info. */
 typedef struct
 {
-    PFN_test    function;
-    char*       description;
+    test_function_t function;
+    char*           description;
 }
 test_entry_t;
 
@@ -32,12 +32,12 @@ test_startup
 /**
  * @brief Registers a test with the test manager.
  * 
- * @param PFN_test A callback function.
+ * @param test_function_t A callback function.
  * @param description Test description string.
  */
 void
 test_register
-(   PFN_test
+(   test_function_t
 ,   char*       description
 );
 

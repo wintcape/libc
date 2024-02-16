@@ -1,6 +1,6 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
- * @file platform/linux.c
+ * @file platform/macos.c
  * @brief Implementation of the platform header for GNU/Linux-based
  * operating systems.
  * (see platform.h for additional details)
@@ -9,16 +9,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Begin platform layer.
-#if PLATFORM_LINUX == 1
+#if PLATFORM_MAC == 1
 
 #include "core/logger.h"
 #include "core/memory.h"
 
 // Platform layer dependencies.
 #include <errno.h>
+#include <mach/mach_time.h>
 #include <pthread.h>
-#include <sys/sysinfo.h>
-#include <sys/time.h>
 #if _POSIX_C_SOURCE >= 199309L
     #include <time.h>   // nanosleep
 #else
@@ -106,9 +105,11 @@ f64
 platform_absolute_time
 ( void )
 {
-    struct timespec time;
-    clock_gettime ( CLOCK_MONOTONIC , &time );
-    return time.tv_sec + time.tv_nsec * 0.000000001;
+    mach_timebase_info_data_t mach_timebase_info;
+    mach_timebase_info ( &mach_timebase_info );
+    const u64 time = mach_absolute_time ();
+    const u64 ns = ( f64 )( time * ( ( u64 ) mach_timebase_info.numer ) / ( ( f64 ) clock_timebase.denom ) );
+    return ns / 1.0E9;
 }
 
 void
@@ -134,13 +135,10 @@ i32
 platform_processor_core_count
 ( void )
 {
-    i32 total_processor_count = get_nprocs_conf ();
-    i32 available_processor_count = get_nprocs ();
-    LOGINFO ( "platform_processor_core_count: %i cores available (%i offline)."
-            , available_processor_count
-            , total_processor_count - available_processor_count
+    LOGINFO ( "platform_processor_core_count: %i cores available."
+            , [ [ NSProcessInfo processInfo ] processorCount ]
             );
-    return available_processor_count;
+    return [ [ NSProcessInfo processInfo ] processorCount ];
 }
 
 bool

@@ -13,11 +13,10 @@
 #define FLOAT_EPSILON   1.192092896e-07f  /** @brief Smallest possible non-zero floating point number. */
 
 /**
- * @brief Defines an alias for the absolute value function. This avoids function
- * signatures which cause name conflicts with those included by the standard
- * libc headers.
+ * @brief Defines an alias for the absolute value function. This resolves a name
+ * conflict with the absolute value function provided by the standard libc headers.
  */
-#define abs(X) ( _abs ( X ) )
+#define abs(X) _abs ( X )
 
 /**
  * @brief Absolute value function.

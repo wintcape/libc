@@ -10,8 +10,10 @@
 
 #include "platform/platform.h"
 
-// Undefine preprocessor bindings which cause name conflicts with the standard
-// libc headers.
+/**
+ * @brief Undefines preprocessor bindings which cause name conflicts with the
+ * standard libc headers.
+ */
 #undef abs
 #undef sqrt
 #undef sin
@@ -22,6 +24,7 @@
 #undef atan
 #undef random
 
+// Standard libc dependencies.
 #include <math.h>
 #include <stdlib.h>
 
@@ -99,7 +102,7 @@ _random
 {
     if ( !random_seeded )
     {
-        srand ( ( u32 ) platform_get_absolute_time () );
+        srand ( ( u32 ) platform_absolute_time () );
         random_seeded = true;
     }
     return rand ();
@@ -113,7 +116,7 @@ random2
 {
     if ( !random_seeded )
     {
-        srand ( ( u32 ) platform_get_absolute_time () );
+        srand ( ( u32 ) platform_absolute_time () );
         random_seeded = true;
     }
     return ( rand () % ( max - min + 1 ) ) + min;
