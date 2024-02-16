@@ -81,8 +81,8 @@ test_run_all
             fail += 1;
         }
 
-        char* status = string_format ( fail ? "*** %u FAILED ***"
-                                            : "SUCCESS"
+        char* status = string_format ( fail ? ANSI_CC ( ANSI_CC_FG_RED ) "*** %u FAILED ***" ANSI_CC_RESET
+                                            : ANSI_CC ( ANSI_CC_FG_DARK_GREEN ) "SUCCESS" ANSI_CC_RESET
                                      , fail
                                      );
 
@@ -101,10 +101,11 @@ test_run_all
                      , &clock_test_elapsed_fractional
                      );
     
-        LOGINFO ( "Executed %u of %u (%u skipped) %s (%Pl02u:%pl02u:%pl02u.%.6d / %Pl02u:%pl02u:%pl02u.%.6d)."
+        LOGINFO ( "Executed %u of %u (%u skipped).\n\t%s\n\tResult:   %s\n\tElapsed:  %Pl02u:%pl02u:%pl02u.%.6d / %Pl02u:%pl02u:%pl02u.%.6d."
                 , i + 1
                 , test_count
                 , skip
+                , tests[ i ].description
                 , status
                 , clock_test_elapsed_hours
                 , clock_test_elapsed_minutes
