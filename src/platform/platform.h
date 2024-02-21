@@ -11,6 +11,8 @@
 #include "core/mutex.h"
 #include "core/thread.h"
 
+#include "platform/filesystem.h"
+
 /**
  * @brief Platform-independent memory allocation function (see core/memory.h).
  * 
@@ -90,6 +92,21 @@ platform_memory_move
 );
 
 /**
+ * @brief Platform-independent memory comparison function (see core/memory.h).
+ * 
+ * @param s1 .
+ * @param s2 .
+ * @param size The number of bytes to compare.
+ * @return true if strings are equal; false otherwise.
+ */
+bool
+platform_memory_equal
+(   const void* s1
+,   const void* s2
+,   u64         size
+);
+
+/**
  * @brief Platform-independent function to compute the length of a null-
  * terminated string (see core/string.h).
  * 
@@ -140,6 +157,31 @@ platform_sleep
 );
 
 /**
+ * @brief Queries the most recent platform-specific error code. Thread-safe.
+ * 
+ * @return The value of the most recent platform-specific error code.
+ */
+i64
+platform_error_code
+( void );
+
+/**
+ * @brief Queries the platform-specific error message corresponding to the
+ * provided error code. The output is returned as a mutable string
+ * (see container/string.h). Thread-safe.
+ * 
+ * Uses dynamic memory allocation. Call string_destroy to free.
+ * 
+ * @param error Error code.
+ * @return A mutable string containing the platform-specific error message
+ * corresponding to error.
+ */
+char*
+platform_error_message
+(   const i64 error
+);
+
+/**
  * @brief Queries the number of logical cores which are available for processing
  * on the host platform.
  * 
@@ -160,7 +202,7 @@ platform_processor_core_count
  * @param auto_detach Thread should immediately release resources when work is
  * complete? Y/N. If true, the output buffer will be unset.
  * @param thread Output buffer (only set if auto_detach is false).
- * @returns true if successfully created; otherwise false.
+ * @return true if successfully created; otherwise false.
  */
 bool
 platform_thread_create
@@ -229,7 +271,7 @@ platform_thread_wait_timeout
  * @brief Platform-independent 'thread active' function (see core/thread.h).
  * 
  * @param thread The thread to query.
- * @returns true if thread currently active; otherwise false.
+ * @return true if thread currently active; otherwise false.
  */
 bool
 platform_thread_active
@@ -301,6 +343,26 @@ platform_mutex_lock
 bool
 platform_mutex_unlock
 (   mutex_t* mutex
+);
+
+/**
+ * @brief Tests if a file with the provided mode exists at the provided path on
+ * the host platform.
+ * 
+ * FILE_MODE_ACCESS : Test only for file existence.
+ * FILE_MODE_READ   : Test for read-only file.
+ * FILE_MODE_WRITE  : Test for write-only file.
+ * FILE_MODE_READ |
+ * FILE_MODE_WRITE  : Test for file with both read and write permission.
+ * 
+ * @param path The filepath to test.
+ * @param mode Mode flag.
+ * @return true if file exists; false otherwise.
+ */
+bool
+platform_file_exists
+(   const char* path
+,   FILE_MODE   mode
 );
 
 #endif  // PLATFORM_H

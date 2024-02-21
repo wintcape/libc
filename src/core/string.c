@@ -57,6 +57,27 @@ __string_contains_reverse
 ,   u64*        index
 );
 
+/**
+ * @brief Primary implementation of string_i64 and string_u64
+ * (see string_i64 and string_u64).
+ * 
+ * After return, the string at dst will be written in least-significant-bit
+ * first order. Since the standard method for printing Arabic-numeral integers
+ * is in most-significant-bit first order, the output of this function should be
+ * reversed for the purpose of display.
+ * 
+ * @param value A 64-bit value.
+ * @param radix Integer radix in the range [2..36] (inclusive).
+ * @param dst Output buffer for string.
+ * @return The number of characters written to dst.
+ */
+u64
+_string_u64
+(   u64     value
+,   u8      radix
+,   char*   dst
+);
+
 u64
 _string_length
 (   const char* string
@@ -110,6 +131,97 @@ string_contains
                              , find , find_length
                              , index
                              );
+}
+
+char*
+string_reverse
+(   char*     string
+,   u64       string_length
+)
+{
+    if ( !string_length )
+    {
+        return string;
+    }
+    
+    u64 i;
+    u64 j;
+    char swap;
+    for ( i = 0 , j = string_length - 1; i < j; ++i , --j )
+    {
+        swap = string[ i ];
+        string[ i ] = string[ j ];
+        string[ j ] = swap;
+    }
+    return string;
+}
+
+u64
+string_i64
+(   i64     value
+,   u8      radix
+,   char*   dst
+)
+{
+    if ( radix < STRING_INTEGER_MIN_RADIX || radix > STRING_INTEGER_MAX_RADIX )
+    {
+        LOGWARN ( "string_i64: Illegal value for radix argument: %u. Clamping to range [%u..%u]."
+                , radix
+                , STRING_INTEGER_MIN_RADIX
+                , STRING_INTEGER_MAX_RADIX
+                );
+        radix = CLAMP ( radix
+                      , STRING_INTEGER_MIN_RADIX
+                      , STRING_INTEGER_MAX_RADIX
+                      );
+    }
+
+    const bool negative = radix == 10 && value < 0;
+    if ( negative )
+    {
+        *dst = '-';
+        value = -value;
+    }
+
+    const u64 length = _string_u64 ( value , radix , dst + negative );
+    string_reverse ( dst + negative , length );
+    return length + negative;
+}
+
+u64
+string_u64
+(   u64     value
+,   u8      radix
+,   char*   dst
+)
+{
+    if ( radix < STRING_INTEGER_MIN_RADIX || radix > STRING_INTEGER_MAX_RADIX )
+    {
+        LOGWARN ( "string_u64: Illegal value for radix argument: %u. Clamping to range [%u..%u]."
+                , radix
+                , STRING_INTEGER_MIN_RADIX
+                , STRING_INTEGER_MAX_RADIX
+                );
+        radix = CLAMP ( radix
+                      , STRING_INTEGER_MIN_RADIX
+                      , STRING_INTEGER_MAX_RADIX
+                      );
+    }
+
+    const u64 length = _string_u64 ( value , radix , dst );
+    string_reverse ( dst , length );
+    return length;
+}
+
+u64
+string_f64
+(   f64         value
+,   u8          precision
+,   const bool  abbreviated
+,   char*       dst
+)
+{   // TODO: Implement this.
+    return 0;
 }
 
 const char*
@@ -232,4 +344,30 @@ __string_contains_reverse
         }
     }
     return false;
+}
+
+u64
+_string_u64
+(   u64     value
+,   u8      radix
+,   char*   dst
+)
+{
+    char* i = dst;
+    do
+    {
+        const u8 digit = value % radix;
+        value /= radix;
+        if ( digit < 10 )
+        {
+            *i = '0' + digit;
+        }
+        else
+        {
+            *i = 'A' + digit - 10;
+        }
+        i += 1;
+    }
+    while ( value );
+    return i - dst;
 }

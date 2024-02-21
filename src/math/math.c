@@ -11,17 +11,28 @@
 #include "platform/platform.h"
 
 /**
- * @brief Undefines preprocessor bindings which cause name conflicts with the
- * standard libc headers.
+ * @brief Undefines preprocessor bindings which may cause name conflicts with
+ * the standard libc headers.
  */
+#undef nan
+#undef finite
 #undef abs
+#undef floor
+#undef ceiling
+#undef pow
 #undef sqrt
+#undef exp
+#undef ln
+#undef log
 #undef sin
 #undef cos
 #undef tan
 #undef asin
 #undef acos
 #undef atan
+#undef sinh
+#undef cosh
+#undef tanh
 #undef random
 
 // Standard libc dependencies.
@@ -31,8 +42,24 @@
 // ( see random ).
 static bool random_seeded = false;
 
+bool
+__nan
+(   f32 x
+)
+{
+    return isnan ( x );
+}
+
+bool
+__finite
+(   f32 x
+)
+{
+    return !isinf ( x );
+}
+
 f32
-_abs
+__abs
 (   f32 x
 )
 {
@@ -40,16 +67,64 @@ _abs
 }
 
 f32
-_sqrt
+__floor
+(   f32 x
+)
+{
+    return floorf ( x );
+}
+
+f32
+__ceiling
+(   f32 x
+)
+{
+    return ceilf ( x );
+}
+
+f32
+__pow
+(   f32 x
+,   f32 y
+)
+{
+    return powf ( x , y );
+}
+
+f32
+__sqrt
 (   f32 x
 )
 {
     return sqrtf ( x );
 }
 
+f32
+__exp
+(   f32 x
+)
+{
+    return expf ( x );
+}
 
 f32
-_sin
+__ln
+(   f32 x
+)
+{
+    return logf ( x );
+}
+
+f32
+__log
+(   f32 x
+)
+{
+    return log10f ( x );
+}
+
+f32
+__sin
 (   f32 x
 )
 {
@@ -57,7 +132,7 @@ _sin
 }
 
 f32
-_cos
+__cos
 (   f32 x
 )
 {
@@ -65,7 +140,7 @@ _cos
 }
 
 f32
-_tan
+__tan
 (   f32 x
 )
 {
@@ -73,7 +148,7 @@ _tan
 }
 
 f32
-_asin
+__asin
 (   f32 x
 )
 {
@@ -81,7 +156,7 @@ _asin
 }
 
 f32
-_acos
+__acos
 (   f32 x
 )
 {
@@ -89,15 +164,39 @@ _acos
 }
 
 f32
-_atan
+__atan
 (   f32 x
 )
 {
     return atanf ( x );
 }
 
+f32
+__sinh
+(   f32 x
+)
+{
+    return sinhf ( x );
+}
+
+f32
+__cosh
+(   f32 x
+)
+{
+    return coshf ( x );
+}
+
+f32
+__tanh
+(   f32 x
+)
+{
+    return tanhf ( x );
+}
+
 i32
-_random
+__random
 ( void )
 {
     if ( !random_seeded )
@@ -126,10 +225,10 @@ i64
 random64
 ( void )
 {
-    const u64 a = _random () & 0xFFFF;
-    const u64 b = _random () & 0xFFFF;
-    const u64 c = _random () & 0xFFFF;
-    const u64 d = _random () & 0xFFFF;
+    const u64 a = __random () & 0xFFFF;
+    const u64 b = __random () & 0xFFFF;
+    const u64 c = __random () & 0xFFFF;
+    const u64 d = __random () & 0xFFFF;
     return a | ( b << 16 ) | ( c << 32 ) | ( d << 48 );
 }
 
@@ -137,7 +236,7 @@ f32
 randomf
 ( void )
 {
-    return ( f32 ) _random () / ( f32 ) RAND_MAX;
+    return ( f32 ) __random () / ( f32 ) RAND_MAX;
 }
 
 f32
@@ -146,5 +245,5 @@ randomf2
 ,   f32 max
 )
 {
-    return min + ( f32 ) _random () / ( ( f32 ) RAND_MAX / ( max - min ) );
+    return min + ( f32 ) __random () / ( ( f32 ) RAND_MAX / ( max - min ) );
 }

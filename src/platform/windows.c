@@ -16,13 +16,23 @@
 #include "core/logger.h"
 
 // Platform layer dependencies.
+#include <io.h>
 #include <windows.h>
 #include <windowsx.h>
 
 // Standard libc dependencies.
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define PLATFORM_WINDOWS_ERROR_CREATE_THREAD        1 /** @brief Internal error code. */
+#define PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE         2 /** @brief Internal error code. */
+#define PLATFORM_WINDOWS_ERROR_GET_EXIT_CODE_THREAD 3 /** @brief Internal error code. */
+#define PLATFORM_WINDOWS_ERROR_TERMINATE_THREAD     4 /** @brief Internal error code. */
+#define PLATFORM_WINDOWS_ERROR_CREATE_MUTEX         5 /** @brief Internal error code. */
+#define PLATFORM_WINDOWS_ERROR_ABANDONED_MUTEX      6 /** @brief Internal error code. */
+#define PLATFORM_WINDOWS_ERROR_RELEASE_MUTEX        7 /** @brief Internal error code. */
 
 // Global system clock. Allows for clocks to function without having to call
 // platform_start first (see core/clock.h).
@@ -35,6 +45,161 @@ static LARGE_INTEGER    platform_clock_start_time; /** @brief Global system cloc
 void
 platform_clock_init
 ( void );
+
+/**
+ * @brief Primary implementation of platform_thread_create
+ * (see platform_thread_create).
+ * 
+ * @param function The callback function to run threaded.
+ * @param args Internal state arguments.
+ * @param auto_detach Thread should immediately release resources when work is
+ * complete? Y/N. If true, the output buffer will be unset.
+ * @param thread Output buffer (only set if auto_detach is false).
+ * @return 0 on success; error code false.
+ */
+i32
+_platform_thread_create
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_destroy
+ * (see platform_thread_destroy).
+ * 
+ * @param thread The thread to free.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_destroy
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_detach
+ * (see platform_thread_detach).
+ * 
+ * @param thread The thread to detach.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_detach
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_cancel
+ * (see platform_thread_cancel).
+ * 
+ * @param thread The thread to cancel.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_cancel
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_wait
+ * (see platform_thread_wait).
+ * 
+ * @param thread The thread to wait for.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_wait
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_wait_timeout
+ * (see platform_thread_wait_timeout).
+ * 
+ * @param thread The thread to wait for.
+ * @param timeout_ms The number of milliseconds to wait prior to timeout.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_wait_timeout
+(   thread_t*   thread
+,   const u64   timeout_ms
+);
+
+/**
+ * @brief Primary implementation of platform_thread_active
+ * (see platform_thread_active).
+ * 
+ * @param thread The thread to query.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_active
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_active
+ * (see platform_thread_active).
+ * 
+ * @param thread The thread to sleep on.
+ * @param ms The time to sleep, in milliseconds.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_sleep
+(   thread_t*   thread
+,   const u64   ms
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_create
+ * (see platform_mutex_create).
+ * 
+ * @param mutex Output buffer.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_create
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_destroy
+ * (see platform_mutex_destroy).
+ * 
+ * @param mutex The mutex to free.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_destroy
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_lock
+ * (see platform_mutex_lock).
+ * 
+ * @param mutex The mutex to lock.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_lock
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_unlock
+ * (see platform_mutex_unlock).
+ * 
+ * @param mutex The mutex to unlock.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_unlock
+(   mutex_t* mutex
+);
 
 void*
 platform_memory_allocate
@@ -91,6 +256,16 @@ platform_memory_move
     return memmove ( dst , src , size );
 }
 
+bool
+platform_memory_equal
+(   const void* s1
+,   const void* s2
+,   u64         size
+)
+{
+    return !memcmp ( s1 , s2 , size );
+}
+
 u64
 platform_string_length
 (   const char* string
@@ -130,13 +305,45 @@ platform_sleep
     Sleep ( ms );
 }
 
+i64
+platform_error_code
+( void )
+{
+    return GetLastError ();
+}
+
+char*
+platform_error_message
+(   const i64 error
+)
+{
+    mutex_t mutex;
+    if ( !_platform_mutex_create ( &mutex ) || !_platform_mutex_lock ( &mutex ) )
+    {
+        return string_create_from ( "" );
+    }
+    char* message = _string_create ( STACK_STRING_MAX_SIZE );
+    const u64 written = FormatMessage (  FORMAT_MESSAGE_FROM_SYSTEM
+                                       | FORMAT_MESSAGE_IGNORE_INSERTS
+                                      , 0
+                                      , error
+                                      , 0
+                                      , message
+                                      , STACK_STRING_MAX_SIZE
+                                      , 0
+                                      );
+    _array_field_set ( message , ARRAY_FIELD_LENGTH , written );
+    _platform_mutex_unlock ( &mutex );
+    return message;
+}
+
 i32
 platform_processor_core_count
 ( void )
 {
     SYSTEM_INFO system_info;
     GetSystemInfo ( &system_info );
-    LOGINFO ( "platform_processor_core_count: %i cores available."
+    LOGINFO ( "platform_processor_core_count ("PLATFORM_STRING"): %i cores available."
             , system_info.dwNumberOfProcessors
             );
     return system_info.dwNumberOfProcessors;
@@ -154,35 +361,57 @@ platform_thread_create
     {
         if ( !function )
         {
-            LOGERROR ( "platform_thread_create: Missing argument: function (threaded process to run)." );
+            LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): Missing argument: function (threaded process to run)." );
             return false;
         }
         if ( !thread )
         {
-            LOGERROR ( "platform_thread_create: Missing argument: thread (output buffer)." );
+            LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): Missing argument: thread (output buffer)." );
             return false;
         }
     }
 
-    ( *thread ).internal = CreateThread ( 0
-                                        , 0
-                                        , ( LPTHREAD_START_ROUTINE ) function
-                                        , args
-                                        , 0
-                                        , ( DWORD* ) &( *thread ).id
-                                        );
-    LOGDEBUG ( "Starting process on new thread #%u." , ( *thread ).id );
+    const i32 result = _platform_thread_create ( function
+                                               , args
+                                               , auto_detach
+                                               , thread
+                                               );
 
-    if ( ( *thread ).internal )
+    if ( result )
     {
+        const char* platform_function_name;
+        switch ( result )
+        {
+            case PLATFORM_WINDOWS_ERROR_CREATE_THREAD:
+            {
+                platform_function_name = "CreateThread";
+            }
+            break;
+
+            case PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE:
+            {
+                platform_function_name = "CloseHandle";
+            }
+            break;
+
+            default:
+            {
+                platform_function_name = "An unknown Windows process";
+            }
+            break;
+        }
+
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+                 , platform_function_name
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+
         return false;
     }
-
-    if ( auto_detach )
-    {
-        CloseHandle( ( *thread ).internal );
-    }
-    
     return true;
 }
 
@@ -195,9 +424,44 @@ platform_thread_destroy
     {
         return;
     }
-    DWORD code;
-    GetExitCodeThread ( ( *thread ).internal , &code );
-    CloseHandle ( ( *thread ).internal );
+
+    const i32 result = _platform_thread_destroy ( thread );
+
+    if ( result )
+    {
+        const char* platform_function_name;
+        switch ( result )
+        {
+            case PLATFORM_WINDOWS_ERROR_GET_EXIT_CODE_THREAD:
+            {
+                platform_function_name = "GetExitCodeThread";
+            }
+            break;
+
+            case PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE:
+            {
+                platform_function_name = "CloseHandle";
+            }
+            break;
+
+            default:
+            {
+                platform_function_name = "An unknown Windows process";
+            }
+            break;
+        }
+
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): %s failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+                 , platform_function_name
+                 , ( *thread ).id
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+    }
+
     ( *thread ).internal = 0;
     ( *thread ).id = 0;
 }
@@ -211,7 +475,19 @@ platform_thread_detach
     {
         return;
     }
-    CloseHandle ( ( *thread ).internal );
+
+    if ( _platform_thread_detach ( thread ) )
+    {
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): CloseHandle failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+                 , ( *thread ).id
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+    }
+
     ( *thread ).internal = 0;
 }
 
@@ -224,7 +500,19 @@ platform_thread_cancel
     {
         return;
     }
-    TerminateThread ( ( *thread ).internal , 0 );
+
+    if ( _platform_thread_cancel ( thread ) )
+    {
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): TerminateThread failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+                 , ( *thread ).id
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+    }
+
     ( *thread ).internal = 0;
 }
 
@@ -237,8 +525,7 @@ platform_thread_wait
     {
         return false;
     }
-    const DWORD code = WaitForSingleObject ( ( *thread ).internal , INFINITE );
-    return code == WAIT_OBJECT_0;
+    return !_platform_thread_wait ( thread );
 }
 
 bool
@@ -251,10 +538,7 @@ platform_thread_wait_timeout
     {
         return false;
     }
-    const DWORD code = WaitForSingleObject ( ( *thread ).internal
-                                           , timeout_ms
-                                           );
-    return code == WAIT_OBJECT_0;
+    return !_platform_thread_wait_timeout ( thread , timeout_ms );
 }
 
 bool
@@ -266,8 +550,7 @@ platform_thread_active
     {
         return false;
     }
-    const DWORD code = WaitForSingleObject ( ( *thread ).internal , 0 );
-    return code == WAIT_TIMEOUT;
+    return !_platform_thread_active ( thread );
 }
 
 void
@@ -276,8 +559,8 @@ platform_thread_sleep
 ,   const u64   ms
 )
 {
-    platform_sleep ( ms );
-}
+    /* if ( */ _platform_thread_sleep ( thread , ms ) /* ) {} */;
+}//            ^^^^^^^^^^^^^^^^^^^^^^ Does not fail.
 
 u64
 platform_thread_id
@@ -293,14 +576,19 @@ platform_mutex_create
 {
     if ( !mutex )
     {
-        LOGERROR ( "platform_mutex_create: Missing argument: mutex (output buffer)." );
+        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): Missing argument: mutex (output buffer)." );
         return false;
     }
 
-    ( *mutex ).internal = CreateMutex ( 0 , 0 , 0 );
-    if ( !( *mutex ).internal )
+    if ( _platform_mutex_create ( mutex ) )
     {
-        LOGERROR ( "platform_mutex_create: CreateMutex failed." );
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): CreateMutex failed.\n\t                                        Reason: %S\n\t                                        Code:   %i"
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
         return false;
     }
 
@@ -317,7 +605,18 @@ platform_mutex_destroy
         return;
     }
 
-    CloseHandle ( ( *mutex ).internal );
+    if ( _platform_mutex_destroy ( mutex ) )
+    {
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): CloseHandle failed on mutex %@.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+                 , mutex
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+    }
+
     ( *mutex ).internal = 0;
 }
 
@@ -328,25 +627,22 @@ platform_mutex_lock
 {
     if ( !mutex || !( *mutex ).internal )
     {
-        LOGERROR ( "platform_mutex_lock: No mutex was provided." );
         return false;
     }
 
-    const DWORD result = WaitForSingleObject ( ( *mutex ).internal
-                                             , INFINITE
-                                             );
-    switch ( result )
+    if ( _platform_mutex_lock ( mutex ) )
     {
-        case WAIT_OBJECT_0:
-        {
-            return true;
-        }
-        case WAIT_ABANDONED:
-        {
-            return false;
-        }
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): WaitForSingleObject failed on mutex %@.\n\t                                       Reason: %S\n\t                                       Code:   %i"
+                 , mutex
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+        return false;
     }
-    
+
     return true;
 }
 
@@ -359,7 +655,52 @@ platform_mutex_unlock
     {
         return false;
     }
-    return ReleaseMutex ( ( *mutex ).internal );
+
+    if ( _platform_mutex_unlock ( mutex ) )
+    {
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): ReleaseMutex failed on mutex %@.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+                 , mutex
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+        return false;
+    }
+
+    return true;
+}
+
+bool
+platform_file_exists
+(   const char* path
+,   FILE_MODE   mode_
+)
+{
+    i32 mode;
+    if ( mode_ == FILE_MODE_ACCESS )
+    {
+        mode = 0;
+    }
+    else if ( ( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = 6;
+    }
+    else if ( ( mode_ & FILE_MODE_READ ) && !( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = 4;
+    }
+    else if ( !( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = 2;
+    }
+    else
+    {
+        LOGERROR ( "file_exists: Invalid file mode." );
+        return false;
+    }
+    return !_access ( path , mode );
 }
 
 void
@@ -370,6 +711,168 @@ platform_clock_init
     QueryPerformanceFrequency( &f );
     platform_clock_frequency = 1.0 / ( ( f64 ) f.QuadPart );
     QueryPerformanceCounter( &platform_clock_start_time );
+}
+
+i32
+_platform_thread_create
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
+)
+{
+    ( *thread ).internal = CreateThread ( 0
+                                        , 0
+                                        , ( LPTHREAD_START_ROUTINE ) function
+                                        , args
+                                        , 0
+                                        , ( LPDWORD )( &( *thread ).id )
+                                        );
+    if ( !( *thread ).internal )
+    {
+        return PLATFORM_WINDOWS_ERROR_CREATE_THREAD;
+    }
+    if ( auto_detach )
+    {
+        if ( !CloseHandle ( ( *thread ).internal ) )
+        {
+            return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
+        }
+    }
+    return 0;
+}
+
+i32
+_platform_thread_destroy
+(   thread_t* thread
+)
+{
+    i32 result = 0;
+    DWORD code;
+    if ( !GetExitCodeThread ( ( *thread ).internal , &code ) )
+    {
+        result = PLATFORM_WINDOWS_ERROR_GET_EXIT_CODE_THREAD;
+    }
+    if ( !CloseHandle ( ( *thread ).internal ) )
+    {
+        result = PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
+    }
+    return !result;
+}
+
+i32
+_platform_thread_detach
+(   thread_t* thread
+)
+{
+    if ( !CloseHandle ( ( *thread ).internal ) )
+    {
+        return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
+    }
+    return 0;
+}
+
+i32
+_platform_thread_cancel
+(   thread_t* thread
+)
+{
+    if ( !TerminateThread ( ( *thread ).internal , 0 ) )
+    {
+        return PLATFORM_WINDOWS_ERROR_TERMINATE_THREAD;
+    }
+    return 0;
+}
+
+i32
+_platform_thread_wait
+(   thread_t* thread
+)
+{
+    return !( WaitForSingleObject ( ( *thread ).internal , INFINITE ) == WAIT_OBJECT_0 );
+}
+
+i32
+_platform_thread_wait_timeout
+(   thread_t*   thread
+,   const u64   timeout_ms
+)
+{
+    return !( WaitForSingleObject ( ( *thread ).internal , timeout_ms ) == WAIT_OBJECT_0 );
+}
+
+i32
+_platform_thread_active
+(   thread_t* thread
+)
+{
+    return !( WaitForSingleObject ( ( *thread ).internal , 0 ) == WAIT_TIMEOUT );
+}
+
+i32
+_platform_thread_sleep
+(   thread_t*   thread
+,   const u64   ms
+)
+{
+    platform_sleep ( ms );
+    return 0;
+}
+
+i32
+_platform_mutex_create
+(   mutex_t* mutex
+)
+{
+    ( *mutex ).internal = CreateMutex ( 0 , 0 , 0 );
+    if ( !( *mutex ).internal )
+    {
+        return PLATFORM_WINDOWS_ERROR_CREATE_MUTEX;
+    }
+    return 0;
+}
+
+i32
+_platform_mutex_destroy
+(   mutex_t* mutex
+)
+{
+    if ( !CloseHandle ( ( *mutex ).internal ) )
+    {
+        return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
+    }
+    return 0;
+}
+
+i32
+_platform_mutex_lock
+(   mutex_t* mutex
+)
+{
+    switch ( WaitForSingleObject ( ( *mutex ).internal , INFINITE ) )
+    {
+        case WAIT_OBJECT_0:
+        {
+            return 0;
+        }
+        case WAIT_ABANDONED:
+        {
+            return PLATFORM_WINDOWS_ERROR_ABANDONED_MUTEX;
+        }
+    }
+    return 0;
+}
+
+i32
+_platform_mutex_unlock
+(   mutex_t* mutex
+)
+{
+    if ( !ReleaseMutex ( ( *mutex ).internal ) )
+    {
+        return PLATFORM_WINDOWS_ERROR_RELEASE_MUTEX;
+    }
+    return 0;
 }
 
 #endif  // End platform layer.

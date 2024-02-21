@@ -22,12 +22,15 @@
  * signatures which cause name conflicts with those provided by the standard
  * libc headers.
  */
-#define sin(X)  _sin ( X )  /** @brief Defines an alias for the sine function. This resolves a name conflict with the sine function provided by the standard libc headers. */
-#define cos(X)  _cos ( X )  /** @brief Defines an alias for the cosine function. This resolves a name conflict with the cosine function provided by the standard libc headers. */
-#define tan(X)  _tan ( X )  /** @brief Defines an alias for the tangent function. This resolves a name conflict with the tangent function provided by the standard libc headers. */
-#define asin(X) _asin ( X ) /** @brief Defines an alias for the sine inverse function. This resolves a name conflict with the sine inverse function provided by the standard libc headers. */
-#define acos(X) _acos ( X ) /** @brief Defines an alias for the cosine inverse function. This resolves a name conflict with the cosine inverse function provided by the standard libc headers. */
-#define atan(X) _atan ( X ) /** @brief Defines an alias for the tangent inverse function. This resolves a name conflict with the tangent inverse function provided by the standard libc headers. */
+#define sin(x)  __sin ( x )  /** @brief Defines an alias for the sine function. This resolves a name conflict with the sine function provided by the standard libc headers. */
+#define cos(x)  __cos ( x )  /** @brief Defines an alias for the cosine function. This resolves a name conflict with the cosine function provided by the standard libc headers. */
+#define tan(x)  __tan ( x )  /** @brief Defines an alias for the tangent function. This resolves a name conflict with the tangent function provided by the standard libc headers. */
+#define asin(x) __asin ( x ) /** @brief Defines an alias for the sine inverse function. This resolves a name conflict with the sine inverse function provided by the standard libc headers. */
+#define acos(x) __acos ( x ) /** @brief Defines an alias for the cosine inverse function. This resolves a name conflict with the cosine inverse function provided by the standard libc headers. */
+#define atan(x) __atan ( x ) /** @brief Defines an alias for the tangent inverse function. This resolves a name conflict with the tangent inverse function provided by the standard libc headers. */
+#define sinh(x) __sinh ( x ) /** @brief Defines an alias for the hyperbolic sine function. This resolves a name conflict with the hyperbolic sine function provided by the standard libc headers. */
+#define cosh(x) __cosh ( x ) /** @brief Defines an alias for the hyperbolic cosine function. This resolves a name conflict with the hyperbolic cosine function provided by the standard libc headers. */
+#define tanh(x) __tanh ( x ) /** @brief Defines an alias for the hyperbolic tangent function. This resolves a name conflict with the hyperbolic tangent function provided by the standard libc headers. */
 
 /**
  * @brief Sine function.
@@ -92,6 +95,39 @@ _acos
  */
 f32
 _atan
+(   f32 x
+);
+
+/**
+ * @brief Hyperbolic sine function.
+ * 
+ * @param x A floating-point number.
+ * @return sinh(x)
+ */
+f32
+_sinh
+(   f32 x
+);
+
+/**
+ * @brief Hyperbolic cosine function.
+ * 
+ * @param x A floating-point number.
+ * @return cosh(x)
+ */
+f32
+_cosh
+(   f32 x
+);
+
+/**
+ * @brief Hyperbolic tangent function.
+ * 
+ * @param x A floating-point number.
+ * @return tanh(x)
+ */
+f32
+_tanh
 (   f32 x
 );
 

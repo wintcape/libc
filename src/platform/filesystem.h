@@ -14,29 +14,39 @@ typedef struct
     void*   handle;
     bool    valid;
 }
-file_handle_t;
+file_t;
 
 /** @brief Type and instance definitions for file modes. */
 typedef enum
 {
-    FILE_MODE_READ  = 0x1
-,   FILE_MODE_WRITE = 0x2
+    FILE_MODE_ACCESS = 0x0
+,   FILE_MODE_READ   = 0x1
+,   FILE_MODE_WRITE  = 0x2
 }
 FILE_MODE;
 
 /**
- * @brief Tests if a file exists.
+ * @brief Tests if a file with the provided mode exists at the provided path on
+ * the host platform.
+ * 
+ * FILE_MODE_ACCESS : Test only for file existence.
+ * FILE_MODE_READ   : Test for read-only file.
+ * FILE_MODE_WRITE  : Test for write-only file.
+ * FILE_MODE_READ |
+ * FILE_MODE_WRITE  : Test for file with both read and write permission.
  * 
  * @param path The filepath to test.
+ * @param mode Mode flag.
  * @return true if file exists; false otherwise.
  */
 bool
 file_exists
 (   const char* path
+,   FILE_MODE   mode
 );
 
 /**
- * @brief Attempts to open a file.
+ * @brief Attempts to open a file on the host platform.
  * 
  * @param path The filepath.
  * @param mode Mode flag.
@@ -46,53 +56,54 @@ file_exists
  */
 bool
 file_open
-(   const char*     path
-,   FILE_MODE       mode
-,   bool            binary
-,   file_handle_t*  file
+(   const char* path
+,   FILE_MODE   mode
+,   bool        binary
+,   file_t*     file
 );
 
 /**
- * @brief Closes a file.
+ * @brief Attempts to close a file on the host platform.
  * 
  * @param file Handle to the file to close.
  */
 void
 file_close
-(   file_handle_t* file
+(   file_t* file
 );
 
 /**
- * @brief Computes the size of a file.
+ * @brief Computes the size of a file on the host platform.
  * 
  * @param file The file.
  * @return The filesize of file in bytes.
  */
 u64
 file_size
-(   file_handle_t* file
+(   file_t* file
 );
 
 /**
- * @brief Reads a specified amount of data into an output buffer.
+ * @brief Reads a specified amount of content from a file on the host platform
+ * into an output buffer.
  * 
  * @param file Handle to the file to read.
  * @param size Number of bytes to read.
- * @param dst Output buffer for the read data.
+ * @param dst Output buffer for the content.
  * @param read Output buffer to hold number of bytes read.
  * @return true if file read into dst successfully; false otherwise.
  */
 bool
 file_read
-(   file_handle_t*  file
-,   u64             size
-,   void*           dst
-,   u64*            read
+(   file_t* file
+,   u64     size
+,   void*   dst
+,   u64*    read
 );
 
 /**
- * @brief Reads a file into a mutable string buffer until EOF or line break
- * encountered (see container/string.h).
+ * @brief Reads content from a file from the host platform into a mutable string
+ * buffer until EOF or line break encountered (see container/string.h).
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
@@ -102,12 +113,13 @@ file_read
  */
 bool
 file_read_line
-(   file_handle_t*  file
-,   char**          dst
+(   file_t* file
+,   char**  dst
 );
 
 /**
- * @brief Generates a copy of the entire file contents.
+ * @brief Generates a copy of the entire contents of a file on the host
+ * platform.
  * 
  * Uses dynamic memory allocation. Call string_free to free.
  * (see core/string.h)
@@ -120,13 +132,13 @@ file_read_line
  */
 bool
 file_read_all
-(   file_handle_t*  file
-,   u8**            dst
-,   u64*            read
+(   file_t* file
+,   u8**    dst
+,   u64*    read
 );
 
 /**
- * @brief Writes a specified amount of data to a file.
+ * @brief Writes a specified amount of data to a file on the host platform.
  * 
  * @param file Handle to the file to write to.
  * @param size Number of bytes to write.
@@ -136,14 +148,15 @@ file_read_all
  */
 bool
 file_write
-(   file_handle_t*  file
-,   u64             size
-,   const void*     src
-,   u64*            written
+(   file_t*     file
+,   u64         size
+,   const void* src
+,   u64*        written
 );
 
 /**
- * @brief Writes a string to file and appends the `\n` character.
+ * @brief Writes a string to file on the host platform and appends the `\n`
+ * character.
  * 
  * Use file_write_line to explicitly specify string length, or _file_write_line
  * to compute the length of a null-terminated string before passing it to
@@ -157,10 +170,10 @@ file_write
  */
 bool
 file_write_line
-(   file_handle_t*  file
-,   u64             size
-,   const char*     src
-,   u64*            written
+(   file_t*     file
+,   u64         size
+,   const char* src
+,   u64*        written
 );
 
 #define _file_write_line(file,src,written) \
@@ -173,7 +186,7 @@ file_write_line
  */
 void
 file_stdin
-(   file_handle_t* file
+(   file_t* file
 );
 
 /**
@@ -183,7 +196,7 @@ file_stdin
  */
 void
 file_stdout
-(   file_handle_t* file
+(   file_t* file
 );
 
 /**
@@ -193,7 +206,7 @@ file_stdout
  */
 void
 file_stderr
-(   file_handle_t* file
+(   file_t* file
 );
 
 #endif  // FILESYSTEM_H

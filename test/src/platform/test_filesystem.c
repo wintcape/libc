@@ -25,10 +25,10 @@ u8
 test_file_exists
 ( void )
 {
-    EXPECT_NOT ( file_exists ( FILE_NAME_TEST_DNE ) );
-    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE ) );
-    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_EMPTY ) );
-    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_BINARY ) );
+    EXPECT_NOT ( file_exists ( FILE_NAME_TEST_DNE , FILE_MODE_ACCESS ) );
+    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE , FILE_MODE_ACCESS ) );
+    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_ACCESS ) );
+    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_ACCESS ) );
     return true;
 }
 
@@ -36,7 +36,7 @@ u8
 test_file_open_and_close
 ( void )
 {
-    file_handle_t file;
+    file_t file;
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , false , &file ) );
     EXPECT_NEQ ( 0 , file.handle );
     EXPECT ( file.valid );
@@ -81,7 +81,7 @@ test_file_read
 ( void )
 {
     char buffer[ 100 ];
-    file_handle_t file;
+    file_t file;
     u64 read;
     memory_clear ( buffer , 100 );
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , false , &file ) );
@@ -108,7 +108,7 @@ test_file_write
 ( void )
 {
     char buffer[ 100 ];
-    file_handle_t file;
+    file_t file;
     u64 written;
     u64 read;
     memory_clear ( buffer , 100 );
@@ -144,7 +144,7 @@ u8
 test_file_read_line
 ( void )
 {
-    file_handle_t file;
+    file_t file;
     u64 written;
     const u64 max_line_length = MEGABYTES ( 1 );
     const u64 line_count = 100;
@@ -196,7 +196,7 @@ test_file_write_line
 {
     const char newline = '\n';
     char buffer[ 100 ];
-    file_handle_t file;
+    file_t file;
     u64 written;
     u64 read;
     memory_clear ( buffer , 100 );
@@ -248,7 +248,7 @@ test_file_read_all
     }
     LOGDEBUG ( "  Done." );
     u8* file_content = 0;
-    file_handle_t file;
+    file_t file;
     u64 written;
     u64 read;
     LOGDEBUG ( "Writing it to a file on the host platform. . ." );

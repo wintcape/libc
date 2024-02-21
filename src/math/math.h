@@ -12,7 +12,6 @@
 #include "math/div.h"
 #include "math/float.h"
 #include "math/random.h"
-#include "math/root.h"
 #include "math/trig.h"
 
 /**
@@ -22,10 +21,11 @@
  * @param b A numeric value.
  * @return The minimum of a and b.
  */
-#define MIN(a,b)                 \
-   ({ __typeof__ (a) a__ = (a);  \
-      __typeof__ (b) b__ = (b);  \
-      ( a__ < b__ ) ? a__ : b__; \
+#define MIN(a,b)                  \
+    ({                            \
+        __typeof__ (a) a__ = (a); \
+        __typeof__ (b) b__ = (b); \
+       ( a__ < b__ ) ? a__ : b__; \
     })
 
 /**
@@ -35,10 +35,11 @@
  * @param b A numeric value.
  * @return The maximum of a and b.
  */
-#define MAX(a,b)                 \
-   ({ __typeof__ (a) a__ = (a);  \
-      __typeof__ (b) b__ = (b);  \
-      ( a__ > b__ ) ? a__ : b__; \
+#define MAX(a,b)                  \
+    ({                            \
+        __typeof__ (a) a__ = (a); \
+        __typeof__ (b) b__ = (b); \
+       ( a__ > b__ ) ? a__ : b__; \
     })
 
 /**
@@ -49,11 +50,12 @@
  * @param max Upper bound (inclusive).
  * @return The clamped value.
  */
-#define CLAMP(value,min,max)                                                  \
-    ({ __typeof__ (value) value__ = (value);                                  \
-       __typeof__ (min) min__ = (min);                                        \
-       __typeof__ (max) max__ = (max);                                        \
-       ( value__ <= min__ ) ? min__ : ( value__ >= max__ ) ? max__ : value__; \
+#define CLAMP(value,min,max)                                                   \
+    ({                                                                         \
+        __typeof__ (value) value__ = (value);                                  \
+        __typeof__ (min) min__ = (min);                                        \
+        __typeof__ (max) max__ = (max);                                        \
+        ( value__ <= min__ ) ? min__ : ( value__ >= max__ ) ? max__ : value__; \
     })
 
 #endif  // MATH_H

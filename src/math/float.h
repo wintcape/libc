@@ -1,7 +1,7 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
  * @file math/float.h
- * @brief Defines miscellaneous floating point constants and functions.
+ * @brief Defines miscellaneous floating point constants and operations.
  */
 #ifndef MATH_FLOAT_H
 #define MATH_FLOAT_H
@@ -9,14 +9,50 @@
 #include "common.h"
 
 // Global constants.
-#define INFINITY        ( 1e30f * 1e30f ) /** @brief Placeholder value for floating point overflow. */
-#define FLOAT_EPSILON   1.192092896e-07f  /** @brief Smallest possible non-zero floating point number. */
+#define INFINITY        ( 1e30f*1e30f )         /** @brief Placeholder value for floating point number overflow. */
+#define FLOAT_EPSILON   1.192092896e-07f        /** @brief Smallest possible non-zero floating point number. */
+#define EULERS_NUMBER   2.71828182845904523536f /** @brief e.*/
+#define SQRT2           1.41421356237309504880f /** @brief sqrt(2). */
+#define SQRT3           1.73205080756887729352f /** @brief sqrt(3). */
+#define DIV_SQRT2       0.70710678118654752440f /** @brief 1 / sqrt(2). */
+#define DIV_SQRT3       0.57735026918962576450f /** @brief 1 / sqrt(3). */
 
 /**
- * @brief Defines an alias for the absolute value function. This resolves a name
- * conflict with the absolute value function provided by the standard libc headers.
+ * @brief Defines an alias for each floating point function. This resolves a
+ * name conflict with those provided by the standard libc headers.
  */
-#define abs(X) _abs ( X )
+#define nan(x)     __nan ( x )     /** @brief Defines an alias for the nan test predicate function. This resolves a name conflict with the nan test predicate function provided by the standard libc headers. */
+#define finite(x)  __finite ( x ) /** @brief Defines an alias for the overflow test predicat function. This resolves a name conflict with the overflow test predicate function provided by the standard libc headers. */
+#define abs(x)     __abs ( x )     /** @brief Defines an alias for the absolute value function. This resolves a name conflict with the absolute value function provided by the standard libc headers. */
+#define floor(x)   __floor ( x )   /** @brief Defines an alias for the floor function. This resolves a name conflict with the floor function provided by the standard libc headers. */
+#define ceiling(x) __ceiling ( x ) /** @brief Defines an alias for the ceiling function. This resolves a name conflict with the ceiling function provided by the standard libc headers. */
+#define pow(x,y)   __pow ( x , y ) /** @brief Defines an alias for the exponentiation function. This resolves a name conflict with the exponentiation function included by the standard libc headers. */
+#define sqrt(x)    __sqrt ( x )    /** @brief Defines an alias for the square root function. This resolves a name conflict with the square root function included by the standard libc headers. */
+#define exp(x)     __exp ( x )     /** @brief Defines an alias for the exponential function. This resolves a name conflict with the exponential function included by the standard libc headers. */
+#define ln(x)      __ln ( x )      /** @brief Defines an alias for the natural logarithmic function. This resolves a name conflict with the natural logarithmic function included by the standard libc headers. */
+#define log(x)     __log ( x )     /** @brief Defines an alias for the base-10 logarithmic function. This resolves a name conflict with the base-10 logarithmic function included by the standard libc headers. */
+
+/**
+ * @brief Not a number? Y/N
+ * 
+ * @param x A floating point number.
+ * @return true if x is NaN; false otherwise.
+ */
+bool
+__nan
+(   f32 x
+);
+
+/**
+ * @brief Overflow? Y/N
+ * 
+ * @param x A floating point number.
+ * @return true if x is verifiably finite; false otherwise.
+ */
+bool
+__finite
+(   f32 x
+);
 
 /**
  * @brief Absolute value function.
@@ -25,7 +61,86 @@
  * @return abs(x)
  */
 f32
-_abs
+__abs
+(   f32 x
+);
+
+/**
+ * @brief Floor function.
+ * 
+ * @param x A floating point number.
+ * @return floor(x)
+ */
+f32
+__floor
+(   f32 x
+);
+
+/**
+ * @brief Ceiling function.
+ * 
+ * @param x A floating point number.
+ * @return ceiling(x)
+ */
+f32
+__ceiling
+(   f32 x
+);
+
+/**
+ * @brief Exponentiation function.
+ * 
+ * @param x Base.
+ * @param y Exponent.
+ * @return x^y
+ */
+f32
+__pow
+(   f32 x
+,   f32 y
+);
+
+/**
+ * @brief Square root function.
+ * 
+ * @param x A floating point number.
+ * @return sqrt(x)
+ */
+f32
+__sqrt
+(   f32 x
+);
+
+/**
+ * @brief Exponential function.
+ * 
+ * @param x A floating point number.
+ * @return e^x
+ */
+f32
+__exp
+(   f32 x
+);
+
+/**
+ * @brief Natural logarithmic function.
+ * 
+ * @param x A floating point number.
+ * @return ln(x)
+ */
+f32
+__ln
+(   f32 x
+);
+
+/**
+ * @brief Logarithmic function (base-10).
+ * 
+ * @param x A floating point number.
+ * @return log(x)
+ */
+f32
+__log
 (   f32 x
 );
 

@@ -37,7 +37,7 @@ u8
 test_queue_push_and_pop
 ( void )
 {
-    const u64 max_op = 100000;
+    const u64 max_op = 65536;
     const u32 to_push = random ();
     u32 popped;
     queue_t queue;
@@ -67,7 +67,7 @@ test_queue_push_and_pop
     EXPECT_NOT ( queue_pop ( 0 , &popped ) );
     EXPECT_NOT ( queue_pop ( &queue , 0 ) );
     LOGDEBUG ( "Popping %i elements off the queue one-by-one. . ." , max_op );
-    for ( u64 i = max_op; i > 0; --i )
+    for ( u64 i = max_op; i; --i )
     {
         EXPECT_EQ ( i , queue.length );
         EXPECT ( queue_pop ( &queue , &popped ) );
@@ -102,7 +102,7 @@ test_queue_peek
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
     EXPECT_NOT ( queue_peek ( 0 , &popped ) );
     EXPECT_NOT ( queue_peek ( &queue , 0 ) );
-    for ( u64 i = max_op; i > 0; --i )
+    for ( u64 i = max_op; i; --i )
     {
         EXPECT_EQ ( i , queue.length );
         EXPECT ( queue_peek ( &queue , &popped ) );

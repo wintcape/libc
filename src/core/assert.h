@@ -25,8 +25,8 @@
 /**
  * @brief Interface for logging information on assertion failure.
  * 
- * @param expr The expression to assert.
- * @param mesg The message to log on assertion failure.
+ * @param expression The expression to assert.
+ * @param message The message to log on assertion failure.
  * @param file The file containing the caller of the BRKDBG invocation that was
  * triggered.
  * @param line The line number in file containing the caller of the BRKDBG
@@ -34,8 +34,8 @@
  */
 void
 assertf
-(   const char* expr
-,   const char* mesg
+(   const char* expression
+,   const char* message
 ,   const char* file
 ,   const i32   line
 );
@@ -43,32 +43,32 @@ assertf
 /**
  * @brief Definition for runtime assertion.
  * 
- * @param expr The expression to assert.
+ * @param expression The expression to assert.
  */
-#define ASSERT(expr)                                    \
-{                                                       \
-    if ( expr ) {}                                      \
-    else                                                \
-    {                                                   \
-        assertf ( #expr , "" , __FILE__ , __LINE__ );   \
-        BRKDBG ();                                      \
-    }                                                   \
+#define ASSERT(expression)                                  \
+{                                                           \
+    if ( expression ) {}                                    \
+    else                                                    \
+    {                                                       \
+        assertf ( #expression , "" , __FILE__ , __LINE__ ); \
+        BRKDBG ();                                          \
+    }                                                       \
 }
 
 /**
  * @brief Definition for runtime assertion (with message).
  * 
- * @param expr The expression to assert.
- * @param mesg The message to log on assertion failure.
+ * @param expression The expression to assert.
+ * @param message The message to log on assertion failure.
  */
-#define ASSERTM(expr,mesg)                              \
-{                                                       \
-    if ( expr ) {}                                      \
-    else                                                \
-    {                                                   \
-        assertf ( #expr , mesg , __FILE__ , __LINE__ ); \
-        BRKDBG ();                                      \
-    }                                                   \
+#define ASSERTM(expression,message)                              \
+{                                                                \
+    if ( expression ) {}                                         \
+    else                                                         \
+    {                                                            \
+        assertf ( #expression , message , __FILE__ , __LINE__ ); \
+        BRKDBG ();                                               \
+    }                                                            \
 }
 
 /**
@@ -77,25 +77,25 @@ assertf
  * @param expr The expression to assert.
  */
 #if VERSION_DEBUG == 1
-#define ASSERT_DEBUG(expr)                              \
-{                                                       \
-    if ( expr ) {}                                      \
-    else                                                \
-    {                                                   \
-        assertf ( #expr , "" , __FILE__ , __LINE__ );   \
-        BRKDBG ();                                      \
-    }                                                   \
+#define ASSERT_DEBUG(expression)                            \
+{                                                           \
+    if ( expression ) {}                                    \
+    else                                                    \
+    {                                                       \
+        assertf ( #expression , "" , __FILE__ , __LINE__ ); \
+        BRKDBG ();                                          \
+    }                                                       \
 }
 #else
-#define ASSERT_DEBUG(expr)
+#define ASSERT_DEBUG(expression)
 #endif
 ////////////////////////////////////////////////////////////////////////////////
 
 // Disable all if ASSERT_ENABLED != 1.
 #else
-    #define ASSERT(expr)
-    #define ASSERTM(expr,mesg)
-    #define ASSERT_DEBUG(expr)
+    #define ASSERT(expression)
+    #define ASSERTM(expression,message)
+    #define ASSERT_DEBUG(expression)
 
 #endif  // ASSERT_ENABLED
 #endif  // ASSERT_H

@@ -60,7 +60,7 @@ test_freelist_allocate_one_and_free_one
 }
 
 u8
-test_freelist_allocate_one_and_free_multi
+test_freelist_allocate_one_and_free_multiple
 ( void )
 {
     freelist_t freelist;
@@ -98,7 +98,7 @@ test_freelist_allocate_one_and_free_multi
 }
 
 u8
-test_freelist_allocate_one_and_free_multi_varying_sizes
+test_freelist_allocate_one_and_free_multiple_varying_sizes
 ( void )
 {
     freelist_t freelist;
@@ -191,7 +191,7 @@ test_freelist_util_free
 }
 
 u8
-test_freelist_multiple_alloc_and_free_random
+test_freelist_multiple_allocate_and_free_random
 ( void )
 {
     freelist_t freelist;
@@ -282,8 +282,8 @@ test_register_freelist
 {
     test_register ( test_freelist_init_and_clear , "Initializing or clearing a freelist." );
     test_register ( test_freelist_allocate_one_and_free_one , "Testing freelist with a single allocation and free." );
-    test_register ( test_freelist_allocate_one_and_free_multi , "Testing freelist with a single allocation and multiple frees." );
-    test_register ( test_freelist_allocate_one_and_free_multi_varying_sizes , "Testing freelist with multiple allocations and frees of varying sizes." );
+    test_register ( test_freelist_allocate_one_and_free_multiple , "Testing freelist with a single allocation and multiple frees." );
+    test_register ( test_freelist_allocate_one_and_free_multiple_varying_sizes , "Testing freelist with multiple allocations and frees of varying sizes." );
     test_register ( test_freelist_allocate_to_full_and_fail_to_allocate_more , "Testing freelist overflow handling." );
-    test_register ( test_freelist_multiple_alloc_and_free_random , "Testing freelist with multiple random-sized allocations, each freed in random order." );
+    test_register ( test_freelist_multiple_allocate_and_free_random , "Testing freelist with multiple random-sized allocations, each freed in random order." );
 }

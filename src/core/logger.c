@@ -36,7 +36,7 @@ static const char* log_level_colors[] = { LOG_LEVEL_COLOR_FATAL
 /** @brief Type definition for logger subsystem state. */
 typedef struct
 {
-    file_handle_t file;
+    file_t file;
 }
 state_t;
 
@@ -53,7 +53,7 @@ static state_t* state = 0;
 INLINE
 void
 _print
-(   file_handle_t*  file
+(   file_t*         file
 ,   const char*     string
 ,   const u64       string_length
 )
@@ -73,17 +73,17 @@ _print
  * _logger_file_append to compute the lengths of null-terminated strings before
  * passing them to logger_file_append.
  * 
- * @param mesg The message string to append.
- * @param mesg_length The message length (in characters).
+ * @param message The message string to append.
+ * @param message_length The message length (in characters).
  */
 void
 logger_file_append
-(   const char* mesg
-,   const u64   mesg_length
+(   const char* message
+,   const u64   message_length
 );
 
-#define _logger_file_append(mesg) \
-    logger_file_append ( (mesg) , _string_length ( mesg ) )
+#define _logger_file_append(message) \
+    logger_file_append ( (message) , _string_length ( message ) )
 
 bool
 logger_startup
@@ -137,7 +137,7 @@ logger_shutdown
 void
 logger_log
 (   const LOG_LEVEL level
-,   const char*     mesg
+,   const char*     message
 ,   u64             arg_count
 ,   u64*            args
 )
@@ -145,7 +145,7 @@ logger_log
     const bool err = level < LOG_WARN;
     const bool colored = level != LOG_INFO;
 
-    char* raw = _string_format ( mesg , arg_count , args );
+    char* raw = _string_format ( message , arg_count , args );
 
     // Write plaintext to log file.
     _string_insert ( raw , 0 , log_level_prefixes[ level ] );
@@ -163,7 +163,7 @@ logger_log
                                     , ( colored ) ? "" : ANSI_CC_RESET
                                     , raw
                                     );
-    file_handle_t file;
+    file_t file;
     ( err ) ? file_stderr ( &file )
             : file_stdout ( &file )
             ;
@@ -175,8 +175,8 @@ logger_log
 
 void
 print
-(   file_handle_t*  file
-,   const char*     mesg
+(   file_t*         file
+,   const char*     message
 ,   u64             arg_count
 ,   u64*            args
 )
@@ -185,7 +185,7 @@ print
     {
         return;
     }
-    char* raw = _string_format ( mesg , arg_count , args );
+    char* raw = _string_format ( message , arg_count , args );
     char* formatted = string_format ( ANSI_CC_RESET"%S"ANSI_CC_RESET  , raw );
     _print ( file , formatted , string_length ( formatted ) );
     string_destroy ( raw );
@@ -194,30 +194,30 @@ print
 
 void
 assertf
-(   const char* expr
-,   const char* mesg
+(   const char* expression
+,   const char* message
 ,   const char* file
 ,   const i32   line
 )
 {
-    if ( *mesg == '\0' )
+    if ( *message == '\0' )
     {
         LOGFATAL ( "Assertion failure in file %s (line %i): %s"
-                 , file , line , expr
+                 , file , line , expression
                  );
     }
     else
     {
         LOGFATAL ( "Assertion failure in file %s (line %i): %s\n\tMessage: %s"
-                 , file , line , expr , mesg
+                 , file , line , expression , message
                  );
     }
 }
 
 void
 logger_file_append
-(   const char* mesg
-,   const u64   mesg_length
+(   const char* message
+,   const u64   message_length
 )
 {
     if ( !state || !( *state ).file.valid )
@@ -227,8 +227,8 @@ logger_file_append
     
     u64 written;
     if ( !file_write ( &( *state ).file
-                     , ( mesg_length + 1 ) * sizeof ( char )
-                     , mesg
+                     , ( message_length + 1 ) * sizeof ( char )
+                     , message
                      , &written
                      ))
     {

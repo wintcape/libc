@@ -125,11 +125,21 @@ _array_pop
 ,   void* dst
 )
 {
+    if ( !array_length ( array ) )
+    {
+        LOGWARN ( "_array_pop: Array is empty." );
+        return;
+    }
+
     const u64 length = array_length ( array ) - 1;
     const u64 stride = array_stride ( array );
 
     const u64 src = ( u64 ) array + length * stride;
-    memory_copy ( dst , ( void* ) src , stride );
+
+    if ( dst )
+    {
+        memory_copy ( dst , ( void* ) src , stride );
+    }
 
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
 }
@@ -146,7 +156,7 @@ _array_insert
     
     if ( index > length )
     {
-        LOGERROR ( "_array_insert: called with out of bounds index: %i (index) > %i (array length)."
+        LOGERROR ( "_array_insert: Called with out of bounds index: %i (index) > %i (array length)."
                  , index , length
                  );
         return array;
@@ -176,19 +186,30 @@ _array_remove
 ,   void*   dst
 )
 {
+    if ( !array_length ( array ) )
+    {
+        LOGWARN ( "_array_remove: Array is empty." );
+        return array;
+    }
+
     const u64 length = array_length ( array ) - 1;
     const u64 stride = array_stride ( array );
     
     if ( index > length )
     {
-        LOGERROR ( "_array_remove: called with out of bounds index: %i (index) >= %i (array length)."
+        LOGERROR ( "_array_remove: Called with out of bounds index: %i (index) >= %i (array length)."
                  , index , length + 1
                  );
         return array;
     }
 
     const u64 src = ( u64 ) array;
-    memory_copy ( dst , ( void* )( src + index * stride ) , stride );
+
+    if ( dst )
+    {
+        memory_copy ( dst , ( void* )( src + index * stride ) , stride );
+    }
+
     memory_move ( ( void* )( src + index * stride )
                 , ( void* )( src + ( index + 1 ) * stride )
                 , ( length - index ) * stride

@@ -16,7 +16,6 @@
 // Global constants.
 #define STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH             2048 /** @brief Maximum floating point string buffer length. */
 #define STRING_FORMAT_MAX_FLOATING_POINT_ABBREVIATED_STRING_LENGTH 64   /** @brief Maximum abbreviated floating point string buffer length. */
-#define STRING_FORMAT_MAX_INTEGER_STRING_LENGTH                    32   /** @brief Maximum integer string buffer length. */
 
 /** @brief Type and instance definitions for string padding tag. */
 typedef enum
@@ -195,6 +194,21 @@ _string_format
 ,   u64*        args
 )
 {
+    if ( !format || ( !args && arg_count ) )
+    {
+        if ( !format )
+        {
+            LOGERROR ( "_string_format: Missing argument: format." );
+        }
+        if ( !args && arg_count )
+        {
+            LOGERROR ( "_string_format: Missing argument: args. Supposed to contain %u elements."
+                     , arg_count
+                     );
+        }
+        return string_create_from ( "" );
+    }
+
     state_t state;
     state.format = format;
     state.format_length = _string_length ( format );
@@ -231,7 +245,7 @@ _string_format
             {
                 LOGWARN ( "_string_format: Illegal format specifier encountered on index %i of the formatting string. Skipping argument %i.\n\t                `%s`"
                         , read - state.format
-                        , state.arg_count - state.args_remaining
+                        , state.arg_count - state.args_remaining + 1
                         , state.format
                         );
                 _string_format_consume_next_argument ( &state );
@@ -728,26 +742,19 @@ _string_format_parse_next_argument
     _string_format_consume_next_argument ( state );
 }
 
-// TODO: Implement everything beneath this dependency to remove it.
-#include <stdio.h>
-
 u64
 _string_format_parse_next_argument_raw
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    char string[ STRING_FORMAT_MAX_INTEGER_STRING_LENGTH ];
+    char string[ 65 ];
     const u64 arg = *( ( *state ).next_arg );
-    const char* format = "%llu";
-    const i32 snprintf_result = snprintf ( string
-                                         , STRING_FORMAT_MAX_INTEGER_STRING_LENGTH
-                                         , format
-                                         , arg
-                                         );
+    const u8 radix = 10;
+    const u64 string_length = string_u64 ( arg , radix , string );
     return _string_format_push ( &( *state ).string
                                , string
-                               , snprintf_result
+                               , string_length
                                , format_specifier
                                );
 }
@@ -758,34 +765,40 @@ _string_format_parse_next_argument_integer
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    char string[ STRING_FORMAT_MAX_INTEGER_STRING_LENGTH ];
+    char string[ 65 ];
     const u64 arg = *( ( *state ).next_arg );
-    const char* format;
-    if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_NONE )
+    const u8 radix = 10;
+    const bool hide_sign = ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_HIDE
+                        && radix == 10
+                        && ( i64 ) arg < 0
+                        ;
+    const bool show_sign = ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_SHOW
+                        && radix == 10
+                        && ( i64 ) arg >= 0
+                        ;
+    u64 string_length;
+    if ( hide_sign )
     {
-        format = "%lli";
+        string_length = string_u64 ( -( ( i64 ) arg ) , radix , string );
+    }
+    else if ( show_sign )
+    {
+        string[ 0 ] = '+';
+        string_length = string_i64 ( arg , radix , string + 1 ) + 1;
     }
     else
     {
-        format = "%+lli";
-    }
-    i32 snprintf_result = snprintf ( string
-                                   , STRING_FORMAT_MAX_INTEGER_STRING_LENGTH
-                                   , format
-                                   , ( i64 ) arg
-                                   );
-    if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_HIDE )
-    {
-        snprintf_result -= 1;
-        memory_move ( string , string + 1 , snprintf_result );
-        string[ snprintf_result ] = 0; // Append terminator.
+        string_length = string_i64 ( arg , radix , string );
     }
     return _string_format_push ( &( *state ).string
                                , string
-                               , snprintf_result
+                               , string_length
                                , format_specifier
                                );
 }
+
+// TODO: Implement everything beneath this dependency to remove it.
+#include <stdio.h>
 
 u64
 _string_format_parse_next_argument_floating_point
@@ -982,7 +995,7 @@ _string_format_parse_next_argument_floating_point_mantissa_only
         index += 1;
         snprintf_result -= index;
         memory_move ( string
-                    , string + ( index * sizeof ( char ) )
+                    , string + index
                     , snprintf_result
                     );
         string[ snprintf_result ] = 0;
@@ -993,6 +1006,7 @@ _string_format_parse_next_argument_floating_point_mantissa_only
                                , format_specifier
                                );
 }
+// END <stdio.h> DEPENDENCY.
 
 u64
 _string_format_parse_next_argument_address
@@ -1000,16 +1014,15 @@ _string_format_parse_next_argument_address
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
+    const char* prefix = "0x";
+    char string[ 67 ];
     const u64 arg = *( ( *state ).next_arg );
-    const i32 snprintf_result = snprintf ( string
-                                         , STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH
-                                         , "0x%llX"
-                                         , arg
-                                         );
+    const u8 radix = 16;
+    memory_copy ( string , prefix , _string_length ( prefix ) );
+    const u64 string_length = string_u64 ( arg , radix , string + _string_length ( prefix ) ) + _string_length ( prefix );
     return _string_format_push ( &( *state ).string
                                , string
-                               , snprintf_result
+                               , string_length
                                , format_specifier
                                );
 }

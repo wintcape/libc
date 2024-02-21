@@ -127,6 +127,12 @@ test_string_insert_and_remove
     string_remove ( string1 , 0 , string_length ( string1 ) );
     EXPECT_NEQ ( 0 , string1 );
     EXPECT_EQ ( 0 , string_length ( string1 ) );
+    string_remove ( string1 , 0 , 0 );
+    EXPECT_NEQ ( 0 , string1 );
+    EXPECT_EQ ( 0 , string_length ( string1 ) );
+    string_remove ( string1 , 0 , 1 );
+    EXPECT_NEQ ( 0 , string1 );
+    EXPECT_EQ ( 0 , string_length ( string1 ) );
     string_destroy ( string1 );
     string_destroy ( string2 );
     return true;
@@ -312,6 +318,118 @@ test_string_contains
     return true;
 }
 
+u8
+test_string_reverse
+( void )
+{
+    const char* string_empty = "";
+    const char* string_single_character = "$";
+    const char* string_in = "0123456789";
+    const char* string_out = "9876543210";
+    char string[ 11 ];
+    memory_copy ( string , string_empty , _string_length ( string_empty ) + 1 );
+    _string_reverse ( string );
+    EXPECT_EQ ( _string_length ( string_empty ) , _string_length ( string ) );
+    EXPECT ( memory_equal ( string , string_empty , _string_length ( string ) ) );
+    memory_copy ( string , string_single_character , _string_length ( string_single_character ) + 1 );
+    _string_reverse ( string );
+    EXPECT_EQ ( _string_length ( string_single_character ) , _string_length ( string ) );
+    EXPECT ( memory_equal ( string , string_single_character , _string_length ( string ) ) );
+    memory_copy ( string , string_in , _string_length ( string_in ) + 1 );
+    _string_reverse ( string );
+    EXPECT_EQ ( _string_length ( string_out ) , _string_length ( string ) );
+    EXPECT ( memory_equal ( string , string_out , _string_length ( string ) ) );
+    _string_reverse ( string );
+    EXPECT_EQ ( _string_length ( string_in ) , _string_length ( string ) );
+    EXPECT ( memory_equal ( string , string_in , _string_length ( string ) ) );
+    return true;
+}
+
+u8
+test_string_u64_and_i64
+( void )
+{
+    const i64 in1 = -9223372036854775807;
+    const u64 in2 = 18446744073709551615ULL;
+    const i64 in3 = -23428476892;
+    const i64 in4 = 23428476892;
+    const u64 in5 = 0;
+    const char* out1_i64_radix16 = "8000000000000001";
+    const char* out1_i64_radix10 = "-9223372036854775807";
+    const char* out1_i64_radix2 = "1000000000000000000000000000000000000000000000000000000000000001";
+    const char* out2_u64_radix16 = "FFFFFFFFFFFFFFFF";
+    const char* out2_u64_radix10 = "18446744073709551615";
+    const char* out2_u64_radix8 = "1777777777777777777777";
+    const char* out2_u64_radix2 = "1111111111111111111111111111111111111111111111111111111111111111";
+    const char* out3_i64_radix16 = "FFFFFFFA8B8DD024";
+    const char* out3_i64_radix10 = "-23428476892";
+    const char* out3_i64_radix2 = "1111111111111111111111111111101010001011100011011101000000100100";
+    const char* out4_u64_radix16 = "574722FDC";
+    const char* out4_u64_radix10 = "23428476892";
+    const char* out4_u64_radix8 = "256434427734";
+    const char* out4_u64_radix2 = "10101110100011100100010111111011100";
+    const char* out5_u64_radix16 = "0";
+    const char* out5_i64_radix16 = "0";
+    const char* out5_u64_radix10 = "0";
+    const char* out5_i64_radix10 = "0";
+    const char* out5_u64_radix8 = "0";
+    const char* out5_i64_radix8 = "0";
+    const char* out5_u64_radix2 = "0";
+    const char* out5_i64_radix2 = "0";
+    char string[ 65 ];
+    EXPECT_EQ ( _string_length ( out1_i64_radix16 ) , string_i64 ( in1 , 16 , string ) );
+    EXPECT ( memory_equal ( string , out1_i64_radix16 , _string_length ( out1_i64_radix16 ) ) );
+    EXPECT_EQ ( _string_length ( out1_i64_radix10 ) , string_i64 ( in1 , 10 , string ) );
+    EXPECT ( memory_equal ( string , out1_i64_radix10 , _string_length ( out1_i64_radix10 ) ) );
+    EXPECT_EQ ( _string_length ( out1_i64_radix2 ) , string_i64 ( in1 , 2 , string ) );
+    EXPECT ( memory_equal ( string , out1_i64_radix2 , _string_length ( out1_i64_radix2 ) ) );
+    EXPECT_EQ ( _string_length ( out2_u64_radix16 ) , string_u64 ( in2 , 16 , string ) );
+    EXPECT ( memory_equal ( string , out2_u64_radix16 , _string_length ( out2_u64_radix16 ) ) );
+    EXPECT_EQ ( _string_length ( out2_u64_radix10 ) , string_u64 ( in2 , 10 , string ) );
+    EXPECT ( memory_equal ( string , out2_u64_radix10 , _string_length ( out2_u64_radix10 ) ) );
+    EXPECT_EQ ( _string_length ( out2_u64_radix8 ) , string_i64 ( in2 , 8 , string ) );
+    EXPECT ( memory_equal ( string , out2_u64_radix8 , _string_length ( out2_u64_radix8 ) ) );
+    EXPECT_EQ ( _string_length ( out2_u64_radix2 ) , string_i64 ( in2 , 2 , string ) );
+    EXPECT ( memory_equal ( string , out2_u64_radix2 , _string_length ( out2_u64_radix2 ) ) );
+    EXPECT_EQ ( _string_length ( out3_i64_radix16 ) , string_i64 ( in3 , 16 , string ) );
+    EXPECT ( memory_equal ( string , out3_i64_radix16 , _string_length ( out3_i64_radix16 ) ) );
+    EXPECT_EQ ( _string_length ( out3_i64_radix10 ) , string_i64 ( in3 , 10 , string ) );
+    EXPECT ( memory_equal ( string , out3_i64_radix10 , _string_length ( out3_i64_radix10 ) ) );
+    EXPECT_EQ ( _string_length ( out3_i64_radix2 ) , string_i64 ( in3 , 2 , string ) );
+    EXPECT ( memory_equal ( string , out3_i64_radix2 , _string_length ( out3_i64_radix2 ) ) );
+    EXPECT_EQ ( _string_length ( out4_u64_radix16 ) , string_u64 ( in4 , 16 , string ) );
+    EXPECT ( memory_equal ( string , out4_u64_radix16 , _string_length ( out4_u64_radix16 ) ) );
+    EXPECT_EQ ( _string_length ( out4_u64_radix10 ) , string_u64 ( in4 , 10 , string ) );
+    EXPECT ( memory_equal ( string , out4_u64_radix10 , _string_length ( out4_u64_radix10 ) ) );
+    EXPECT_EQ ( _string_length ( out4_u64_radix8 ) , string_u64 ( in4 , 8 , string ) );
+    EXPECT ( memory_equal ( string , out4_u64_radix8 , _string_length ( out4_u64_radix8 ) ) );
+    EXPECT_EQ ( _string_length ( out4_u64_radix2 ) , string_u64 ( in4 , 2 , string ) );
+    EXPECT ( memory_equal ( string , out4_u64_radix2 , _string_length ( out4_u64_radix2 ) ) );
+    EXPECT_EQ ( _string_length ( out5_u64_radix16 ) , string_u64 ( in5 , 16 , string ) );
+    EXPECT ( memory_equal ( string , out5_u64_radix16 , _string_length ( out5_u64_radix16 ) ) );
+    EXPECT_EQ ( _string_length ( out5_u64_radix10 ) , string_u64 ( in5 , 10 , string ) );
+    EXPECT ( memory_equal ( string , out5_u64_radix10 , _string_length ( out5_u64_radix10 ) ) );
+    EXPECT_EQ ( _string_length ( out5_u64_radix8 ) , string_u64 ( in5 , 8 , string ) );
+    EXPECT ( memory_equal ( string , out5_u64_radix8 , _string_length ( out5_u64_radix8 ) ) );
+    EXPECT_EQ ( _string_length ( out5_u64_radix2 ) , string_u64 ( in5 , 2 , string ) );
+    EXPECT ( memory_equal ( string , out5_u64_radix2 , _string_length ( out5_u64_radix2 ) ) );
+    EXPECT_EQ ( _string_length ( out5_i64_radix16 ) , string_i64 ( in5 , 16 , string ) );
+    EXPECT ( memory_equal ( string , out5_i64_radix16 , _string_length ( out5_i64_radix16 ) ) );
+    EXPECT_EQ ( _string_length ( out5_i64_radix10 ) , string_i64 ( in5 , 10 , string ) );
+    EXPECT ( memory_equal ( string , out5_i64_radix10 , _string_length ( out5_i64_radix10 ) ) );
+    EXPECT_EQ ( _string_length ( out5_i64_radix8 ) , string_i64 ( in5 , 8 , string ) );
+    EXPECT ( memory_equal ( string , out5_i64_radix8 , _string_length ( out5_i64_radix8 ) ) );
+    EXPECT_EQ ( _string_length ( out5_i64_radix2 ) , string_i64 ( in5 , 2 , string ) );
+    EXPECT ( memory_equal ( string , out5_i64_radix2 , _string_length ( out5_i64_radix2 ) ) );
+    return true;
+}
+
+u8
+test_string_f64
+( void )
+{
+    return BYPASS;
+}
 
 u8
 test_string_format
@@ -319,9 +437,9 @@ test_string_format
 {
     const u64 raw_in = 23428476892;
     const i64 integer_in1 = -23428476892;
-    const i64 integer_in2 = 23428476892;
+    const i64 integer_in4 = 23428476892;
     const f64 float_in1 = -100098.7893573;
-    const f64 float_in2 = 100098.7893573;
+    const f64 float_in4 = 100098.7893573;
     const f64 float_in3 = 8723941230947.678234563498562343478952734523495893245723495782349057897563274632589346;
     const u64 address_in = 45763;
     const char* const_string_in = "Hello world!";
@@ -333,10 +451,10 @@ test_string_format
     EXPECT ( memory_equal ( string , in1 , string_length ( string ) ) );
     string_destroy ( string );
     LOGWARN ( "The following warnings are intentionally triggered by a test:" );
-    const char* in2 = "%;";
-    string = string_format ( in2 , 25 );
-    EXPECT_EQ ( _string_length ( in2 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , in2 , string_length ( string ) ) );
+    const char* in4 = "%;";
+    string = string_format ( in4 , 25 );
+    EXPECT_EQ ( _string_length ( in4 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , in4 , string_length ( string ) ) );
     string_destroy ( string );
     const char* illegal_fix_precision_string_in = "`%.10f`";
     string = string_format ( illegal_fix_precision_string_in , &float_in1 );
@@ -348,7 +466,7 @@ test_string_format
     EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
     string_destroy ( string );
-    string = string_format ( "%-i" , integer_in2 );
+    string = string_format ( "%-i" , integer_in4 );
     EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
     string_destroy ( string );
@@ -375,7 +493,7 @@ test_string_format
     EXPECT ( memory_equal ( string , out3 , string_length ( string ) ) );
     string_destroy ( string );
     const char* out4 = "100098.789357300";
-    string = string_format ( "%.9f" , &float_in2 );
+    string = string_format ( "%.9f" , &float_in4 );
     EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
     string_destroy ( string );
@@ -383,12 +501,12 @@ test_string_format
     EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
     string_destroy ( string );
-    string = string_format ( "%-.9f" , &float_in2 );
+    string = string_format ( "%-.9f" , &float_in4 );
     EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
     string_destroy ( string );
     const char* out5 = "+100098.789357300";
-    string = string_format ( "%+.9f" , &float_in2 );
+    string = string_format ( "%+.9f" , &float_in4 );
     EXPECT_EQ ( _string_length ( out5 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out5 , string_length ( string ) ) );
     string_destroy ( string );
@@ -434,10 +552,10 @@ test_string_format
     EXPECT_EQ ( _string_length ( illegal_padding_string_in1 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , illegal_padding_string_in1 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* illegal_padding_string_in2 = "`%pr 0.3f`";
-    string = string_format ( illegal_padding_string_in2 , &float_in1 );
-    EXPECT_EQ ( _string_length ( illegal_padding_string_in2 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , illegal_padding_string_in2 , string_length ( string ) ) );
+    const char* illegal_padding_string_in4 = "`%pr 0.3f`";
+    string = string_format ( illegal_padding_string_in4 , &float_in1 );
+    EXPECT_EQ ( _string_length ( illegal_padding_string_in4 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_padding_string_in4 , string_length ( string ) ) );
     string_destroy ( string );
     const char* out8 = "`000000000000000000000000000000000000000000000000000000000000000000000-100098.789`";
     string = string_format ( "`%pl080.3f`" , &float_in1 );
@@ -468,7 +586,7 @@ test_string_format
     EXPECT ( memory_equal ( string , out11 , string_length ( string ) ) );
     string_destroy ( string );
     const char* out12 = "+23428476892";
-    string = string_format ( "%+i" , integer_in2 );
+    string = string_format ( "%+i" , integer_in4 );
     EXPECT_EQ ( _string_length ( out12 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out12 , string_length ( string ) ) );
     string_destroy ( string );
@@ -526,5 +644,8 @@ test_register_string
     test_register ( test_string_insert_and_remove_random , "Testing string 'insert' and 'remove' operations with random indices and elements." );
     test_register ( test_string_trim , "Testing string 'trim' operation." );
     test_register ( test_string_contains , "Testing string 'contains' operation." );
-     test_register ( test_string_format , "Constructing a string using format specifiers." );
+    test_register ( test_string_reverse , "Testing string in-place 'reverse' operation." );
+    test_register ( test_string_u64_and_i64 , "Testing 'stringify' operation on 64-bit integers." );
+    test_register ( test_string_f64 , "Testing 'stringify' operation on 64-bit floating point numbers." );
+    test_register ( test_string_format , "Constructing a string using format specifiers." );
 }

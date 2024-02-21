@@ -39,11 +39,11 @@ hashtable_create
         }
         if ( !capacity )
         {
-            LOGERROR ( "hashtable_create: value of capacity argument must be non-zero." );
+            LOGERROR ( "hashtable_create: Value of capacity argument must be non-zero." );
         }
         if ( !stride && !pointer )
         {
-            LOGERROR ( "hashtable_create: value of stride argument must be non-zero." );
+            LOGERROR ( "hashtable_create: Value of stride argument must be non-zero." );
         }
         return false;
     }

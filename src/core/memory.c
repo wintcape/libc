@@ -97,13 +97,13 @@ memory_startup
                                  , &( *state ).allocator
                                  ))
     {
-        LOGFATAL ( "Memory subsystem failed to initialize internal allocator." );
+        LOGFATAL ( "memory_startup: Failed to initialize internal allocator." );
         return false;
     }
 
     if ( !mutex_create ( &( *state ).allocation_mutex ) )
     {
-        LOGFATAL ( "Memory subsystem failed to initialize the mutex data structure employed by thread-safe memory operations." );
+        LOGFATAL ( "memory_startup: Failed to initialize the mutex data structure employed by thread-safe memory operations." );
         return false;
     }
 
@@ -127,7 +127,7 @@ memory_shutdown
 
     if ( ( *state ).stat.allocation_count != ( *state ).stat.free_count )
     {
-        LOGDEBUG ( "Noticed allocation count (%i) != free count (%i) when shutting down memory subsystem."
+        LOGDEBUG ( "memory_shutdown: Noticed allocation count (%i) != free count (%i) when shutting down memory subsystem."
                  , ( *state ).stat.allocation_count
                  , ( *state ).stat.free_count
                  );
@@ -238,7 +238,7 @@ memory_free_aligned
         }
         if ( !mutex_unlock ( &( *state ).allocation_mutex ) )
         {
-            LOGFATAL ( "memory_free: Failed to release mutex lock." );
+            LOGERROR ( "memory_free: Failed to release mutex lock." );
         }
         if ( !success )
         {
@@ -302,36 +302,7 @@ memory_equal
 ,   u64         size
 )
 {
-    if ( !s1 || !s2 )
-    {
-        return false;
-    }
-    
-    const u64* s1a;
-    const u64* s2a;
-    const u8*  s1b;
-    const u8*  s2b;
-    for ( s1a = ( u64* ) s1 , s2a = ( u64* ) s2
-        ; size >= sizeof ( u64 )
-        ; ++s1a , ++s2a , size -= sizeof ( u64 )
-        )
-    {
-        if ( *s1a != *s2a )
-        {
-            return false;
-        }
-    }
-    for ( s1b = ( u8* ) s1a , s2b = ( u8* ) s2a
-        ; size
-        ; ++s1b , ++s2b , size -= sizeof ( u8 )
-        )
-    {
-        if ( *s1b != *s2b )
-        {
-            return false;
-        }
-    }
-    return true;
+    return platform_memory_equal ( s1 , s2 , size );
 }
 
 char*

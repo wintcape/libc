@@ -13,22 +13,185 @@
 
 #include "core/logger.h"
 #include "core/memory.h"
+#include "core/mutex.h"
 
 // Platform layer dependencies.
-#include <errno.h>
 #include <pthread.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
+#include <unistd.h>
 #if _POSIX_C_SOURCE >= 199309L
-    #include <time.h>   // nanosleep
-#else
-    #include <unistd.h> // usleep
+    #include <time.h> // nanosleep
 #endif
 
 // Standard libc dependencies.
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define PLATFORM_LINUX_ERROR_PTHREAD_CREATE        1 /** @brief Internal error code. */
+#define PLATFORM_LINUX_ERROR_PTHREAD_DETACH        2 /** @brief Internal error code. */
+#define PLATFORM_LINUX_ERROR_PTHREAD_CANCEL        3 /** @brief Internal error code. */
+#define PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_INIT    4 /** @brief Internal error code. */
+#define PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_DESTROY 5 /** @brief Internal error code. */
+#define PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_LOCK    6 /** @brief Internal error code. */
+#define PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_UNLOCK  7 /** @brief Internal error code. */
+
+/**
+ * @brief Primary implementation of platform_thread_create
+ * (see platform_thread_create).
+ * 
+ * @param function The callback function to run threaded.
+ * @param args Internal state arguments.
+ * @param auto_detach Thread should immediately release resources when work is
+ * complete? Y/N. If true, the output buffer will be unset.
+ * @param thread Output buffer (only set if auto_detach is false).
+ * @return 0 on success; error code false.
+ */
+i32
+_platform_thread_create
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_destroy
+ * (see platform_thread_destroy).
+ * 
+ * @param thread The thread to free.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_destroy
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_detach
+ * (see platform_thread_detach).
+ * 
+ * @param thread The thread to detach.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_detach
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_cancel
+ * (see platform_thread_cancel).
+ * 
+ * @param thread The thread to cancel.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_cancel
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_wait
+ * (see platform_thread_wait).
+ * 
+ * @param thread The thread to wait for.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_wait
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_wait_timeout
+ * (see platform_thread_wait_timeout).
+ * 
+ * @param thread The thread to wait for.
+ * @param timeout_ms The number of milliseconds to wait prior to timeout.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_wait_timeout
+(   thread_t*   thread
+,   const u64   timeout_ms
+);
+
+/**
+ * @brief Primary implementation of platform_thread_active
+ * (see platform_thread_active).
+ * 
+ * @param thread The thread to query.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_active
+(   thread_t* thread
+);
+
+/**
+ * @brief Primary implementation of platform_thread_active
+ * (see platform_thread_active).
+ * 
+ * @param thread The thread to sleep on.
+ * @param ms The time to sleep, in milliseconds.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_thread_sleep
+(   thread_t*   thread
+,   const u64   ms
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_create
+ * (see platform_mutex_create).
+ * 
+ * @param mutex Output buffer.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_create
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_destroy
+ * (see platform_mutex_destroy).
+ * 
+ * @param mutex The mutex to free.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_destroy
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_lock
+ * (see platform_mutex_lock).
+ * 
+ * @param mutex The mutex to lock.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_lock
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Primary implementation of platform_mutex_unlock
+ * (see platform_mutex_unlock).
+ * 
+ * @param mutex The mutex to unlock.
+ * @return 0 on success; error code otherwise.
+ */
+i32
+_platform_mutex_unlock
+(   mutex_t* mutex
+);
 
 void*
 platform_memory_allocate
@@ -85,6 +248,16 @@ platform_memory_move
     return memmove ( dst , src , size );
 }
 
+bool
+platform_memory_equal
+(   const void* s1
+,   const void* s2
+,   u64         size
+)
+{
+    return !memcmp ( s1 , s2 , size );
+}
+
 u64
 platform_string_length
 (   const char* string
@@ -130,6 +303,36 @@ platform_sleep
     #endif
 }
 
+i64
+platform_error_code
+( void )
+{
+    return errno;
+}
+
+char*
+platform_error_message
+(   const i64 error
+)
+{
+    mutex_t mutex;
+    if ( !_platform_mutex_create ( &mutex ) || !_platform_mutex_lock ( &mutex ) )
+    {
+        return string_create_from ( "" );
+    }
+    char* message;
+    if ( error < sys_nerr )
+    {
+        message = string_create_from ( sys_errlist[ error ] ); 
+    }
+    else
+    {
+        message = string_create_from ( "Unknown code." );
+    }
+    _platform_mutex_unlock ( &mutex );
+    return message;
+}
+
 i32
 platform_processor_core_count
 ( void )
@@ -155,89 +358,56 @@ platform_thread_create
     {
         if ( !function )
         {
-            LOGERROR ( "platform_thread_create: Missing argument: function (threaded process to run)." );
+            LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): Missing argument: function (threaded process to run)." );
             return false;
         }
         if ( !thread )
         {
-            LOGERROR ( "platform_thread_create: Missing argument: thread (output buffer)." );
+            LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): Missing argument: thread (output buffer)." );
             return false;
         }
     }
 
-    // TODO: Fix this.
-    i32 result;
-    DISABLE_WARNING ( -Wcast-function-type );
-    result = pthread_create ( ( pthread_t* ) &( *thread ).id
-                            , 0
-                            , ( void* (*)( void* ) ) function
-                            , args
-                            );
-    REENABLE_WARNING ();
-    
+    const i32 result = _platform_thread_create ( function
+                                               , args
+                                               , auto_detach
+                                               , thread
+                                               );
+
     if ( result )
     {
+        const char* platform_function_name;
         switch ( result )
         {
-            case EAGAIN:
+            case PLATFORM_LINUX_ERROR_PTHREAD_CREATE:
             {
-                LOGERROR ( "platform_thread_create: Thread creation failed.\n\tReason:  Insufficient resources available on the host platform." );
-                return false;
+                platform_function_name = "pthread_create";
             }
-            case EINVAL:
+            break;
+
+            case PLATFORM_LINUX_ERROR_PTHREAD_DETACH:
             {
-                LOGERROR ( "platform_thread_create: Thread creation failed.\n\tReason:  Invalid thread attribute(s) supplied as arguments." );
-                return false;
+                platform_function_name = "pthread_detach";
             }
+            break;
+
             default:
             {
-                LOGERROR ( "platform_thread_create: Thread creation failed.\n\tReason:  %s\n\tCode:    %i"
-                         , strerror ( errno )
-                         , errno
-                         );
-                return false;
+                platform_function_name = "An unknown GNU/Linux process";
             }
+            break;
         }
-    }
 
-    LOGDEBUG ( "Starting process on new thread %u." , ( *thread ).id );
-
-    if ( auto_detach )
-    {
-        result = pthread_detach ( ( *thread ).id );
-        if ( result )
-        {
-            switch ( result )
-            {
-                case EINVAL:
-                {
-                    LOGERROR ( "platform_thread_create: Failed to detach the new thread.\n\tReason:  Thread is non-joinable." );
-                    return false;
-                }
-                case ESRCH:
-                {
-                    LOGERROR ( "platform_thread_create: Failed to detach the new thread.\n\tReason:  No thread with the ID %u could be found."
-                             , ( *thread ).id
-                             );
-                    return false;
-                }
-                default:
-                {
-                    LOGERROR ( "platform_thread_create: Failed to detach the new thread.\n\tReason:  %s\n\tCode:    %i"
-                             , strerror ( errno )
-                             , errno
-                             );
-                    return false;
-                }
-            }
-        }
-    }
-    else
-    {
-        ( *thread ).internal = memory_allocate ( sizeof ( u64 )
-                                               , MEMORY_TAG_THREAD
-                                               );
-        *( ( u64* )( ( *thread ).internal ) ) = ( *thread ).id;
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+                 , platform_function_name
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+        
+        return false;
     }
 
     return true;
@@ -248,7 +418,22 @@ platform_thread_destroy
 (   thread_t* thread
 )
 {
-    thread_cancel ( thread );
+    if ( !thread || !( *thread ).internal )
+    {
+        return;
+    }
+
+    if ( _platform_thread_destroy ( thread ) )
+    {
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                     Reason: %S\n\t                                     Code:   %i"
+                 , ( *thread ).id
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+    }
 }
 
 void
@@ -260,38 +445,18 @@ platform_thread_detach
     {
         return;
     }
-    const i32 result = pthread_detach ( *( ( pthread_t* )( ( *thread ).internal ) ) );
-    if ( result )
+
+    if ( _platform_thread_detach ( thread ) )
     {
-        switch ( result )
-        {
-            case EINVAL:
-            {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  Thread is non-joinable."
-                         , ( *thread ).id
-                         );
-                break;
-            }
-            case ESRCH:
-            {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  No thread with the ID could be found."
-                         , ( *thread ).id
-                         );
-                break;
-            }
-            default:
-            {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  %s\n\tCode:    %i"
-                         , ( *thread ).id
-                         , strerror ( errno )
-                         , errno
-                         );
-                break;
-            }
-        }
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on thread #%u.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+                 , ( *thread ).id
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
     }
-    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
-    ( *thread ).internal = 0;
 }
 
 void
@@ -303,44 +468,30 @@ platform_thread_cancel
     {
         return;
     }
-    const i32 result = pthread_cancel ( *( ( pthread_t* )( ( *thread ).internal ) ) );
-    if ( result )
+
+    if ( _platform_thread_cancel ( thread ) )
     {
-        switch ( result )
-        {
-            case ESRCH:
-            {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  No thread with the ID could be found."
-                         , ( *thread ).id
-                         );
-                break;
-            }
-            default:
-            {
-                LOGERROR ( "platform_thread_detach: Failed to detach thread %u.\n\tReason:  %s\n\tCode:    %i"
-                         , ( *thread ).id
-                         , strerror ( errno )
-                         , errno
-                         );
-                break;
-            }
-        }
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+                 , ( *thread ).id
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
     }
-    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
-    ( *thread ).internal = 0;
-    ( *thread ).id = 0;
 }
 
 bool
 platform_thread_wait
 (   thread_t* thread
 )
-{   // TODO: Implement this.
+{
     if ( !thread || !( *thread ).internal )
     {
         return false;
     }
-    return true;
+    return !_platform_thread_wait ( thread );
 }
 
 bool
@@ -348,20 +499,24 @@ platform_thread_wait_timeout
 (   thread_t*   thread
 ,   const u64   timeout_ms
 )
-{   // TODO: Implement this.
+{
     if ( !thread || !( *thread ).internal )
     {
         return false;
     }
-    return true;
+    return !_platform_thread_wait_timeout ( thread , timeout_ms );
 }
 
 bool
 platform_thread_active
 (   thread_t* thread
 )
-{   // TODO: Implement this.
-    return ( *thread ).internal;
+{
+    if ( !thread || !( *thread ).internal )
+    {
+        return false;
+    }
+    return !_platform_thread_active ( thread );
 }
 
 void
@@ -370,8 +525,8 @@ platform_thread_sleep
 ,   const u64   ms
 )
 {
-    platform_sleep ( ms );
-}
+    /* if ( */ _platform_thread_sleep ( thread , ms ) /* ) {} */;
+}//            ^^^^^^^^^^^^^^^^^^^^^^ Does not fail.
 
 u64
 platform_thread_id
@@ -387,30 +542,21 @@ platform_mutex_create
 {
     if ( !mutex )
     {
-        LOGERROR ( "platform_mutex_create: Missing argument: mutex (output buffer)." );
+        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): Missing argument: mutex (output buffer)." );
         return false;
     }
 
-    pthread_mutexattr_t pthread_mutex_attr;
-    pthread_mutexattr_init ( &pthread_mutex_attr );
-    pthread_mutexattr_settype ( &pthread_mutex_attr , PTHREAD_MUTEX_RECURSIVE );
-    
-    pthread_mutex_t pthread_mutex;
-    const i32 result = pthread_mutex_init ( &pthread_mutex
-                                          , &pthread_mutex_attr
-                                          );
-    if ( result )
+    if ( _platform_mutex_create ( mutex ) )
     {
-        LOGERROR ( "platform_mutex_create: pthread_mutex_init failed with result %i."
-                 , result
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): pthread_mutex_init failed.\n\t                                   Reason: %S\n\t                                   Code:   %i"
+                 , message
+                 , error
                  );
+        string_destroy ( message );
         return false;
     }
-
-    ( *mutex ).internal = memory_allocate ( sizeof ( pthread_mutex_t )
-                                          , MEMORY_TAG_MUTEX
-                                          );
-    *( ( pthread_mutex_t* )( ( *mutex ).internal ) ) = pthread_mutex;
 
     return true;
 }
@@ -424,45 +570,18 @@ platform_mutex_destroy
     {
         return;
     }
-    const i32 result = pthread_mutex_destroy ( ( pthread_mutex_t* )( ( *mutex ).internal ) );
-    switch ( result )
+    
+    if ( _platform_mutex_destroy ( mutex ) )
     {
-        case 0:
-        {}
-        break;
-
-        case EBUSY:
-        {
-            LOGERROR ( "platform_mutex_destroy: Failed to destroy mutex %@.\n\tReason:  Mutex is locked or referenced."
-                     , ( *mutex ).internal
-                     );
-        }
-        break;
-
-        case EINVAL:
-        {
-            LOGERROR ( "platform_mutex_destroy: Failed to destroy mutex %@.\n\tReason:  Invalid mutex."
-                     , ( *mutex ).internal
-                     );
-        }
-        break;
-
-        default:
-        {
-            LOGERROR ( "platform_mutex_destroy: Failed to destroy mutex %@.\n\tReason:  %s\n\tCode:    %i"
-                     , ( *mutex ).internal
-                     , strerror ( errno )
-                     , errno
-                     );
-        }
-        break;
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): pthread_mutex_destroy failed on mutex %@.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+                 , mutex
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
     }
-
-    memory_free ( ( *mutex ).internal
-                , sizeof ( pthread_mutex_t* )
-                , MEMORY_TAG_MUTEX
-                );
-    ( *mutex ).internal = 0;
 }
 
 bool
@@ -472,54 +591,30 @@ platform_mutex_lock
 {
     if ( !mutex || !( *mutex ).internal )
     {
-        LOGERROR ( "platform_mutex_lock: No mutex was provided." );
+        if ( !mutex )
+        {
+            LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): Missing argument: mutex." );
+        }
+        else
+        {
+            LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): The provided mutex (%@) is not initialized."
+                     , mutex
+                     );
+        }
         return false;
     }
 
-    const i32 result = pthread_mutex_lock ( ( pthread_mutex_t* )( ( *mutex ).internal ) );
-    switch ( result )
+    if ( _platform_mutex_lock ( mutex ) )
     {
-        case 0:
-        {}
-        break;
-
-        case EOWNERDEAD:
-        {
-            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  The owner thread was terminated while the mutex was still active."
-                     , ( *mutex ).internal
-                     );
-            return false;
-        }
-        case EAGAIN:
-        {
-            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  The maximum number of recursive mutex locks has been reached."
-                     , ( *mutex ).internal
-                     );
-            return false;
-        }
-        case EBUSY:
-        {
-            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  A mutex lock already exists."
-                     , ( *mutex ).internal
-                     );
-            return false;
-        }
-        case EDEADLK:
-        {
-            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  A mutex deadlock was detected."
-                     , ( *mutex ).internal
-                     );
-            return false;
-        }
-        default:
-        {
-            LOGERROR ( "platform_mutex_lock: pthread_mutex_lock failed on mutex %@.\n\tReason:  %s\n\tCode:    %i"
-                     , ( *mutex ).internal
-                     , strerror ( errno )
-                     , errno
-                     );
-            return false;
-        }
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): pthread_mutex_lock failed on mutex %@.\n\t                                 Reason: %S\n\t                                 Code:   %i"
+                 , mutex
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+        return false;
     }
 
     return true;
@@ -530,45 +625,250 @@ platform_mutex_unlock
 (   mutex_t* mutex
 )
 {
-    if ( !mutex || !( *mutex ).internal )
+if ( !mutex || !( *mutex ).internal )
     {
-        LOGERROR ( "platform_mutex_unlock: No mutex was provided." );
+        if ( !mutex )
+        {
+            LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): Missing argument: mutex." );
+        }
+        else
+        {
+            LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): The provided mutex (%@) is not initialized."
+                     , mutex
+                     );
+        }
         return false;
     }
 
-    const i32 result = pthread_mutex_unlock ( ( pthread_mutex_t* )( ( *mutex ).internal ) );
-    switch ( result )
+    if ( _platform_mutex_unlock ( mutex ) )
     {
-        case 0:
-        {}
-        break;
-
-        case EOWNERDEAD:
-        {
-            LOGERROR ( "platform_mutex_unlock: pthread_mutex_unlock failed on mutex %@.\n\tReason:  The owner thread was terminated while the mutex was still active."
-                     , ( *mutex ).internal
-                     );
-            return false;
-        }
-        case EPERM:
-        {
-            LOGERROR ( "platform_mutex_unlock: pthread_mutex_unlock failed on mutex %@.\n\tReason:  The mutex is not owned by the current thread."
-                     , ( *mutex ).internal
-                     );
-            return false;
-        }
-        default:
-        {
-            LOGERROR ( "platform_mutex_unlock: pthread_mutex_unlock failed on mutex %@.\n\tReason:  %s\n\tCode:    %i"
-                     , ( *mutex ).internal
-                     , strerror ( errno )
-                     , errno
-                     );
-            return false;
-        }
+        const i64 error = platform_error_code ();
+        char* message = platform_error_message ( error );
+        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): pthread_mutex_unlock failed on mutex %@.\n\t                                   Reason: %S\n\t                                   Code:   %i"
+                 , mutex
+                 , message
+                 , error
+                 );
+        string_destroy ( message );
+        return false;
     }
 
     return true;
+}
+
+bool
+platform_file_exists
+(   const char* path
+,   FILE_MODE   mode_
+)
+{
+    i32 mode;
+    if ( mode_ == FILE_MODE_ACCESS )
+    {
+        mode = F_OK;
+    }
+    else if ( ( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = R_OK | W_OK;
+    }
+    else if ( ( mode_ & FILE_MODE_READ ) && !( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = R_OK;
+    }
+    else if ( !( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = W_OK;
+    }
+    else
+    {
+        LOGERROR ( "file_exists: Invalid file mode." );
+        return false;
+    }
+    return !access ( path , mode );
+}
+
+i32
+_platform_thread_create
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
+)
+{
+    DISABLE_WARNING ( -Wcast-function-type );
+    const i32 result = pthread_create ( ( pthread_t* ) &( *thread ).id
+                                      , 0
+                                      , ( void* (*)( void* ) ) function
+                                      , args
+                                      );
+    REENABLE_WARNING ();
+
+    if ( result )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_CREATE;
+    }
+
+    if ( auto_detach )
+    {
+        if ( pthread_detach ( ( *thread ).id ) )
+        {
+            return PLATFORM_LINUX_ERROR_PTHREAD_DETACH;
+        }
+    }
+
+    ( *thread ).internal = memory_allocate ( sizeof ( u64 )
+                                           , MEMORY_TAG_THREAD
+                                           );
+    *( ( u64* )( ( *thread ).internal ) ) = ( *thread ).id;
+
+    return 0;
+}
+
+i32
+_platform_thread_destroy
+(   thread_t* thread
+)
+{
+    return _platform_thread_cancel ( thread );
+}
+
+i32
+_platform_thread_detach
+(   thread_t* thread
+)
+{
+    if ( !thread || !( *thread ).internal )
+    {
+        return 0;
+    }
+
+    if ( pthread_detach ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_DETACH;
+    }
+
+    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
+    ( *thread ).internal = 0;
+
+    return 0;
+}
+
+i32
+_platform_thread_cancel
+(   thread_t* thread
+)
+{
+    if ( pthread_cancel ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_CANCEL;
+    }
+
+    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
+    ( *thread ).internal = 0;
+    ( *thread ).id = 0;
+
+    return 0;
+}
+
+i32
+_platform_thread_wait
+(   thread_t* thread
+)
+{   // TODO: Implement this.
+    return 0;
+}
+
+i32
+_platform_thread_wait_timeout
+(   thread_t*   thread
+,   const u64   timeout_ms
+)
+{   // TODO: Implement this.
+    return 0;
+}
+
+i32
+_platform_thread_active
+(   thread_t* thread
+)
+{   // TODO: Implement this.
+    return !( *thread ).internal;
+}
+
+i32
+_platform_thread_sleep
+(   thread_t*   thread
+,   const u64   ms
+)
+{
+    platform_sleep ( ms );
+    return 0;
+}
+
+i32
+_platform_mutex_create
+(   mutex_t* mutex
+)
+{
+    pthread_mutexattr_t pthread_mutex_attr;
+    pthread_mutexattr_init ( &pthread_mutex_attr );
+    pthread_mutexattr_settype ( &pthread_mutex_attr , PTHREAD_MUTEX_RECURSIVE );
+    
+    pthread_mutex_t pthread_mutex;
+    if ( pthread_mutex_init ( &pthread_mutex , &pthread_mutex_attr ) )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_INIT;
+    }
+
+    ( *mutex ).internal = memory_allocate ( sizeof ( pthread_mutex_t )
+                                          , MEMORY_TAG_MUTEX
+                                          );
+    *( ( pthread_mutex_t* )( ( *mutex ).internal ) ) = pthread_mutex;
+
+    return 0;
+}
+
+i32
+_platform_mutex_destroy
+(   thread_t* thread
+)
+{
+    if ( pthread_mutex_destroy ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_DESTROY;
+    }
+
+    memory_free ( ( *mutex ).internal
+                , sizeof ( pthread_mutex_t* )
+                , MEMORY_TAG_MUTEX
+                );
+    ( *mutex ).internal = 0;
+
+    return 0;
+}
+
+i32
+_platform_mutex_lock
+(   thread_t* thread
+)
+{
+    if ( pthread_mutex_lock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_LOCK;
+    }
+    return 0;
+}
+
+i32
+_platform_mutex_lock
+(   thread_t* thread
+)
+{
+    if ( pthread_mutex_unlock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
+    {
+        return PLATFORM_LINUX_ERROR_PTHREAD_MUTEX_UNLOCK;
+    }
+    return 0;
 }
 
 #endif  // End platform layer.

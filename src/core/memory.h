@@ -111,7 +111,7 @@ memory_free_aligned
 /**
  * @brief Clears a block of memory.
  * 
- * @param memory The block to clear.
+ * @param memory The block to clear. Must not be null.
  * @param size The block size in bytes.
  * @return memory.
  */
@@ -124,7 +124,7 @@ memory_clear
 /**
  * @brief Sets a block of memory.
  * 
- * @param memory The block to set.
+ * @param memory The block to set. Must not be null.
  * @param size The block size in bytes.
  * @return memory.
  */
@@ -142,8 +142,8 @@ memory_set
  * The size of both blocks should be adequate for the specified size parameter.
  * The source and destination blocks may not overlap.
  * 
- * @param dst The destination block.
- * @param src The source block.
+ * @param dst The destination block. Must not be null.
+ * @param src The source block. Must not be null.
  * @param size The number of bytes to copy.
  * @return dst.
  */
@@ -161,8 +161,8 @@ memory_copy
  * The size of both blocks should be adequate for the specified size parameter.
  * The source and destination blocks may overlap.
  * 
- * @param dst The destination block.
- * @param src The source block.
+ * @param dst The destination block. Must not be null.
+ * @param src The source block. Must not be null.
  * @param size The number of bytes to move.
  * @return dst.
  */
@@ -176,8 +176,9 @@ memory_move
 /**
  * @brief Fixed-length string equality test predicate.
  * 
- * @param s1.
- * @param s2.
+ * @param s1 A string. Must not be null.
+ * @param s2 A string. Must not be null.
+ * @param size The number of bytes to compare.
  * @return true if strings are equal; false otherwise.
  */
 bool

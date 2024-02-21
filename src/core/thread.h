@@ -32,7 +32,7 @@ typedef u32 ( *thread_start_function_t )( void* );
  * @param auto_detach Thread should immediately release resources when work is
  * complete? Y/N. If true, the output buffer will be unset.
  * @param thread Output buffer (only set if auto_detach is false).
- * @returns true if successfully created; otherwise false.
+ * @return true if successfully created; otherwise false.
  */
 bool
 thread_create
@@ -102,7 +102,7 @@ thread_wait_timeout
  * @brief Queries if a thread is currently active.
  * 
  * @param thread The thread to query.
- * @returns true if thread currently active; otherwise false.
+ * @return true if thread currently active; otherwise false.
  */
 bool
 thread_active

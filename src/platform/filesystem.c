@@ -13,29 +13,28 @@
 
 #include "math/math.h"
 
-// Platform layer dependencies.
-#include <errno.h>
+#include "platform/platform.h"
 
 // Standard libc dependencies.
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 
 bool
 file_exists
 (   const char* path
+,   FILE_MODE   mode
 )
 {
-    struct stat file_stat;
-    return !stat ( path , &file_stat );
+    return platform_file_exists ( path , mode );
 }
 
 bool
 file_open
-(   const char*     path
-,   FILE_MODE       mode_
-,   bool            binary
-,   file_handle_t*  file_
+(   const char* path
+,   FILE_MODE   mode_
+,   bool        binary
+,   file_t*     file_
 )
 {
     ( *file_ ).valid = false;
@@ -85,7 +84,7 @@ file_open
     FILE* file = fopen ( path , mode );
     if ( !file )
     {
-        LOGERROR ( "file_open: fopen failed for filepath:  %s.\n\tReason:  %s\n\tCode:    %i"
+        LOGERROR ( "file_open: fopen failed for filepath: %s.\n\t           Reason: %s.\n\t           Code:   %i"
                  , path
                  , strerror ( errno )
                  , errno
@@ -100,7 +99,7 @@ file_open
 
 void
 file_close
-(   file_handle_t* file_
+(   file_t* file_
 )
 {
     if ( !( *file_ ).handle || !( *file_ ).valid )
@@ -109,13 +108,20 @@ file_close
     }
     FILE* file = ( *file_ ).handle;
     ( *file_ ).valid = false;
-    fclose ( file );
+    if ( fclose ( file ) )
+    {
+        LOGERROR ( "file_close: fclose failed for file %@.\n\t            Reason: %s.\n\t            Code:   %i"
+                 , ( *file_ ).handle
+                 , strerror ( errno )
+                 , errno
+                 );
+    }
     ( *file_ ).handle = 0;
 }
 
 u64
 file_size
-(   file_handle_t* file
+(   file_t* file
 )
 {
     if ( !( *file ).handle || !( *file ).valid )
@@ -130,10 +136,10 @@ file_size
 
 bool
 file_read
-(   file_handle_t*  file_
-,   u64             size
-,   void*           dst
-,   u64*            read
+(   file_t* file_
+,   u64     size
+,   void*   dst
+,   u64*    read
 )
 {    
     if ( !( *file_ ).handle || !( *file_ ).valid || !dst )
@@ -144,7 +150,7 @@ file_read
     *read = fread ( dst , 1 , size , file );
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_read: fread failed for file %@.\n\tReason:  %s\n\tCode:    %i"
+        LOGERROR ( "file_read: fread failed for file %@.\n\t           Reason: %s.\n\tCode:   %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -156,8 +162,8 @@ file_read
 
 bool
 file_read_line
-(   file_handle_t*  file_
-,   char**          dst
+(   file_t* file_
+,   char**  dst
 )
 {
     if ( !( *file_ ).handle || !( *file_ ).valid  )
@@ -181,7 +187,7 @@ file_read_line
     *dst = string;
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_read_line: fgets failed for file %@.\n\tReason:  %s\n\tCode:    %i"
+        LOGERROR ( "file_read_line: fgets failed for file %@.\n\t                Reason: %s.\n\t                Code:   %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -193,9 +199,9 @@ file_read_line
 
 bool
 file_read_all
-(   file_handle_t*  file_
-,   u8**            dst
-,   u64*            read
+(   file_t* file_
+,   u8**    dst
+,   u64*    read
 )
 {
     if ( !( *file_ ).handle || !( *file_ ).valid || !dst )
@@ -210,7 +216,7 @@ file_read_all
     *dst = string;
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_read_all: fread failed for file %@.\n\tReason:  %s\n\tCode:    %i"
+        LOGERROR ( "file_read_all: fread failed for file %@.\n\t               Reason: %s.\n\t               Code:   %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -222,10 +228,10 @@ file_read_all
 
 bool
 file_write
-(   file_handle_t*  file_
-,   u64             size
-,   const void*     src
-,   u64*            written
+(   file_t*     file_
+,   u64         size
+,   const void* src
+,   u64*        written
 )
 {
     if ( !( *file_ ).handle || !( *file_ ).valid )
@@ -237,7 +243,7 @@ file_write
     fflush ( file );
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_write: fwrite failed for file %@.\n\tReason:  %s\n\tCode:    %i"
+        LOGERROR ( "file_write: fwrite failed for file %@.\n\t            Reason: %s.\n\t            Code:   %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -249,10 +255,10 @@ file_write
 
 bool
 file_write_line
-(   file_handle_t*  file_
-,   u64             size
-,   const char*     src
-,   u64*            written
+(   file_t*     file_
+,   u64         size
+,   const char* src
+,   u64*        written
 )
 {
     if ( !( *file_ ).handle || !( *file_ ).valid )
@@ -266,7 +272,7 @@ file_write_line
     fflush ( file );
     if ( ferror ( file ) )
     {
-        LOGERROR ( "file_write: fwrite failed for file %@.\n\tReason:  %s\n\tCode:    %i"
+        LOGERROR ( "file_write_line: fwrite failed for file %@.\n\t                 Reason: %s.\n\t                 Code:   %i"
                  , file
                  , strerror ( errno )
                  , errno
@@ -278,7 +284,7 @@ file_write_line
 
 void
 file_stdin
-(   file_handle_t* file
+(   file_t* file
 )
 {
     ( *file ).handle = stdin;
@@ -287,7 +293,7 @@ file_stdin
 
 void
 file_stdout
-(   file_handle_t* file
+(   file_t* file
 )
 {
     ( *file ).handle = stdout;
@@ -296,7 +302,7 @@ file_stdout
 
 void
 file_stderr
-(   file_handle_t* file
+(   file_t* file
 )
 {
     ( *file ).handle = stderr;

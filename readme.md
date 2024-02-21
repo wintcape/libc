@@ -3,51 +3,89 @@ Ongoing project to add robustness to libc for improved programming of C applicat
 
 ## About
 
-This project is not intended to reinvent the wheel. There are some standard libc functions whose implementation is typically already highly optimized for the target platform, and other features which provide detailed platform-specific error messages out-of-the-box.
+This project is not intended to reinvent the wheel. There are some standard libc functions whose implementation is typically already highly optimized for the target platform, and other features which provide detailed platform-specific error handling out-of-the-box.
 
 As such, there are some standard libc headers that this library assumes are available on the host platform, regardless of what platform layer is used:
 
 ### `<stdlib.h>`
+
+Requesting memory from the host platform:
 - `malloc`
 - `free`
+
+Pseudorandom number generation:
 - `rand`
 - `srand`
+
 ### `<stdio.h>`
+
+Thread-safe interaction with buffered files on the host platform:
 - `fopen`
 - `fclose`
-- `ferror`
 - `fread`
 - `fwrite`
-- `fflush`
 - `fseek`
 - `ftell`
-- `rewind`
+- `fflush`
+- `ferror`
 - `fgets`
-- `stdin`
-- `stdout`
-- `stderr`
+- `rewind`
+
+- **TEMPORARY**: `snprintf` (crutch for printing fixed-precision floating point numbers)
+
 ### `<string.h>`
+
+Highly-optimized string operations:
 - `strlen`
 - `strnlen`
 - `memset`
 - `memcpy`
 - `memmove`
+- `memcmp`
+
+Platform-dependent error reporting:
 - `strerror`
+
 ### `<math.h>`
+
+Performing algebraic operations on 32-bit floating point numbers:
 - `fabsf`
+- `floorf`
+- `ceilf`
+- `powf`
 - `sqrtf`
+- `expf`
+- `logf`
+- `log10f`
 - `sinf`
 - `cosf`
 - `tanf`
 - `asinf`
 - `acosf`
 - `atanf`
-### `<sys/stat.h>`
-- `stat`
+- `sinhf`
+- `coshf`
+- `tanhf`
+
 ### `<errno.h>`
+
+Platform-dependent error reporting:
 - `errno`
 
 ## Changelog
+
+### 0.2.0
+- Standardized platform-layer error reporting across the library via two new functions: `platform_error_code` and `platform_error_string` (both thread-safe).
+- New functions in `core/string.h`: `string_i64` and `string_u64`, for converting various types of integer values to string; `string_format` uses these now instead of being dependent on `<stdio.h>` for that.
+- As may be evident from the two changes listed above, I am working towards `<stdio.h>` no longer being a dependency of this library; it is still used as a crutch in `string_format` as a robust method of printing fixed-precision floating point numbers because `string_f64` is yet to be implemented.
+- Included a lot more functionality from `<math.h>` into `math/math.h`.
+- `memory_equal` now calls new function `platform_memory_equal` which is a wrapper for `memcmp`, instead of using the naive string comparison implementation I used previously
+- Added explicit documentation specifying when `array` and `string` class functions (from `container/array.h`, `container/string.h`, and `core/string.h`) do and do not support passing null pointers as arguments. This is very different from other containers in `container/` and `memory/`, which always have explicit error handling if any of the arguments are null pointers.
+- `array_remove`, `array_pop`, and `string_remove` now all support passing empty arrays and null output buffers as arguments (but *not* null arrays!).
+- New function `string_reverse` and tests, for reversing a string.
+- Type definition name change: `file_handle_t` -> `file_t` because I wanted it to be less tedious to type
+- Fixed some spacing and other issues in various logger messages across the library.
+- Fixed some bugs in `test_array.h`
 
 ### 0.1.3
 - Improved error handling in `core/memory.h`.

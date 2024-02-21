@@ -85,74 +85,74 @@ logger_shutdown
  * @brief Logs a message according to the logging elevation protocol.
  * 
  * @param level The log elevation.
- * @param mesg Formatted message to log.
+ * @param message Formatted message to log.
  * @param arg_count Number of elements in the variadic argument list.
  * @param args Variadic argument list.
  */
 void
 logger_log
 (   const LOG_LEVEL level
-,   const char*     mesg
+,   const char*     message
 ,   u64             arg_count
 ,   u64*            args
 );
 
 /** @brief Alias for calling logger_log with __VA_ARGS__. */
-#define LOG(level,mesg,...)                                     \
-    do                                                          \
-    {                                                           \
-        DISABLE_WARNING ( -Wint-conversion )                    \
-        logger_log ( (level) , (mesg) , ARGS ( __VA_ARGS__ ) ); \
-        REENABLE_WARNING ()                                     \
-    }                                                           \
+#define LOG(level,message,...)                                     \
+    do                                                             \
+    {                                                              \
+        DISABLE_WARNING ( -Wint-conversion )                       \
+        logger_log ( (level) , (message) , ARGS ( __VA_ARGS__ ) ); \
+        REENABLE_WARNING ()                                        \
+    }                                                              \
     while ( 0 )
 
 // LOG: Fatal.
-#define LOGFATAL(mesg,...) \
-    LOG ( LOG_FATAL , (mesg) , ##__VA_ARGS__ )
+#define LOGFATAL(message,...) \
+    LOG ( LOG_FATAL , (message) , ##__VA_ARGS__ )
 
 // LOG: Error.
-#define LOGERROR(mesg,...) \
-    LOG ( LOG_ERROR , (mesg) , ##__VA_ARGS__ )
+#define LOGERROR(message,...) \
+    LOG ( LOG_ERROR , (message) , ##__VA_ARGS__ )
 
 // LOG: Warn.
 #if LOG_WARN_ENABLED == 1
-#define LOGWARN(mesg,...) \
-    LOG ( LOG_WARN , (mesg) , ##__VA_ARGS__ )
+#define LOGWARN(message,...) \
+    LOG ( LOG_WARN , (message) , ##__VA_ARGS__ )
 #else
-#define LOGWARN(mesg,...)
+#define LOGWARN(message,...)
 #endif
 
 // LOG: Info.
 #if LOG_INFO_ENABLED == 1
-#define LOGINFO(mesg,...) \
-    LOG ( LOG_INFO , (mesg) , ##__VA_ARGS__ )
+#define LOGINFO(message,...) \
+    LOG ( LOG_INFO , (message) , ##__VA_ARGS__ )
 #else
-#define LOGINFO(mesg,...)
+#define LOGINFO(message,...)
 #endif
 
 // LOG: Debug.
 #if LOG_DEBUG_ENABLED == 1
-#define LOGDEBUG(mesg,...) \
-    LOG ( LOG_DEBUG , (mesg) , ##__VA_ARGS__ )
+#define LOGDEBUG(message,...) \
+    LOG ( LOG_DEBUG , (message) , ##__VA_ARGS__ )
 #else
-#define LOGDEBUG(mesg,...)
+#define LOGDEBUG(message,...)
 #endif
 
 // LOG: Trace.
 #if LOG_TRACE_ENABLED == 1
-#define LOGTRACE(mesg,...) \
-    LOG ( LOG_TRACE , (mesg) , ##__VA_ARGS__ )
+#define LOGTRACE(message,...) \
+    LOG ( LOG_TRACE , (message) , ##__VA_ARGS__ )
 #else
-#define LOGTRACE(mesg,...)
+#define LOGTRACE(message,...)
 #endif
 
 // LOG: Silent.
 #if LOG_SILENT_ENABLED == 1
-#define LOGSILENT(mesg,...) \
-    LOG ( LOG_SILENT , (mesg) , ##__VA_ARGS__ )
+#define LOGSILENT(message,...) \
+    LOG ( LOG_SILENT , (message) , ##__VA_ARGS__ )
 #else
-#define LOGSILENT(mesg,...)
+#define LOGSILENT(message,...)
 #endif
 
 /**
@@ -160,40 +160,40 @@ logger_log
  * 
  * Use PRINT to print to stdout, use PRINTERROR to print to stderr.
  * 
- * @param mesg Formatted message to print to file.
+ * @param message Formatted message to print to file.
  * @param arg_count Number of elements in the variadic argument list.
  * @param args Variadic argument list.
  */
 void
 print
-(   file_handle_t*  file
-,   const char*     mesg
+(   file_t*         file
+,   const char*     message
 ,   u64             arg_count
 ,   u64*            args
 );
 
 /** @brief Alias for calling print with __VA_ARGS__. */
-#define PRINT(mesg,...)                                  \
-    do                                                   \
-    {                                                    \
-        file_handle_t file;                              \
-        file_stdout ( &file );                           \
-        DISABLE_WARNING ( -Wint-conversion )             \
-        print ( &file , (mesg) , ARGS ( __VA_ARGS__ ) ); \
-        REENABLE_WARNING ()                              \
-    }                                                    \
+#define PRINT(message,...)                                  \
+    do                                                      \
+    {                                                       \
+        file_t file;                                 \
+        file_stdout ( &file );                              \
+        DISABLE_WARNING ( -Wint-conversion )                \
+        print ( &file , (message) , ARGS ( __VA_ARGS__ ) ); \
+        REENABLE_WARNING ()                                 \
+    }                                                       \
     while ( 0 )
 
 /** @brief Alias for calling print with __VA_ARGS__. */
-#define PRINTERROR(mesg,...)                             \
-    do                                                   \
-    {                                                    \
-        file_handle_t file;                              \
-        file_stderr ( &file );                           \
-        DISABLE_WARNING ( -Wint-conversion )             \
-        print ( &file , (mesg) , ARGS ( __VA_ARGS__ ) ); \
-        REENABLE_WARNING ()                              \
-    }                                                    \
+#define PRINTERROR(message,...)                             \
+    do                                                      \
+    {                                                       \
+        file_t file;                                 \
+        file_stderr ( &file );                              \
+        DISABLE_WARNING ( -Wint-conversion )                \
+        print ( &file , (message) , ARGS ( __VA_ARGS__ ) ); \
+        REENABLE_WARNING ()                                 \
+    }                                                       \
     while ( 0 )
 
 #endif  // LOGGER_H

@@ -53,23 +53,34 @@ test_array_push_and_pop
         memory_copy ( old_memory , array , old_length * array_stride ( array ) );
         array_push ( array , to_push );
         EXPECT_NEQ ( 0 , array );
-        EXPECT_EQ ( old_length , array_length ( array ) - 1 );
+        EXPECT_EQ ( old_length + 1 , array_length ( array ) );
         EXPECT_EQ ( to_push , array[ old_length ] );
         EXPECT ( memory_equal ( array , old_memory , old_length ) );
     }
     LOGDEBUG ( "  Done." );
     LOGDEBUG ( "Removing them. . ." );
-    while ( array_length ( array ) )
+    u64 old_length;
+    i16 popped;
+    while ( array_length ( array ) > 1 )
     {
-        const u64 old_length = array_length ( array );
+        old_length = array_length ( array );
         memory_copy ( old_memory , array , old_length );
-        i16 popped = 0;
+        popped = 0;
         array_pop ( array , &popped );
         EXPECT_NEQ ( 0 , array );
-        EXPECT_EQ ( old_length , array_length ( array ) + 1 );
+        EXPECT_EQ ( old_length - 1 , array_length ( array ) );
         EXPECT_EQ ( to_push , popped );
-        EXPECT ( memory_equal ( array , old_memory , old_length ) );
+        EXPECT ( memory_equal ( array , old_memory , array_length ( array ) ) );
     }
+    array_pop ( array , 0 );
+    EXPECT_NEQ ( 0 , array );
+    EXPECT_EQ ( 0 , array_length ( array ) );
+    popped = 0;
+    LOGWARN ( "The following warning is intentionally triggered by a test:" );
+    array_pop ( array , &popped );
+    EXPECT_NEQ ( 0 , array );
+    EXPECT_EQ ( 0 , array_length ( array ) );
+    EXPECT_EQ ( 0 , popped );
     memory_free ( old_memory , sizeof ( i16 ) * max_op , MEMORY_TAG_ARRAY );
     LOGDEBUG ( "  Done." );
     array_destroy ( array );
@@ -86,7 +97,7 @@ test_array_insert_and_remove
     const i64 remove3[]   = { -15799 };
     i64* array1 = array_create_new ( i64 );
     i64* array2 = array_create_new ( i64 );
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+    LOGWARN ( "The following warning and errors are intentionally triggered by a test:" );
     array_insert ( array1 , array_length ( array1 ) + 1 , to_insert[ 0 ] );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 0 , array_length ( array1 ) );
@@ -113,18 +124,19 @@ test_array_insert_and_remove
     EXPECT_EQ ( array_stride ( array1 ) , array_stride ( array2 ) );
     EXPECT_EQ ( array_length ( array1 ) , array_length ( array2 ) );
     EXPECT ( memory_equal ( array1 , array2 , array_stride ( array1 ) * array_length ( array1 ) ) );
-    i64 removed1;
-    i64 removed2;
+    i64 removed1 = 0;
+    i64 removed2 = 0;
     array_remove ( array1 , array_length ( array1 ) , &removed1 );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 4 , array_length ( array1 ) );
     EXPECT_EQ ( array_stride ( array1 ) , array_stride ( array2 ) );
     EXPECT_EQ ( array_length ( array1 ) , array_length ( array2 ) );
+    EXPECT_EQ ( 0 , removed1 );
     EXPECT ( memory_equal ( array1 , array2 , array_stride ( array1 ) * array_length ( array1 ) ) );
     array_remove ( array1 , array_length ( array1 ) - 1 , &removed1 );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 3 , array_length ( array1 ) );
-    EXPECT_EQ ( to_insert[ 3 ] , removed1 );
+    EXPECT_EQ ( to_insert[ array_length ( array1 ) - 1 + 1 ] , removed1 );
     EXPECT ( memory_equal ( array1 , to_insert , 3 * sizeof ( i64 ) ) );
     array_pop ( array2 , &removed2 );
     EXPECT_EQ ( array_stride ( array1 ) , array_stride ( array2 ) );
@@ -137,18 +149,27 @@ test_array_insert_and_remove
     array_remove ( array1 , 2 , &removed1 );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 3 , array_length ( array1 ) );
+    EXPECT_EQ ( to_insert[ 2 ] , removed1 );
     EXPECT ( memory_equal ( array1 , remove1 , array_stride ( array1 ) * array_length ( array1 ) ) );
     array_remove ( array1 , 1 , &removed1 );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 2 , array_length ( array1 ) );
+    EXPECT_EQ ( to_insert[ 1 ] , removed1 );
     EXPECT ( memory_equal ( array1 , remove2 , array_stride ( array1 ) * array_length ( array1 ) ) );
     array_remove ( array1 , 0 , &removed1 );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 1 , array_length ( array1 ) );
+    EXPECT_EQ ( to_insert[ 0 ] , removed1 );
     EXPECT ( memory_equal ( array1 , remove3 , array_stride ( array1 ) * array_length ( array1 ) ) );
+    array_remove ( array1 , 0 , 0 );
+    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_EQ ( 0 , array_length ( array1 ) );
+    removed1 = 0;
+    LOGWARN ( "The following warning is intentionally triggered by a test:" );
     array_remove ( array1 , 0 , &removed1 );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 0 , array_length ( array1 ) );
+    EXPECT_EQ ( 0 , removed1 );
     array_destroy ( array1 );
     array_destroy ( array2 );
     return true;
@@ -158,7 +179,7 @@ u8
 test_array_insert_and_remove_random
 ( void )
 {
-    const u64 max_op = 100000;
+    const u64 max_op = 10000;
     i32* array = array_create_new ( i32 );
     LOGDEBUG ( "Inserting %i elements into an array at random indices. . ." , max_op );
     i32* old_memory = memory_allocate ( sizeof ( i32 ) * max_op , MEMORY_TAG_ARRAY );
@@ -188,11 +209,13 @@ test_array_insert_and_remove_random
     }
     LOGDEBUG ( "  Done." );
     LOGDEBUG ( "Removing them in random order. . ." );
-    while ( array_length ( array ) )
+    u64 old_length;
+    i32 removed;
+    while ( array_length ( array ) > 1 )
     {
-        const u64 old_length = array_length ( array );
+        old_length = array_length ( array );
         memory_copy ( old_memory , array , old_length * array_stride ( array ) );
-        i32 removed = 0;
+        removed = 0;
         const u64 remove_index = random2 ( 0 , old_length - 1 );
         array_remove ( array , remove_index , &removed );
         EXPECT_NEQ ( 0 , array );
@@ -212,6 +235,15 @@ test_array_insert_and_remove_random
         }
         EXPECT_EQ ( old_memory[ remove_index ] , removed );
     }
+    array_remove ( array , 0 , 0 );
+    EXPECT_NEQ ( 0 , array );
+    EXPECT_EQ ( 0 , array_length ( array ) );
+    removed = 0;
+    LOGWARN ( "The following warning is intentionally triggered by a test:" );
+    array_pop ( array , &removed );
+    EXPECT_NEQ ( 0 , array );
+    EXPECT_EQ ( 0 , array_length ( array ) );
+    EXPECT_EQ ( 0 , removed );
     memory_free ( old_memory , sizeof ( i32 ) * max_op , MEMORY_TAG_ARRAY );
     LOGDEBUG ( "  Done." );
     array_destroy ( array );

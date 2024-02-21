@@ -101,7 +101,7 @@ test_run_all
                      , &clock_test_elapsed_fractional
                      );
     
-        LOGINFO ( "Executed %u of %u (%u skipped).\n\t%s\n\tResult:   %s\n\tElapsed:  %Pl02u:%pl02u:%pl02u.%.6d / %Pl02u:%pl02u:%pl02u.%.6d."
+        LOGINFO ( "Executed %u of %u (%u skipped).\n\t%s\n\tResult:   %s\n\tElapsed:  %Pl02u:%pl02u:%pl02u.%.6d / %Pl02u:%pl02u:%pl02u.%.6d"
                 , i + 1
                 , test_count
                 , skip
@@ -129,7 +129,7 @@ test_run_all
                  , &clock_master_elapsed_fractional
                  );
 
-    LOGINFO ( "Results: %u passed, %u failed, %u skipped.\n\t"
+    LOGINFO ( "Results:  %u passed, %u failed, %u skipped.\n\t"
               "Took %Pl02u:%pl02u:%pl02u.%.6d seconds.\n"
             , pass
             , fail

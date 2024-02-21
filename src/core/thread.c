@@ -6,6 +6,8 @@
  */
 #include "core/thread.h"
 
+#include "core/logger.h"
+
 #include "platform/platform.h"
 
 bool
@@ -16,7 +18,17 @@ thread_create
 ,   thread_t*               thread
 )
 {
-    return platform_thread_create ( function , args , auto_detach , thread );
+    if ( !platform_thread_create ( function , args , auto_detach , thread ) )
+    {
+        return false;
+    }
+    
+    LOGDEBUG ( "thread_create: Starting process on new%sthread #%u."
+             , auto_detach ? " auto-detach " : " "
+             , ( *thread ).id
+             );
+    
+    return true;
 }
 
 void

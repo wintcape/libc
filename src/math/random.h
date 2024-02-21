@@ -12,7 +12,7 @@
  * @brief Defines an alias for the random function. This resolves a name
  * conflict with the random function included by the standard libc headers.
  */
-#define random() _random ()
+#define random() __random ()
 
 /**
  * @brief Generates a random integer.
@@ -20,7 +20,7 @@
  * @return A random integer.
  */
 i32
-_random
+__random
 ( void );
 
 /**
