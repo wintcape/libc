@@ -176,7 +176,7 @@ print
 #define PRINT(message,...)                                  \
     do                                                      \
     {                                                       \
-        file_t file;                                 \
+        file_t file;                                        \
         file_stdout ( &file );                              \
         DISABLE_WARNING ( -Wint-conversion )                \
         print ( &file , (message) , ARGS ( __VA_ARGS__ ) ); \
@@ -188,7 +188,7 @@ print
 #define PRINTERROR(message,...)                             \
     do                                                      \
     {                                                       \
-        file_t file;                                 \
+        file_t file;                                        \
         file_stderr ( &file );                              \
         DISABLE_WARNING ( -Wint-conversion )                \
         print ( &file , (message) , ARGS ( __VA_ARGS__ ) ); \

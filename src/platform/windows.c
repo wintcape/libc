@@ -35,8 +35,7 @@
 #define PLATFORM_WINDOWS_ERROR_ABANDONED_MUTEX      6 /** @brief Internal error code. */
 #define PLATFORM_WINDOWS_ERROR_RELEASE_MUTEX        7 /** @brief Internal error code. */
 
-// Global system clock. Allows for clocks to function without having to call
-// platform_start first (see core/clock.h).
+// Global system clock.
 static f64              platform_clock_frequency;  /** @brief Global system clock frequency. */
 static LARGE_INTEGER    platform_clock_start_time; /** @brief Global system clock start time. */
 
@@ -407,7 +406,7 @@ platform_thread_create
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                         Reason: %s\n\t                                         Code:   %i"
                  , platform_function_name
                  , message
                  , error
@@ -456,7 +455,7 @@ platform_thread_destroy
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): %s failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): %s failed on thread #%u.\n\t                                         Reason: %s\n\t                                         Code:   %i"
                  , platform_function_name
                  , ( *thread ).id
                  , message
@@ -480,7 +479,7 @@ platform_thread_detach
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): CloseHandle failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): CloseHandle failed on thread #%u.\n\t                                         Reason: %s\n\t                                         Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
@@ -503,7 +502,7 @@ platform_thread_cancel
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): TerminateThread failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): TerminateThread failed on thread #%u.\n\t                                         Reason: %s\n\t                                         Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
@@ -580,7 +579,7 @@ platform_mutex_create
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): CreateMutex failed.\n\t                                        Reason: %S\n\t                                        Code:   %i"
+        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): CreateMutex failed.\n\t                                        Reason: %s\n\t                                        Code:   %i"
                  , message
                  , error
                  );
@@ -605,7 +604,7 @@ platform_mutex_destroy
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): CloseHandle failed on mutex %@.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): CloseHandle failed on mutex %@.\n\t                                         Reason: %s\n\t                                         Code:   %i"
                  , mutex
                  , message
                  , error
@@ -628,7 +627,7 @@ platform_mutex_lock
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): WaitForSingleObject failed on mutex %@.\n\t                                       Reason: %S\n\t                                       Code:   %i"
+        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): WaitForSingleObject failed on mutex %@.\n\t                                       Reason: %s\n\t                                       Code:   %i"
                  , mutex
                  , message
                  , error
@@ -654,7 +653,7 @@ platform_mutex_unlock
         const i64 error = platform_error_code ();
         char message[ STACK_STRING_MAX_SIZE ];
         platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): ReleaseMutex failed on mutex %@.\n\t                                         Reason: %S\n\t                                         Code:   %i"
+        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): ReleaseMutex failed on mutex %@.\n\t                                         Reason: %s\n\t                                         Code:   %i"
                  , mutex
                  , message
                  , error
@@ -721,17 +720,21 @@ _platform_thread_create
                                         , 0
                                         , ( LPDWORD )( &( *thread ).id )
                                         );
+
     if ( !( *thread ).internal )
     {
         return PLATFORM_WINDOWS_ERROR_CREATE_THREAD;
     }
+
     if ( auto_detach )
     {
         if ( !CloseHandle ( ( *thread ).internal ) )
         {
             return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
         }
+        ( *thread ).internal = 0;
     }
+
     return 0;
 }
 
@@ -740,19 +743,18 @@ _platform_thread_destroy
 (   thread_t* thread
 )
 {
-    i32 result = 0;
     DWORD code;
-    if ( !GetExitCodeThread ( ( *thread ).internal , &code ) )
-    {
-        result = PLATFORM_WINDOWS_ERROR_GET_EXIT_CODE_THREAD;
-    }
+    GetExitCodeThread ( ( *thread ).internal , &code );
+
     if ( !CloseHandle ( ( *thread ).internal ) )
     {
-        result = PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
+        return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
     }
+
     ( *thread ).internal = 0;
     ( *thread ).id = 0;
-    return !result;
+
+    return 0;
 }
 
 i32
@@ -764,7 +766,9 @@ _platform_thread_detach
     {
         return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
     }
+
     ( *thread ).internal = 0;
+
     return 0;
 }
 
@@ -777,7 +781,9 @@ _platform_thread_cancel
     {
         return PLATFORM_WINDOWS_ERROR_TERMINATE_THREAD;
     }
+
     ( *thread ).internal = 0;
+
     return 0;
 }
 
@@ -786,7 +792,7 @@ _platform_thread_wait
 (   thread_t* thread
 )
 {
-    return !( WaitForSingleObject ( ( *thread ).internal , INFINITE ) == WAIT_OBJECT_0 );
+    return _platform_thread_wait_timeout ( thread , INFINITE );
 }
 
 i32
