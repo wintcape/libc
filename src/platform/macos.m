@@ -14,7 +14,7 @@
 #include "core/memory.h"
 #include "core/string.h"
 
-#include "math/math.h"
+#include "math/clamp.h"
 
 // Platform layer dependencies.
 #include <pthread.h>
@@ -24,13 +24,6 @@
 #if _POSIX_C_SOURCE >= 199309L
     #include <time.h> // nanosleep
 #endif
-
-/**
- * @brief Undefines preprocessor bindings from math/math which may cause name
- * conflicts with the standard libc headers.
- */
-#undef abs
-#undef random
 
 // Standard libc dependencies.
 #include <errno.h>

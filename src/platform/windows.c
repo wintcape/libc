@@ -14,19 +14,12 @@
 #include "core/logger.h"
 #include "core/string.h"
 
-#include "math/math.h"
+#include "math/clamp.h"
 
 // Platform layer dependencies.
 #include <io.h>
 #include <windows.h>
 #include <windowsx.h>
-
-/**
- * @brief Undefines preprocessor bindings from math/math which may cause name
- * conflicts with the standard libc headers.
- */
-#undef abs
-#undef random
 
 // Standard libc dependencies.
 #include <errno.h>
@@ -472,7 +465,7 @@ platform_thread_destroy
     }
 }
 
-voiG
+void
 platform_thread_detach
 (   thread_t* thread
 )
