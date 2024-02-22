@@ -13,7 +13,9 @@
 
 #include "core/logger.h"
 #include "core/memory.h"
-#include "core/mutex.h"
+#include "core/string.h"
+
+#include "math/math.h"
 
 // Platform layer dependencies.
 #include <pthread.h>
@@ -23,6 +25,13 @@
 #if _POSIX_C_SOURCE >= 199309L
     #include <time.h> // nanosleep
 #endif
+
+/**
+ * @brief Undefines preprocessor bindings from math/math which may cause name
+ * conflicts with the standard libc headers.
+ */
+#undef abs
+#undef random
 
 // Standard libc dependencies.
 #include <errno.h>
@@ -310,27 +319,31 @@ platform_error_code
     return errno;
 }
 
-char*
+u64
 platform_error_message
-(   const i64 error
+(   const i64   error
+,   char*       dst
+,   const u64   dst_length
 )
 {
-    mutex_t mutex;
-    if ( !_platform_mutex_create ( &mutex ) || !_platform_mutex_lock ( &mutex ) )
+    if ( !dst || !dst_length )
     {
-        return string_create_from ( "" );
+        if ( !dst )
+        {
+            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
+        }
+        if ( !dst_length )
+        {
+            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Value of dst_length argument must be non-zero." );
+        }
+        return 0;
     }
-    char* message;
-    if ( error < sys_nerr )
+    if ( strerror_r ( error , dst , dst_length ) )
     {
-        message = string_create_from ( sys_errlist[ error ] ); 
+        LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Failed to retrieve an error report from the host platform." );
+        return 0;
     }
-    else
-    {
-        message = string_create_from ( "Unknown code." );
-    }
-    _platform_mutex_unlock ( &mutex );
-    return message;
+    return MIN ( _string_length ( dst ) , dst_length );
 }
 
 i32
@@ -339,7 +352,7 @@ platform_processor_core_count
 {
     i32 total_processor_count = get_nprocs_conf ();
     i32 available_processor_count = get_nprocs ();
-    LOGINFO ( "platform_processor_core_count: %i cores available (%i offline)."
+    LOGINFO ( "platform_processor_core_count ("PLATFORM_STRING"): %i cores available (%i offline)."
             , available_processor_count
             , total_processor_count - available_processor_count
             );
@@ -399,14 +412,13 @@ platform_thread_create
         }
 
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                    Reason: %s\n\t                                    Code:   %i"
                  , platform_function_name
                  , message
                  , error
                  );
-        string_destroy ( message );
-        
         return false;
     }
 
@@ -426,13 +438,13 @@ platform_thread_destroy
     if ( _platform_thread_destroy ( thread ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                     Reason: %S\n\t                                     Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                     Reason: %s\n\t                                     Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
 }
 
@@ -449,13 +461,13 @@ platform_thread_detach
     if ( _platform_thread_detach ( thread ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on thread #%u.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on thread #%u.\n\t                                    Reason: %s\n\t                                    Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
 }
 
@@ -472,13 +484,13 @@ platform_thread_cancel
     if ( _platform_thread_cancel ( thread ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                    Reason: %s\n\t                                    Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
 }
 
@@ -549,12 +561,12 @@ platform_mutex_create
     if ( _platform_mutex_create ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): pthread_mutex_init failed.\n\t                                   Reason: %S\n\t                                   Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): pthread_mutex_init failed.\n\t                                   Reason: %s\n\t                                   Code:   %i"
                  , message
                  , error
                  );
-        string_destroy ( message );
         return false;
     }
 
@@ -574,13 +586,13 @@ platform_mutex_destroy
     if ( _platform_mutex_destroy ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): pthread_mutex_destroy failed on mutex %@.\n\t                                    Reason: %S\n\t                                    Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): pthread_mutex_destroy failed on mutex %@.\n\t                                    Reason: %s\n\t                                    Code:   %i"
                  , mutex
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
 }
 
@@ -607,13 +619,13 @@ platform_mutex_lock
     if ( _platform_mutex_lock ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): pthread_mutex_lock failed on mutex %@.\n\t                                 Reason: %S\n\t                                 Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): pthread_mutex_lock failed on mutex %@.\n\t                                 Reason: %s\n\t                                 Code:   %i"
                  , mutex
                  , message
                  , error
                  );
-        string_destroy ( message );
         return false;
     }
 
@@ -643,13 +655,13 @@ if ( !mutex || !( *mutex ).internal )
     if ( _platform_mutex_unlock ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
-        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): pthread_mutex_unlock failed on mutex %@.\n\t                                   Reason: %S\n\t                                   Code:   %i"
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
+        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): pthread_mutex_unlock failed on mutex %@.\n\t                                   Reason: %s\n\t                                   Code:   %i"
                  , mutex
                  , message
                  , error
                  );
-        string_destroy ( message );
         return false;
     }
 
@@ -830,7 +842,7 @@ _platform_mutex_create
 
 i32
 _platform_mutex_destroy
-(   thread_t* thread
+(   mutex_t* mutex
 )
 {
     if ( pthread_mutex_destroy ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
@@ -849,7 +861,7 @@ _platform_mutex_destroy
 
 i32
 _platform_mutex_lock
-(   thread_t* thread
+(   mutex_t* mutex
 )
 {
     if ( pthread_mutex_lock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
@@ -860,8 +872,8 @@ _platform_mutex_lock
 }
 
 i32
-_platform_mutex_lock
-(   thread_t* thread
+_platform_mutex_unlock
+(   mutex_t* mutex
 )
 {
     if ( pthread_mutex_unlock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )

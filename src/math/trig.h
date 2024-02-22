@@ -22,15 +22,15 @@
  * signatures which cause name conflicts with those provided by the standard
  * libc headers.
  */
-#define sin(x)  __sin ( x )  /** @brief Defines an alias for the sine function. This resolves a name conflict with the sine function provided by the standard libc headers. */
-#define cos(x)  __cos ( x )  /** @brief Defines an alias for the cosine function. This resolves a name conflict with the cosine function provided by the standard libc headers. */
-#define tan(x)  __tan ( x )  /** @brief Defines an alias for the tangent function. This resolves a name conflict with the tangent function provided by the standard libc headers. */
-#define asin(x) __asin ( x ) /** @brief Defines an alias for the sine inverse function. This resolves a name conflict with the sine inverse function provided by the standard libc headers. */
-#define acos(x) __acos ( x ) /** @brief Defines an alias for the cosine inverse function. This resolves a name conflict with the cosine inverse function provided by the standard libc headers. */
-#define atan(x) __atan ( x ) /** @brief Defines an alias for the tangent inverse function. This resolves a name conflict with the tangent inverse function provided by the standard libc headers. */
-#define sinh(x) __sinh ( x ) /** @brief Defines an alias for the hyperbolic sine function. This resolves a name conflict with the hyperbolic sine function provided by the standard libc headers. */
-#define cosh(x) __cosh ( x ) /** @brief Defines an alias for the hyperbolic cosine function. This resolves a name conflict with the hyperbolic cosine function provided by the standard libc headers. */
-#define tanh(x) __tanh ( x ) /** @brief Defines an alias for the hyperbolic tangent function. This resolves a name conflict with the hyperbolic tangent function provided by the standard libc headers. */
+#define sin(x)  math_sin ( x )  /** @brief Defines an alias for the sine function. This resolves a name conflict with the sine function provided by the standard libc headers. */
+#define cos(x)  math_cos ( x )  /** @brief Defines an alias for the cosine function. This resolves a name conflict with the cosine function provided by the standard libc headers. */
+#define tan(x)  math_tan ( x )  /** @brief Defines an alias for the tangent function. This resolves a name conflict with the tangent function provided by the standard libc headers. */
+#define asin(x) math_asin ( x ) /** @brief Defines an alias for the sine inverse function. This resolves a name conflict with the sine inverse function provided by the standard libc headers. */
+#define acos(x) math_acos ( x ) /** @brief Defines an alias for the cosine inverse function. This resolves a name conflict with the cosine inverse function provided by the standard libc headers. */
+#define atan(x) math_atan ( x ) /** @brief Defines an alias for the tangent inverse function. This resolves a name conflict with the tangent inverse function provided by the standard libc headers. */
+#define sinh(x) math_sinh ( x ) /** @brief Defines an alias for the hyperbolic sine function. This resolves a name conflict with the hyperbolic sine function provided by the standard libc headers. */
+#define cosh(x) math_cosh ( x ) /** @brief Defines an alias for the hyperbolic cosine function. This resolves a name conflict with the hyperbolic cosine function provided by the standard libc headers. */
+#define tanh(x) math_tanh ( x ) /** @brief Defines an alias for the hyperbolic tangent function. This resolves a name conflict with the hyperbolic tangent function provided by the standard libc headers. */
 
 /**
  * @brief Sine function.
@@ -39,7 +39,7 @@
  * @return sin(x)
  */
 f32
-_sin
+math_sin
 (   f32 x
 );
 
@@ -50,7 +50,7 @@ _sin
  * @return cos(x)
  */
 f32
-_cos
+math_cos
 (   f32 x
 );
 
@@ -61,7 +61,7 @@ _cos
  * @return tan(x)
  */
 f32
-_tan
+math_tan
 (   f32 x
 );
 
@@ -72,7 +72,7 @@ _tan
  * @return arcsin(x)
  */
 f32
-_asin
+math_asin
 (   f32 x
 );
 
@@ -83,7 +83,7 @@ _asin
  * @return arccos(x)
  */
 f32
-_acos
+math_acos
 (   f32 x
 );
 
@@ -94,7 +94,7 @@ _acos
  * @return arctan(x)
  */
 f32
-_atan
+math_atan
 (   f32 x
 );
 
@@ -105,7 +105,7 @@ _atan
  * @return sinh(x)
  */
 f32
-_sinh
+math_sinh
 (   f32 x
 );
 
@@ -116,7 +116,7 @@ _sinh
  * @return cosh(x)
  */
 f32
-_cosh
+math_cosh
 (   f32 x
 );
 
@@ -127,7 +127,7 @@ _cosh
  * @return tanh(x)
  */
 f32
-_tanh
+math_tanh
 (   f32 x
 );
 

@@ -157,7 +157,7 @@ platform_sleep
 );
 
 /**
- * @brief Queries the most recent platform-specific error code. Thread-safe.
+ * @brief Queries the most recent platform-specific error code.
  * 
  * @return The value of the most recent platform-specific error code.
  */
@@ -167,18 +167,18 @@ platform_error_code
 
 /**
  * @brief Queries the platform-specific error message corresponding to the
- * provided error code. The output is returned as a mutable string
- * (see container/string.h). Thread-safe.
- * 
- * Uses dynamic memory allocation. Call string_destroy to free.
+ * provided error code. Writes the message into an output buffer.
  * 
  * @param error Error code.
- * @return A mutable string containing the platform-specific error message
- * corresponding to error.
+ * @param dst Output buffer.
+ * @param dst_length The maximum number of characters to write to dst.
+ * @return The number of characters written to dst.
  */
-char*
+u64
 platform_error_message
-(   const i64 error
+(   const i64   error
+,   char*       dst
+,   const u64   dst_length
 );
 
 /**

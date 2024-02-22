@@ -41,6 +41,8 @@ stat_t;
 /** @brief Type definition for memory subsystem state. */
 typedef struct
 {
+    bool                initialized;
+
     stat_t              stat;
     
     u64                 allocator_capacity;
@@ -107,6 +109,8 @@ memory_startup
         return false;
     }
 
+    ( *state ).initialized = true;
+
     LOGDEBUG ( "  Success." );
 
     return true;
@@ -116,10 +120,12 @@ void
 memory_shutdown
 ( void )
 {
-    if ( !state )
+    if ( !state || !( *state ).initialized )
     {
         return;
     }
+
+    ( *state ).initialized = false;
 
     mutex_destroy ( &( *state ).allocation_mutex );
 
@@ -160,7 +166,7 @@ memory_allocate_aligned
     }
 
     void* memory;
-    if ( state )
+    if ( state && ( *state ).initialized )
     {
         if ( !mutex_lock ( &( *state ).allocation_mutex ) )
         {
@@ -220,7 +226,7 @@ memory_free_aligned
         LOGWARN ( "memory_free: Called with MEMORY_TAG_UNKNOWN." );
     }
 
-    if ( state )
+    if ( state && ( *state ).initialized )
     {
         if ( !mutex_lock ( &( *state ).allocation_mutex ) )
         {
@@ -309,7 +315,7 @@ char*
 memory_stat
 ( void )
 {
-    if ( !state )
+    if ( !state || !( *state ).initialized )
     {
         LOGERROR ( "memory_stat: Called before the memory subsystem was initialized." );
         return 0;

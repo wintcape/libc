@@ -9,10 +9,14 @@
 #include "common.h"
 
 /**
- * @brief Defines an alias for the random function. This resolves a name
- * conflict with the random function included by the standard libc headers.
+ * @brief Defines an alias for each random function. This resolves a name
+ * conflict with the random functions included by the standard libc headers.
  */
-#define random() __random ()
+#define random()          math_random ()                  /** @brief Defines an alias for the random function. This resolves a name conflict with the random function provided by the standard libc headers. */
+#define random2(min,max)  math_random2 ( (min) , (max) )  /** @brief Defines an alias for the random2 function. */
+#define random64()        math_random64 ()                /** @brief Defines an alias for the random64 function. */
+#define randomf()         math_randomf ()                 /** @brief Defines an alias for the randomf function. */
+#define randomf2(min,max) math_randomf2 ( (min) , (max) ) /** @brief Defines an alias for the randomf2 function. */
 
 /**
  * @brief Generates a random integer.
@@ -20,7 +24,7 @@
  * @return A random integer.
  */
 i32
-__random
+math_random
 ( void );
 
 /**
@@ -31,7 +35,7 @@ __random
  * @return A random integer in the range [ min , max ].
  */
 i32
-random2
+math_random2
 (   i32 min
 ,   i32 max
 );
@@ -42,7 +46,7 @@ random2
  * @return A random 64-bit integer.
  */
 i64
-random64
+math_random64
 ( void );
 
 /**
@@ -51,7 +55,7 @@ random64
  * @return A random floating point number.
  */
 f32
-randomf
+math_randomf
 ( void );
 
 /**
@@ -62,7 +66,7 @@ randomf
  * @return A random floating point number in the range [ min , max ].
  */
 f32
-randomf2
+math_randomf2
 (   f32 min
 ,   f32 max
 );

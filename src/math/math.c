@@ -43,7 +43,7 @@
 static bool random_seeded = false;
 
 bool
-__nan
+math_nan
 (   f32 x
 )
 {
@@ -51,7 +51,7 @@ __nan
 }
 
 bool
-__finite
+math_finite
 (   f32 x
 )
 {
@@ -59,7 +59,7 @@ __finite
 }
 
 f32
-__abs
+math_abs
 (   f32 x
 )
 {
@@ -67,7 +67,7 @@ __abs
 }
 
 f32
-__floor
+math_floor
 (   f32 x
 )
 {
@@ -75,7 +75,7 @@ __floor
 }
 
 f32
-__ceiling
+math_ceiling
 (   f32 x
 )
 {
@@ -83,7 +83,7 @@ __ceiling
 }
 
 f32
-__pow
+math_pow
 (   f32 x
 ,   f32 y
 )
@@ -92,7 +92,7 @@ __pow
 }
 
 f32
-__sqrt
+math_sqrt
 (   f32 x
 )
 {
@@ -100,7 +100,7 @@ __sqrt
 }
 
 f32
-__exp
+math_exp
 (   f32 x
 )
 {
@@ -108,7 +108,7 @@ __exp
 }
 
 f32
-__ln
+math_ln
 (   f32 x
 )
 {
@@ -116,7 +116,7 @@ __ln
 }
 
 f32
-__log
+math_log
 (   f32 x
 )
 {
@@ -124,7 +124,7 @@ __log
 }
 
 f32
-__sin
+math_sin
 (   f32 x
 )
 {
@@ -132,7 +132,7 @@ __sin
 }
 
 f32
-__cos
+math_cos
 (   f32 x
 )
 {
@@ -140,7 +140,7 @@ __cos
 }
 
 f32
-__tan
+math_tan
 (   f32 x
 )
 {
@@ -148,7 +148,7 @@ __tan
 }
 
 f32
-__asin
+math_asin
 (   f32 x
 )
 {
@@ -156,7 +156,7 @@ __asin
 }
 
 f32
-__acos
+math_acos
 (   f32 x
 )
 {
@@ -164,7 +164,7 @@ __acos
 }
 
 f32
-__atan
+math_atan
 (   f32 x
 )
 {
@@ -172,7 +172,7 @@ __atan
 }
 
 f32
-__sinh
+math_sinh
 (   f32 x
 )
 {
@@ -180,7 +180,7 @@ __sinh
 }
 
 f32
-__cosh
+math_cosh
 (   f32 x
 )
 {
@@ -188,7 +188,7 @@ __cosh
 }
 
 f32
-__tanh
+math_tanh
 (   f32 x
 )
 {
@@ -196,7 +196,7 @@ __tanh
 }
 
 i32
-__random
+math_random
 ( void )
 {
     if ( !random_seeded )
@@ -208,7 +208,7 @@ __random
 }
 
 i32
-random2
+math_random2
 (   i32 min
 ,   i32 max
 )
@@ -222,28 +222,28 @@ random2
 }
 
 i64
-random64
+math_random64
 ( void )
 {
-    const u64 a = __random () & 0xFFFF;
-    const u64 b = __random () & 0xFFFF;
-    const u64 c = __random () & 0xFFFF;
-    const u64 d = __random () & 0xFFFF;
+    const u64 a = math_random () & 0xFFFF;
+    const u64 b = math_random () & 0xFFFF;
+    const u64 c = math_random () & 0xFFFF;
+    const u64 d = math_random () & 0xFFFF;
     return a | ( b << 16 ) | ( c << 32 ) | ( d << 48 );
 }
 
 f32
-randomf
+math_randomf
 ( void )
 {
-    return ( f32 ) __random () / ( f32 ) RAND_MAX;
+    return ( f32 ) math_random () / ( f32 ) RAND_MAX;
 }
 
 f32
-randomf2
+math_randomf2
 (   f32 min
 ,   f32 max
 )
 {
-    return min + ( f32 ) __random () / ( ( f32 ) RAND_MAX / ( max - min ) );
+    return min + ( f32 ) math_random () / ( ( f32 ) RAND_MAX / ( max - min ) );
 }

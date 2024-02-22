@@ -11,14 +11,22 @@
 // Begin platform layer.
 #if PLATFORM_WINDOWS == 1
 
-#include "container/string.h"
-
 #include "core/logger.h"
+#include "core/string.h"
+
+#include "math/math.h"
 
 // Platform layer dependencies.
 #include <io.h>
 #include <windows.h>
 #include <windowsx.h>
+
+/**
+ * @brief Undefines preprocessor bindings from math/math which may cause name
+ * conflicts with the standard libc headers.
+ */
+#undef abs
+#undef random
 
 // Standard libc dependencies.
 #include <errno.h>
@@ -309,32 +317,34 @@ i64
 platform_error_code
 ( void )
 {
-    return GetLastError ();
+    return errno;
 }
 
-char*
+u64
 platform_error_message
-(   const i64 error
+(   const i64   error
+,   char*       dst
+,   const u64   dst_length
 )
 {
-    mutex_t mutex;
-    if ( !_platform_mutex_create ( &mutex ) || !_platform_mutex_lock ( &mutex ) )
+    if ( !dst || !dst_length )
     {
-        return string_create_from ( "" );
+        if ( !dst )
+        {
+            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
+        }
+        if ( !dst_length )
+        {
+            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Value of dst_length argument must be non-zero." );
+        }
+        return 0;
     }
-    char* message = _string_create ( STACK_STRING_MAX_SIZE );
-    const u64 written = FormatMessage (  FORMAT_MESSAGE_FROM_SYSTEM
-                                       | FORMAT_MESSAGE_IGNORE_INSERTS
-                                      , 0
-                                      , error
-                                      , 0
-                                      , message
-                                      , STACK_STRING_MAX_SIZE
-                                      , 0
-                                      );
-    _array_field_set ( message , ARRAY_FIELD_LENGTH , written );
-    _platform_mutex_unlock ( &mutex );
-    return message;
+    if ( strerror_s ( dst , dst_length , error ) )
+    {
+        LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Failed to retrieve an error report from the host platform." );
+        return 0;
+    }
+    return MIN ( _string_length ( dst ) , dst_length );
 }
 
 i32
@@ -402,14 +412,13 @@ platform_thread_create
         }
 
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                         Reason: %S\n\t                                         Code:   %i"
                  , platform_function_name
                  , message
                  , error
                  );
-        string_destroy ( message );
-
         return false;
     }
     return true;
@@ -452,21 +461,18 @@ platform_thread_destroy
         }
 
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): %s failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
                  , platform_function_name
                  , ( *thread ).id
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
-
-    ( *thread ).internal = 0;
-    ( *thread ).id = 0;
 }
 
-void
+voiG
 platform_thread_detach
 (   thread_t* thread
 )
@@ -479,16 +485,14 @@ platform_thread_detach
     if ( _platform_thread_detach ( thread ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): CloseHandle failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
-
-    ( *thread ).internal = 0;
 }
 
 void
@@ -504,16 +508,14 @@ platform_thread_cancel
     if ( _platform_thread_cancel ( thread ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): TerminateThread failed on thread #%u.\n\t                                         Reason: %S\n\t                                         Code:   %i"
                  , ( *thread ).id
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
-
-    ( *thread ).internal = 0;
 }
 
 bool
@@ -583,12 +585,12 @@ platform_mutex_create
     if ( _platform_mutex_create ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): CreateMutex failed.\n\t                                        Reason: %S\n\t                                        Code:   %i"
                  , message
                  , error
                  );
-        string_destroy ( message );
         return false;
     }
 
@@ -608,16 +610,14 @@ platform_mutex_destroy
     if ( _platform_mutex_destroy ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): CloseHandle failed on mutex %@.\n\t                                         Reason: %S\n\t                                         Code:   %i"
                  , mutex
                  , message
                  , error
                  );
-        string_destroy ( message );
     }
-
-    ( *mutex ).internal = 0;
 }
 
 bool
@@ -633,13 +633,13 @@ platform_mutex_lock
     if ( _platform_mutex_lock ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): WaitForSingleObject failed on mutex %@.\n\t                                       Reason: %S\n\t                                       Code:   %i"
                  , mutex
                  , message
                  , error
                  );
-        string_destroy ( message );
         return false;
     }
 
@@ -659,13 +659,13 @@ platform_mutex_unlock
     if ( _platform_mutex_unlock ( mutex ) )
     {
         const i64 error = platform_error_code ();
-        char* message = platform_error_message ( error );
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
         LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): ReleaseMutex failed on mutex %@.\n\t                                         Reason: %S\n\t                                         Code:   %i"
                  , mutex
                  , message
                  , error
                  );
-        string_destroy ( message );
         return false;
     }
 
@@ -757,6 +757,8 @@ _platform_thread_destroy
     {
         result = PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
     }
+    ( *thread ).internal = 0;
+    ( *thread ).id = 0;
     return !result;
 }
 
@@ -769,6 +771,7 @@ _platform_thread_detach
     {
         return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
     }
+    ( *thread ).internal = 0;
     return 0;
 }
 
@@ -781,6 +784,7 @@ _platform_thread_cancel
     {
         return PLATFORM_WINDOWS_ERROR_TERMINATE_THREAD;
     }
+    ( *thread ).internal = 0;
     return 0;
 }
 
@@ -841,6 +845,7 @@ _platform_mutex_destroy
     {
         return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
     }
+    ( *mutex ).internal = 0;
     return 0;
 }
 

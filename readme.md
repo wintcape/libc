@@ -30,6 +30,9 @@ Thread-safe interaction with buffered files on the host platform:
 - `ferror`
 - `fgets`
 - `rewind`
+- `stdin`
+- `stdout`
+- `stderr`
 
 - **TEMPORARY**: `snprintf` (crutch for printing fixed-precision floating point numbers)
 
@@ -44,7 +47,8 @@ Highly-optimized string operations:
 - `memcmp`
 
 Platform-dependent error reporting:
-- `strerror`
+- `strerror_r` (GNU/Linux, macOS)
+- `strerror_s` (Windows)
 
 ### `<math.h>`
 
@@ -72,12 +76,19 @@ Performing algebraic operations on 32-bit floating point numbers:
 Platform-dependent error reporting:
 - `errno`
 
+## Known bugs
+- Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows.
+
 ## Changelog
+
+### 0.2.1
+- Fixed and tested Linux platform layer with version 0.2. Updated macOS platform layer to coincide with this, but it is still untested. Among the bugs was the invocation of `memory_allocate` when creating a mutex during the initialization of the memory subsystem; because the state was only halfway initialized, the check done by `memory_allocate` prior to invoking the allocator, which should have failed and invoked `malloc`, would pass, and then all Hell would break loose.
+- Fixed a bunch of name conflicts that the math library was causing with standard libc headers by appending a `math_` prefix to all the function names.
+- `platform_error_string` now uses `strerror_s` (Windows) and `strerror_r` (POSIX) from `<string.h>` on the backend.
 
 ### 0.2.0
 - Standardized platform-layer error reporting across the library via two new functions: `platform_error_code` and `platform_error_string` (both thread-safe).
-- New functions in `core/string.h`: `string_i64` and `string_u64`, for converting various types of integer values to string; `string_format` uses these now instead of being dependent on `<stdio.h>` for that.
-- As may be evident from the two changes listed above, I am working towards `<stdio.h>` no longer being a dependency of this library; it is still used as a crutch in `string_format` as a robust method of printing fixed-precision floating point numbers because `string_f64` is yet to be implemented.
+- New functions in `core/string.h`: `string_i64` and `string_u64`, for converting various types of integer values to string; `string_format` uses these now instead of being dependent on `snprintf` from `<stdio.h>` for that. Still working on `string_f64` to completely remove the `snprintf` dependency.
 - Included a lot more functionality from `<math.h>` into `math/math.h`.
 - `memory_equal` now calls new function `platform_memory_equal` which is a wrapper for `memcmp`, instead of using the naive string comparison implementation I used previously
 - Added explicit documentation specifying when `array` and `string` class functions (from `container/array.h`, `container/string.h`, and `core/string.h`) do and do not support passing null pointers as arguments. This is very different from other containers in `container/` and `memory/`, which always have explicit error handling if any of the arguments are null pointers.

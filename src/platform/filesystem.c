@@ -16,9 +16,7 @@
 #include "platform/platform.h"
 
 // Standard libc dependencies.
-#include <errno.h>
 #include <stdio.h>
-#include <string.h>
 
 bool
 file_exists
@@ -84,10 +82,13 @@ file_open
     FILE* file = fopen ( path , mode );
     if ( !file )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_open: fopen failed for filepath: %s.\n\t           Reason: %s.\n\t           Code:   %i"
                  , path
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
         return false;
     }
@@ -110,10 +111,13 @@ file_close
     ( *file_ ).valid = false;
     if ( fclose ( file ) )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_close: fclose failed for file %@.\n\t            Reason: %s.\n\t            Code:   %i"
                  , ( *file_ ).handle
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
     }
     ( *file_ ).handle = 0;
@@ -150,10 +154,13 @@ file_read
     *read = fread ( dst , 1 , size , file );
     if ( ferror ( file ) )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_read: fread failed for file %@.\n\t           Reason: %s.\n\tCode:   %i"
                  , file
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
         return false;
     }
@@ -187,10 +194,13 @@ file_read_line
     *dst = string;
     if ( ferror ( file ) )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_read_line: fgets failed for file %@.\n\t                Reason: %s.\n\t                Code:   %i"
                  , file
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
         return false;
     }
@@ -216,10 +226,13 @@ file_read_all
     *dst = string;
     if ( ferror ( file ) )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_read_all: fread failed for file %@.\n\t               Reason: %s.\n\t               Code:   %i"
                  , file
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
         return false;
     }
@@ -243,10 +256,13 @@ file_write
     fflush ( file );
     if ( ferror ( file ) )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_write: fwrite failed for file %@.\n\t            Reason: %s.\n\t            Code:   %i"
                  , file
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
         return false;
     }
@@ -272,10 +288,13 @@ file_write_line
     fflush ( file );
     if ( ferror ( file ) )
     {
+        const i64 error = platform_error_code ();
+        char message[ STACK_STRING_MAX_SIZE ];
+        platform_error_message ( error , message , STACK_STRING_MAX_SIZE ); 
         LOGERROR ( "file_write_line: fwrite failed for file %@.\n\t                 Reason: %s.\n\t                 Code:   %i"
                  , file
-                 , strerror ( errno )
-                 , errno
+                 , message
+                 , error
                  );
         return false;
     }

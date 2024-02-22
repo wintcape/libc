@@ -21,16 +21,16 @@
  * @brief Defines an alias for each floating point function. This resolves a
  * name conflict with those provided by the standard libc headers.
  */
-#define nan(x)     __nan ( x )     /** @brief Defines an alias for the nan test predicate function. This resolves a name conflict with the nan test predicate function provided by the standard libc headers. */
-#define finite(x)  __finite ( x ) /** @brief Defines an alias for the overflow test predicat function. This resolves a name conflict with the overflow test predicate function provided by the standard libc headers. */
-#define abs(x)     __abs ( x )     /** @brief Defines an alias for the absolute value function. This resolves a name conflict with the absolute value function provided by the standard libc headers. */
-#define floor(x)   __floor ( x )   /** @brief Defines an alias for the floor function. This resolves a name conflict with the floor function provided by the standard libc headers. */
-#define ceiling(x) __ceiling ( x ) /** @brief Defines an alias for the ceiling function. This resolves a name conflict with the ceiling function provided by the standard libc headers. */
-#define pow(x,y)   __pow ( x , y ) /** @brief Defines an alias for the exponentiation function. This resolves a name conflict with the exponentiation function included by the standard libc headers. */
-#define sqrt(x)    __sqrt ( x )    /** @brief Defines an alias for the square root function. This resolves a name conflict with the square root function included by the standard libc headers. */
-#define exp(x)     __exp ( x )     /** @brief Defines an alias for the exponential function. This resolves a name conflict with the exponential function included by the standard libc headers. */
-#define ln(x)      __ln ( x )      /** @brief Defines an alias for the natural logarithmic function. This resolves a name conflict with the natural logarithmic function included by the standard libc headers. */
-#define log(x)     __log ( x )     /** @brief Defines an alias for the base-10 logarithmic function. This resolves a name conflict with the base-10 logarithmic function included by the standard libc headers. */
+#define nan(x)     math_nan ( x )     /** @brief Defines an alias for the nan test predicate function. This resolves a name conflict with the nan test predicate function provided by the standard libc headers. */
+#define finite(x)  math_finite ( x )  /** @brief Defines an alias for the overflow test predicat function. This resolves a name conflict with the overflow test predicate function provided by the standard libc headers. */
+#define abs(x)     math_abs ( x )     /** @brief Defines an alias for the absolute value function. This resolves a name conflict with the absolute value function provided by the standard libc headers. */
+#define floor(x)   math_floor ( x )   /** @brief Defines an alias for the floor function. This resolves a name conflict with the floor function provided by the standard libc headers. */
+#define ceiling(x) math_ceiling ( x ) /** @brief Defines an alias for the ceiling function. This resolves a name conflict with the ceiling function provided by the standard libc headers. */
+#define pow(x,y)   math_pow ( x , y ) /** @brief Defines an alias for the exponentiation function. This resolves a name conflict with the exponentiation function included by the standard libc headers. */
+#define sqrt(x)    math_sqrt ( x )    /** @brief Defines an alias for the square root function. This resolves a name conflict with the square root function included by the standard libc headers. */
+#define exp(x)     math_exp ( x )     /** @brief Defines an alias for the exponential function. This resolves a name conflict with the exponential function included by the standard libc headers. */
+#define ln(x)      math_ln ( x )      /** @brief Defines an alias for the natural logarithmic function. This resolves a name conflict with the natural logarithmic function included by the standard libc headers. */
+#define log(x)     math_log ( x )     /** @brief Defines an alias for the base-10 logarithmic function. This resolves a name conflict with the base-10 logarithmic function included by the standard libc headers. */
 
 /**
  * @brief Not a number? Y/N
@@ -39,7 +39,7 @@
  * @return true if x is NaN; false otherwise.
  */
 bool
-__nan
+math_nan
 (   f32 x
 );
 
@@ -50,7 +50,7 @@ __nan
  * @return true if x is verifiably finite; false otherwise.
  */
 bool
-__finite
+math_finite
 (   f32 x
 );
 
@@ -61,7 +61,7 @@ __finite
  * @return abs(x)
  */
 f32
-__abs
+math_abs
 (   f32 x
 );
 
@@ -72,7 +72,7 @@ __abs
  * @return floor(x)
  */
 f32
-__floor
+math_floor
 (   f32 x
 );
 
@@ -83,7 +83,7 @@ __floor
  * @return ceiling(x)
  */
 f32
-__ceiling
+math_ceiling
 (   f32 x
 );
 
@@ -95,7 +95,7 @@ __ceiling
  * @return x^y
  */
 f32
-__pow
+math_pow
 (   f32 x
 ,   f32 y
 );
@@ -107,7 +107,7 @@ __pow
  * @return sqrt(x)
  */
 f32
-__sqrt
+math_sqrt
 (   f32 x
 );
 
@@ -118,7 +118,7 @@ __sqrt
  * @return e^x
  */
 f32
-__exp
+math_exp
 (   f32 x
 );
 
@@ -129,7 +129,7 @@ __exp
  * @return ln(x)
  */
 f32
-__ln
+math_ln
 (   f32 x
 );
 
@@ -140,7 +140,7 @@ __ln
  * @return log(x)
  */
 f32
-__log
+math_log
 (   f32 x
 );
 
