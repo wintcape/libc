@@ -70,6 +70,8 @@ memory_startup
         return false;
     }
 
+    ( *state ).initialized = false;
+
     const u64 state_memory_requirement = sizeof ( state_t );
     u64 allocator_memory_requirement = 0;
     dynamic_allocator_init ( capacity , &allocator_memory_requirement , 0 , 0 );
