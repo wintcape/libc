@@ -63,7 +63,7 @@ LOG_LEVEL;
  * 
  * @param memory_requirement Output buffer to read memory requirement.
  * @param state Pass 0 to read memory requirement. Otherwise, pass a buffer.
- * @return false on error, true otherwise.
+ * @return true on success; false otherwise.
  */
 bool
 logger_startup
@@ -74,7 +74,7 @@ logger_startup
 /**
  * @brief Terminates the logger subsystem.
  * 
- * @param state .
+ * @param state Internal subsystem state.
  */
 void
 logger_shutdown
@@ -160,6 +160,7 @@ logger_log
  * 
  * Use PRINT to print to stdout, use PRINTERROR to print to stderr.
  * 
+ * @param file The file to print to.
  * @param message Formatted message to print to file.
  * @param arg_count Number of elements in the variadic argument list.
  * @param args Variadic argument list.

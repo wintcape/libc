@@ -36,7 +36,7 @@ MEMORY_TAG;
  * the host platform should be signaled to free the sandbox via memory_shutdown.
  * 
  * @param capacity The amount of memory to request from the host platform.
- * @return true if initialization successful; false otherwise.
+ * @return true on success; false otherwise.
  */
 bool
 memory_startup
@@ -81,7 +81,7 @@ memory_allocate_aligned
 /**
  * @brief Frees a block of memory.
  * 
- * @param memory The block to free.
+ * @param memory The block to free. Must be non-zero.
  * @param size The block size in bytes.
  * @param tag The block tag.
  */
@@ -95,9 +95,9 @@ memory_free
 /**
  * @brief Frees a block of memory.
  * 
- * @param memory The block to free.
+ * @param memory The block to free. Must be non-zero.
  * @param size The block size in bytes.
- * @param alignment .
+ * @param alignment Block alignment.
  * @param tag The block tag.
  */
 void
@@ -111,7 +111,7 @@ memory_free_aligned
 /**
  * @brief Clears a block of memory.
  * 
- * @param memory The block to clear. Must not be null.
+ * @param memory The block to clear. Must be non-zero.
  * @param size The block size in bytes.
  * @return memory.
  */
@@ -124,7 +124,7 @@ memory_clear
 /**
  * @brief Sets a block of memory.
  * 
- * @param memory The block to set. Must not be null.
+ * @param memory The block to set. Must be non-zero.
  * @param size The block size in bytes.
  * @return memory.
  */
@@ -142,8 +142,8 @@ memory_set
  * The size of both blocks should be adequate for the specified size parameter.
  * The source and destination blocks may not overlap.
  * 
- * @param dst The destination block. Must not be null.
- * @param src The source block. Must not be null.
+ * @param dst The destination block. Must be non-zero.
+ * @param src The source block. Must be non-zero.
  * @param size The number of bytes to copy.
  * @return dst.
  */
@@ -161,8 +161,8 @@ memory_copy
  * The size of both blocks should be adequate for the specified size parameter.
  * The source and destination blocks may overlap.
  * 
- * @param dst The destination block. Must not be null.
- * @param src The source block. Must not be null.
+ * @param dst The destination block. Must be non-zero.
+ * @param src The source block. Must be non-zero.
  * @param size The number of bytes to move.
  * @return dst.
  */
@@ -176,8 +176,8 @@ memory_move
 /**
  * @brief Fixed-length string equality test predicate.
  * 
- * @param s1 A string. Must not be null.
- * @param s2 A string. Must not be null.
+ * @param s1 A string. Must be non-zero.
+ * @param s2 A string. Must be non-zero.
  * @param size The number of bytes to compare.
  * @return true if strings are equal; false otherwise.
  */

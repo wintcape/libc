@@ -47,7 +47,7 @@ _string_create
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
- * @param src The string to copy. Must not be null.
+ * @param src The string to copy. Must be non-zero.
  * @param src_length The amount to copy.
  * @return A mutable copy of s.
  */
@@ -66,7 +66,7 @@ _string_copy
 /**
  * @brief Frees the memory used by a provided mutable string.
  * 
- * @param string The mutable string to free. Must not be null.
+ * @param string The mutable string to free. Must be non-zero.
  */
 void
 string_destroy
@@ -76,7 +76,7 @@ string_destroy
 /**
  * @brief Reads the current length of a mutable string. O(1).
  * 
- * @param string A mutable string. Must not be null.
+ * @param string A mutable string. Must be non-zero.
  * @return The number of characters currently contained by string.
  */
 u64
@@ -91,8 +91,8 @@ string_length
  * to compute the length of a null-terminated string before passing it to
  * __string_push.
  * 
- * @param string The mutable string to append to. Must not be null.
- * @param src The string to append. Must not be null.
+ * @param string The mutable string to append to. Must be non-zero.
+ * @param src The string to append. Must be non-zero.
  * @return The mutable string (possibly with new address).
  */
 char*
@@ -123,9 +123,9 @@ __string_push
  * to compute the length of a null-terminated string before passing it to
  * __string_insert.
  * 
- * @param string The mutable string to append to. Must not be null.
+ * @param string The mutable string to append to. Must be non-zero.
  * @param index The index to insert at.
- * @param src The string to insert. Must not be null.
+ * @param src The string to insert. Must be non-zero.
  * @return The mutable string (possibly with new address).
  */
 char*
@@ -154,7 +154,7 @@ __string_insert
 /**
  * @brief Removes a substring from a mutable string.
  * 
- * @param string The mutable string to remove from. Must not be null.
+ * @param string The mutable string to remove from. Must be non-zero.
  * @param index The starting index of the substring to remove.
  * @param count The number of characters to remove.
  * @return The mutable string with the substring removed.
@@ -172,7 +172,7 @@ _string_remove
 /**
  * @brief **Effectively** clears a mutable string.
  * 
- * @param string The mutable string to clear. Must not be null.
+ * @param string The mutable string to clear. Must be non-zero.
  * @return The mutable string set to empty.
  */
 char*
@@ -186,7 +186,7 @@ _string_clear
 /**
  * @brief Trims whitespace off front and back of a string. In-place.
  * 
- * @param string The mutable string to trim. Must not be null.
+ * @param string The mutable string to trim. Must be non-zero.
  * @return The mutable string with whitespace trimmed off the front and back.
  */
 char*

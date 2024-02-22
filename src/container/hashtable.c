@@ -12,7 +12,7 @@
 /**
  * @brief Key hash generation.
  * 
- * @param name Key name string.
+ * @param name Key name string. Must be non-zero.
  * @param hashtable_capacity Hashtable capacity.
  * @return Key hashcode.
  */

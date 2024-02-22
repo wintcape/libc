@@ -91,6 +91,12 @@ logger_startup
 ,   void*   state_
 )
 {
+    if ( !memory_requirement )
+    {
+        LOGERROR ( "logger_startup: Missing argument: memory_requirement." );
+        return false;
+    }
+
     *memory_requirement = sizeof ( state_t );
 
     if ( !state_ )
@@ -181,7 +187,7 @@ print
 ,   u64*            args
 )
 {
-    if ( !( *file ).handle || !( *file ).valid )
+    if ( !file || !( *file ).handle || !( *file ).valid )
     {
         return;
     }
@@ -220,7 +226,11 @@ logger_file_append
 ,   const u64   message_length
 )
 {
-    if ( !state || !( *state ).file.valid )
+    if (   !state
+        || !( *state ).file.handle
+        || !( *state ).file.valid
+        || message
+       )
     {
         return;
     }

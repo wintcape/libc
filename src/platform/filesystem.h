@@ -35,7 +35,7 @@ FILE_MODE;
  * FILE_MODE_READ |
  * FILE_MODE_WRITE  : Test for file with both read and write permission.
  * 
- * @param path The filepath to test.
+ * @param path The filepath to test. Must be non-zero.
  * @param mode Mode flag.
  * @return true if file exists; false otherwise.
  */
@@ -48,10 +48,10 @@ file_exists
 /**
  * @brief Attempts to open a file on the host platform.
  * 
- * @param path The filepath.
+ * @param path The filepath. Must be non-zero.
  * @param mode Mode flag.
  * @param binary Open in binary mode? Y/N
- * @param file Output buffer for file handle.
+ * @param file Output buffer for file handle. Must be non-zero.
  * @return true if file opened successfully; false otherwise.
  */
 bool
@@ -65,7 +65,7 @@ file_open
 /**
  * @brief Attempts to close a file on the host platform.
  * 
- * @param file Handle to the file to close.
+ * @param file Handle to the file to close. Must be non-zero.
  */
 void
 file_close
@@ -75,7 +75,7 @@ file_close
 /**
  * @brief Computes the size of a file on the host platform.
  * 
- * @param file The file.
+ * @param file Handle to a file. Must be non-zero.
  * @return The filesize of file in bytes.
  */
 u64
@@ -87,10 +87,10 @@ file_size
  * @brief Reads a specified amount of content from a file on the host platform
  * into an output buffer.
  * 
- * @param file Handle to the file to read.
+ * @param file Handle to the file to read. Must be non-zero.
  * @param size Number of bytes to read.
- * @param dst Output buffer for the content.
- * @param read Output buffer to hold number of bytes read.
+ * @param dst Output buffer for the content. Must be non-zero.
+ * @param read Output buffer to hold number of bytes read. Must be non-zero.
  * @return true if file read into dst successfully; false otherwise.
  */
 bool
@@ -107,8 +107,9 @@ file_read
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
- * @param file Handle to the file to read.
+ * @param file Handle to the file to read. Must be non-zero.
  * @param dst Output buffer to hold the handle to the mutable output string.
+ * Must be non-zero.
  * @return true if the handle stored in dst is valid; false otherwise.
  */
 bool
@@ -124,10 +125,10 @@ file_read_line
  * Uses dynamic memory allocation. Call string_free to free.
  * (see core/string.h)
  * 
- * @param file Handle to the file to read.
+ * @param file Handle to the file to read. Must be non-zero.
  * @param dst Output buffer to hold the handle to the null-terminated output
- * string.
- * @param read Output buffer to hold number of bytes read.
+ * string. Must be non-zero.
+ * @param read Output buffer to hold number of bytes read. Must be non-zero.
  * @return true if the handle stored in dst is valid; false otherwise.
  */
 bool
@@ -140,10 +141,11 @@ file_read_all
 /**
  * @brief Writes a specified amount of data to a file on the host platform.
  * 
- * @param file Handle to the file to write to.
+ * @param file Handle to the file to write to. Must be non-zero.
  * @param size Number of bytes to write.
- * @param src The data to write.
+ * @param src The data to write. Must be non-zero.
  * @param written Output buffer to hold number of bytes written.
+ * Must be non-zero.
  * @return true if src written to file successfully; false otherwise.
  */
 bool
@@ -162,10 +164,11 @@ file_write
  * to compute the length of a null-terminated string before passing it to
  * file_write_line.
  * 
- * @param file Handle to the file to write to.
+ * @param file Handle to the file to write to. Must be non-zero.
  * @param size Number of bytes to write.
- * @param src The string to write.
+ * @param src The string to write. Must be non-zero.
  * @param written Output buffer to hold number of bytes written.
+ * Must be non-zero.
  * @return true if src written to file successfully; false otherwise.
  */
 bool
@@ -182,7 +185,7 @@ file_write_line
 /**
  * @brief Obtains a handle to stdin.
  * 
- * @param file Output buffer.
+ * @param file Output buffer. Must be non-zero.
  */
 void
 file_stdin
@@ -192,7 +195,7 @@ file_stdin
 /**
  * @brief Obtains a handle to stdout.
  * 
- * @param file Output buffer.
+ * @param file Output buffer. Must be non-zero.
  */
 void
 file_stdout
@@ -202,7 +205,7 @@ file_stdout
 /**
  * @brief Obtains a handle to stderr.
  * 
- * @param file Output buffer.
+ * @param file Output buffer. Must be non-zero.
  */
 void
 file_stderr

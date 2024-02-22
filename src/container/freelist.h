@@ -24,10 +24,11 @@ freelist_t;
  * @param capacity The requested capacity in bytes.
  * @param memory_requirement Output buffer to hold the actual number of bytes
  * required to operate the freelist.
- * @param memory The starting memory address.
+ * @param memory Pass 0 to read memory requirement. Otherwise, pass a buffer.
  * @param freelist Output buffer.
+ * @return true on success; false otherwise.
  */
-void
+bool
 freelist_init
 (   u64         capacity
 ,   u64*        memory_requirement
@@ -50,7 +51,7 @@ freelist_clear
  * 
  * @param freelist The freelist to mutate.
  * @param size The block size.
- * @param offset The block offset.
+ * @param offset Output buffer for block offset.
  * @return true on success; false otherwise.
  */
 bool

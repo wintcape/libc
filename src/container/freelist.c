@@ -35,7 +35,7 @@ state_t;
 /**
  * @brief Obtains a handle to the first empty node within a freelist.
  * 
- * @param freelist The freelist to query.
+ * @param freelist The freelist to query.  Must be non-zero.
  * @return A handle to the first empty block within freelist.
  */
 node_t*
@@ -46,14 +46,14 @@ freelist_get_node
 /**
  * @brief Clears a node within a freelist.
  * 
- * @param node The freelist node to clear.
+ * @param node The freelist node to clear. Must be non-zero.
  */
 void
 freelist_return_node
 (   node_t* node
 );
 
-void
+bool
 freelist_init
 (   u64         capacity
 ,   u64*        memory_requirement
@@ -61,6 +61,12 @@ freelist_init
 ,   freelist_t* freelist
 )
 {
+    if ( !memory_requirement )
+    {
+        LOGERROR ( "freelist_init: Missing argument: memory_requirement." );
+        return false;
+    }
+
     const u64 max_entries = MAX ( 20U
                                 , capacity / ( sizeof ( void* ) * sizeof ( node_t ) )
                                 );
@@ -69,7 +75,13 @@ freelist_init
 
     if ( !memory )
     {
-        return;
+        return true;
+    }
+
+    if ( !freelist )
+    {
+        LOGERROR ( "freelist_init: Missing argument: freelist (output buffer)." );
+        return false;
     }
 
     u64 minimum_recommended_capacity = ( sizeof ( state_t ) + sizeof ( node_t ) ) * 8;
@@ -102,6 +114,8 @@ freelist_init
     ( *( ( *state ).head ) ).offset = 0;
     ( *( ( *state ).head ) ).size = capacity;
     ( *( ( *state ).head ) ).next = 0;
+
+    return true;
 }
 
 void
@@ -130,6 +144,18 @@ freelist_allocate
 {
     if ( !freelist || !offset || !( *freelist ).memory )
     {
+        if ( !freelist )
+        {
+            LOGERROR ( "freelist_allocate: Missing argument: freelist." );
+        }
+        if ( !offset )
+        {
+            LOGERROR ( "freelist_allocate: Missing argument: offset." );
+        }
+        if ( freelist && ( *freelist ).memory )
+        {
+            LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
+        }
         return false;
     }
 
@@ -191,6 +217,18 @@ freelist_free
 {
     if ( !freelist || !size || !( *freelist ).memory )
     {
+        if ( !freelist )
+        {
+            LOGERROR ( "freelist_allocate: Missing argument: freelist." );
+        }
+        if ( !size )
+        {
+            LOGERROR ( "freelist_allocate: Value of size argument must be non-zero." );
+        }
+        if ( freelist && ( *freelist ).memory )
+        {
+            LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
+        }
         return false;
     }
 
@@ -287,7 +325,7 @@ freelist_free
 
     }// End while.
 
-    LOGWARN ( "freelist_free: Did not find a block to free. Memory corruption possible." );
+    LOGWARN ( "freelist_free: Did not find a block to free. Memory corruption probable." );
     return false;
 }
 

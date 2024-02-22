@@ -81,6 +81,11 @@ Platform-dependent error reporting:
 
 ## Changelog
 
+### 0.2.2
+- `freelist_init` and `test_register` now return a `bool` indicating success.
+- Better null-pointer handling and error messages across the library.
+- All documentation now explicitly specifies `Must be non-zero.` for all pointer-valued parameters for which null checks are *not* performed by the function.
+
 ### 0.2.1
 - Fixed and tested Linux platform layer with version 0.2. Updated macOS platform layer to coincide with this, but it is still untested. Among the bugs was the invocation of `memory_allocate` when creating a mutex during the initialization of the memory subsystem; because the state was only halfway initialized, the check done by `memory_allocate` prior to invoking the allocator, which should have failed and invoked `malloc`, would pass, and then all Hell would break loose.
 - Fixed a bunch of name conflicts that the math library was causing with standard libc headers by appending a `math_` prefix to all the function names.

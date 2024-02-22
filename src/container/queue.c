@@ -13,7 +13,7 @@
  * @brief Ensures that an existing queue has a capacity greater than or equal to
  * some minimum number of elements. The queue is resized, if needed.
  * 
- * @param queue The queue to (possibly) resize.
+ * @param queue The queue to (possibly) resize. Must be non-zero.
  * @param min_capacity The number of elements the queue needs to be able to
  * hold.
  */

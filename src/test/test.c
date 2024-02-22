@@ -24,16 +24,23 @@ test_startup
     tests = array_create_new ( test_entry_t );    
 }
 
-void
+bool
 test_register
-(   u8      ( *test_function_t )()
-,   char*   description
+(   test_function_t function
+,   char*           description
 )
 {
+    if ( !function )
+    {
+        LOGERROR ( "test_register: Missing argument: function (test process to run)." );
+        return false;
+    }
+
     test_entry_t entry;
-    entry.function = test_function_t;
-    entry.description = description;
+    entry.function = function;
+    entry.description = description ? description : "";
     array_push ( tests , entry );
+    return true;
 }
 
 bool

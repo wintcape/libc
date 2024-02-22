@@ -32,13 +32,14 @@ test_startup
 /**
  * @brief Registers a test with the test manager.
  * 
- * @param test_function_t A callback function.
+ * @param function A callback function.
  * @param description Test description string.
+ * @return true on success; false otherwise.
  */
-void
+bool
 test_register
-(   test_function_t
-,   char*       description
+(   test_function_t function
+,   char*           description
 );
 
 /**

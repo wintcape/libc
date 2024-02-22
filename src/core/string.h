@@ -31,7 +31,7 @@
  * 
  * For an O(1) alternative, use string_length instead (see container/string.h).
  * 
- * @param string The null-terminated string to read. Must not be null.
+ * @param string The null-terminated string to read. Must be non-zero.
  * @return The number of characters in string.
  */
 u64
@@ -42,7 +42,7 @@ _string_length
 /**
  * @brief Clamped variant of _string_length for unsafe strings.
  * 
- * @param string The string to read. Must not be null.
+ * @param string The string to read. Must be non-zero.
  * @param limit The maximum number of characters to read from string.
  * @return The number of characters in string, or limit if string contains more
  * than limit characters.
@@ -60,9 +60,9 @@ _string_length_clamped
  * to compute the lengths of null-terminated strings before passing them to
  * string_equal.
  * 
- * @param s1 A string. Must not be null.
+ * @param s1 A string. Must be non-zero.
  * @param s1_length The number of characters in s1.
- * @param s2 A string. Must not be null.
+ * @param s2 A string. Must be non-zero.
  * @param s2_length The number of characters in s2.
  * @return true if strings are equal; false otherwise.
  */
@@ -80,7 +80,7 @@ string_equal
 /**
  * @brief Empty string test predicate.
  * 
- * @param string The string to check. Must not be null.
+ * @param string The string to check. Must be non-zero.
  * @return true if string is empty; false otherwise.
  */
 bool
@@ -95,9 +95,9 @@ string_empty
  * to compute the lengths of null-terminated strings before passing them to
  * string_contains.
  * 
- * @param search The string to search. Must not be null.
+ * @param search The string to search. Must be non-zero.
  * @param search_length The number of characters in search.
- * @param find The string to find. Must not be null.
+ * @param find The string to find. Must be non-zero.
  * @param find_length The number of characters in find.
  * @param reverse Search in reverse? Y/N
  * @param index Output buffer to hold the index in search at which find was
@@ -130,7 +130,7 @@ string_contains
  * to compute the length of a null-terminated string before passing it to
  * string_reverse.
  * 
- * @param string The string to reverse. Must not be null.
+ * @param string The string to reverse. Must be non-zero.
  * @param string_length The number of characters in string.
  * @return The string after reversal.
  */
@@ -148,7 +148,7 @@ string_reverse
  * 
  * @param value A 64-bit signed integer.
  * @param radix Integer radix in the range [2..36] (inclusive).
- * @param dst Output buffer for string. Must not be null. Should have access to
+ * @param dst Output buffer for string. Must be non-zero. Should have access to
  * an adequate number of characters given the supplied value and radix. The
  * maximum amount written to dst is 65 bytes, so dst should have access to a
  * minimum of 65 bytes to guarantee it will never overflow for any valid value
@@ -167,7 +167,7 @@ string_i64
  * 
  * @param value A 64-bit unsigned integer.
  * @param radix Integer radix in the range [2..36] (inclusive).
- * @param dst Output buffer for string. Must not be null. Should have access to
+ * @param dst Output buffer for string. Must be non-zero. Should have access to
  * an adequate number of characters given the supplied value and radix. The
  * maximum amount written to dst is 65 bytes, so this should have access to a
  * minimum of 65 bytes to guarantee it will never overflow for any valid value
@@ -189,7 +189,7 @@ string_u64
  * @param value A 64-bit floating point number.
  * @param precision Floating point precision.
  * @param abbreviated Use abbreviated (scientific) notation? Y/N
- * @param dst Output buffer for string. Must not be null. Should have access to
+ * @param dst Output buffer for string. Must be non-zero. Should have access to
  * an adequate number of characters given the supplied value, abbreviation, and
  * precision. The maximum amount written to dst is 1080† bytes, so dst should
  * have access to a minimum of 1080† bytes to guarantee it will never overflow

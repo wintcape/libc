@@ -79,7 +79,7 @@ _array_destroy
 /**
  * @brief Obtains the value of an array field. O(1).
  * 
- * @param array The array to query. Must not be null.
+ * @param array The array to query. Must be non-zero.
  * @param field The field to read.
  * @return The value of the array field.
  */
@@ -104,7 +104,7 @@ _array_field_get
 /**
  * @brief Sets the value of an array field. O(1).
  * 
- * @param array The array to mutate. Must not be null.
+ * @param array The array to mutate. Must be non-zero.
  * @param field The field to set.
  * @param value The value to set.
  */
@@ -118,7 +118,7 @@ _array_field_set
 /**
  * @brief Resizes an existing array.
  * 
- * @param array The array to resize. Must not be null.
+ * @param array The array to resize. Must be non-zero.
  * @return The new array.
  */
 void*
@@ -129,8 +129,8 @@ _array_resize
 /**
  * @brief Appends an element to an array. O(1), on average.
  * 
- * @param array The array to append to. Must not be null.
- * @param src The element to append. Must not be null.
+ * @param array The array to append to. Must be non-zero.
+ * @param src The element to append. Must be non-zero.
  * @return The array (possibly with new address).
  */
 void*
@@ -150,7 +150,7 @@ _array_push
 /**
  * @brief Removes the last element from an array. O(1).
  * 
- * @param array The array to remove from. Must not be null.
+ * @param array The array to remove from. Must be non-zero.
  * @param dst A destination buffer to store the element that was removed. Pass 0
  * to retrieve nothing.
  */
@@ -166,9 +166,9 @@ _array_pop
 /**
  * @brief Inserts an element into an array at a specified index. O(n).
  * 
- * @param array The array to append to. Must not be null.
+ * @param array The array to append to. Must be non-zero.
  * @param index The index to insert at.
- * @param src The element to insert. Must not be null.
+ * @param src The element to insert. Must be non-zero.
  * @return The array (possibly with new address).
  */
 void*
@@ -189,7 +189,7 @@ _array_insert
 /**
  * @brief Removes an element from an array at a specified index. O(n).
  * 
- * @param array The array to mutate. Must not be null.
+ * @param array The array to mutate. Must be non-zero.
  * @param index The index of the element to remove.
  * @param dst A destination buffer to store the element that was removed. Pass 0
  * to retrieve nothing.

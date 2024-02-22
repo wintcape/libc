@@ -26,7 +26,7 @@ platform_memory_allocate
 /**
  * @brief Platform-independent memory free function (see core/memory.h).
  * 
- * @param blk The block to free.
+ * @param blk The block to free. Must be non-zero.
  */
 void
 platform_memory_free
@@ -36,7 +36,7 @@ platform_memory_free
 /**
  * @brief Platform-independent memory clear function (see core/memory.h).
  * 
- * @param blk The block to initialize.
+ * @param blk The block to initialize. Must be non-zero.
  * @param size The number of bytes to set.
  * @return blk.
  */
@@ -49,7 +49,7 @@ platform_memory_clear
 /**
  * @brief Platform-independent memory set function (see core/memory.h).
  * 
- * @param blk The block to set.
+ * @param blk The block to set. Must be non-zero.
  * @param value The value to set.
  * @param size The number of bytes to set.
  * @return blk.
@@ -64,8 +64,8 @@ platform_memory_set
 /**
  * @brief Platform-independent memory copy function (see core/memory.h).
  * 
- * @param dst The destination block.
- * @param src The source block.
+ * @param dst The destination block. Must be non-zero.
+ * @param src The source block. Must be non-zero.
  * @param size The number of bytes to copy.
  * @return dst.
  */
@@ -79,8 +79,8 @@ platform_memory_copy
 /**
  * @brief Platform-independent memory move function (see core/memory.h).
  * 
- * @param dst The destination block.
- * @param src The source block.
+ * @param dst The destination block. Must be non-zero.
+ * @param src The source block. Must be non-zero.
  * @param size The number of bytes to move.
  * @return dst.
  */
@@ -94,8 +94,8 @@ platform_memory_move
 /**
  * @brief Platform-independent memory comparison function (see core/memory.h).
  * 
- * @param s1 .
- * @param s2 .
+ * @param s1 A string. Must be non-zero.
+ * @param s2 A string. Must be non-zero.
  * @param size The number of bytes to compare.
  * @return true if strings are equal; false otherwise.
  */
@@ -113,7 +113,7 @@ platform_memory_equal
  * String is assumed to terminate within an accessible memory range.
  * For potentially unsafe strings, use platform_string_length_clamped instead.
  * 
- * @param string The null-terminated string to read.
+ * @param string The null-terminated string to read. Must be non-zero.
  * @return The number of characters in string.
  */
 u64
@@ -125,7 +125,7 @@ platform_string_length
 /**
  * @brief Clamped variant of platform_string_length for unsafe strings.
  * 
- * @param string The string to read.
+ * @param string The string to read. Must be non-zero.
  * @param limit The maximum number of characters to read from string.
  * @return The number of characters in string, or limit if string contains more
  * than limit characters.
@@ -200,8 +200,8 @@ platform_processor_core_count
  * @param function The callback function to run threaded.
  * @param args Internal state arguments.
  * @param auto_detach Thread should immediately release resources when work is
- * complete? Y/N. If true, the output buffer will be unset.
- * @param thread Output buffer (only set if auto_detach is false).
+ * complete? Y/N
+ * @param thread Output buffer.
  * @return true if successfully created; otherwise false.
  */
 bool
@@ -355,7 +355,7 @@ platform_mutex_unlock
  * FILE_MODE_READ |
  * FILE_MODE_WRITE  : Test for file with both read and write permission.
  * 
- * @param path The filepath to test.
+ * @param path The filepath to test. Must be non-zero.
  * @param mode Mode flag.
  * @return true if file exists; false otherwise.
  */

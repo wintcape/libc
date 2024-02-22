@@ -25,10 +25,10 @@
 /**
  * @brief Interface for logging information on assertion failure.
  * 
- * @param expression The expression to assert.
- * @param message The message to log on assertion failure.
+ * @param expression The expression to assert. Must be non-zero.
+ * @param message The message to log on assertion failure. Must be non-zero.
  * @param file The file containing the caller of the BRKDBG invocation that was
- * triggered.
+ * triggered. Must be non-zero.
  * @param line The line number in file containing the caller of the BRKDBG
  * invocation that was triggered.
  */

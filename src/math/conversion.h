@@ -54,10 +54,10 @@ degrees
  * @brief Converts elapsed time into appropriate units (for display purposes).
  * 
  * @param elapsed Elapsed time (in seconds).
- * @param hours Output buffer for hours.
- * @param minutes Output buffer for minutes.
- * @param seconds Output buffer for seconds.
- * @param fractional Output buffer for leftover fractional.
+ * @param hours Output buffer for hours. Must be non-zero.
+ * @param minutes Output buffer for minutes. Must be non-zero.
+ * @param seconds Output buffer for seconds. Must be non-zero.
+ * @param fractional Output buffer for leftover fractional. Must be non-zero.
  */
 INLINE
 void
