@@ -186,7 +186,7 @@ file_read_line
                     , buffer
                     , _string_length_clamped ( buffer , STACK_STRING_MAX_SIZE )
                     );
-        if ( string[ string_length ( string ) - 1 ] == '\n' )
+        if ( newline ( string[ string_length ( string ) - 1 ] ) )
         {
             break;
         }

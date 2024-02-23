@@ -101,6 +101,9 @@ Platform-dependent error reporting:
 
 ## Changelog
 
+### 0.2.4
+-`file_read_line` returns on `\r` or `\n` (previously was just `\n`)
+
 ### 0.2.3
 - Added 64-bit variants of all the `math/` functions and preprocessor bindings.
 
