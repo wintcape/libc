@@ -14,7 +14,8 @@
  * @param x An integer.
  * @return odd(x).
  */
-#define odd(x)  ( ( bool )( (x) % 2 ) )
+#define odd(x) \
+    ( ( bool )( (x) % 2 ) )
 
 /**
  * @brief Computes even(x).
@@ -22,6 +23,7 @@
  * @param x An integer.
  * @return even(x).
  */
-#define even(x)  ( !odd ( x ) )
+#define even(x) \
+    ( ( bool )( !odd ( x ) ) )
 
 #endif  // MATH_DIV_H

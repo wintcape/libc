@@ -34,7 +34,8 @@ Thread-safe interaction with buffered files on the host platform:
 - `stdout`
 - `stderr`
 
-- **TEMPORARY**: `snprintf` (crutch for printing fixed-precision floating point numbers)
+**TEMPORARY**: Crutch for printing fixed-precision floating point numbers (until `string_f64` is implemented):
+- `snprintf`
 
 ### `<string.h>`
 
@@ -71,6 +72,25 @@ Performing algebraic operations on 32-bit floating point numbers:
 - `coshf`
 - `tanhf`
 
+Performing algebraic operations on 64-bit floating point numbers:
+- `fabs`
+- `floor`
+- `ceil`
+- `pow`
+- `sqrt`
+- `exp`
+- `log`
+- `log10`
+- `sin`
+- `cos`
+- `tan`
+- `asin`
+- `acos`
+- `atan`
+- `sinh`
+- `cosh`
+- `tanh`
+
 ### `<errno.h>`
 
 Platform-dependent error reporting:
@@ -80,6 +100,9 @@ Platform-dependent error reporting:
 - Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows.
 
 ## Changelog
+
+### 0.2.3
+- Added 64-bit variants of all the `math/` functions and preprocessor bindings.
 
 ### 0.2.2
 - `freelist_init` and `test_register` now return a `bool` indicating success.

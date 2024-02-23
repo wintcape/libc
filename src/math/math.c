@@ -34,6 +34,32 @@
 #undef cosh
 #undef tanh
 #undef random
+#undef random2
+#undef randomf
+#undef randomf2
+#undef nan64
+#undef finite64
+#undef abs64
+#undef floor64
+#undef ceiling64
+#undef pow64
+#undef sqrt64
+#undef exp64
+#undef ln64
+#undef log64
+#undef sin64
+#undef cos64
+#undef tan64
+#undef asin64
+#undef acos64
+#undef atan64
+#undef sinh64
+#undef cosh64
+#undef tanh64
+#undef random64
+#undef random64_2
+#undef randomf64
+#undef randomf64_2
 
 // Standard libc dependencies.
 #include <math.h>
@@ -41,6 +67,9 @@
 
 // ( see random ).
 static bool random_seeded = false;
+
+////////////////////////////////////////////////////////////////////////////////
+// Begin 32-bit math.
 
 bool
 math_nan
@@ -213,23 +242,7 @@ math_random2
 ,   i32 max
 )
 {
-    if ( !random_seeded )
-    {
-        srand ( ( u32 ) platform_absolute_time () );
-        random_seeded = true;
-    }
-    return ( rand () % ( max - min + 1 ) ) + min;
-}
-
-i64
-math_random64
-( void )
-{
-    const u64 a = math_random () & 0xFFFF;
-    const u64 b = math_random () & 0xFFFF;
-    const u64 c = math_random () & 0xFFFF;
-    const u64 d = math_random () & 0xFFFF;
-    return a | ( b << 16 ) | ( c << 32 ) | ( d << 48 );
+    return ( math_random () % ( max - min + 1 ) ) + min;
 }
 
 f32
@@ -247,3 +260,197 @@ math_randomf2
 {
     return min + ( f32 ) math_random () / ( ( f32 ) RAND_MAX / ( max - min ) );
 }
+
+// End 32-bit math.
+////////////////////////////////////////////////////////////////////////////////
+// Begin 64-bit math.
+
+bool
+math_nan_64
+(   f64 x
+)
+{
+    return isnan ( x );
+}
+
+bool
+math_finite_64
+(   f64 x
+)
+{
+    return !isinf ( x );
+}
+
+f64
+math_abs_64
+(   f64 x
+)
+{
+    return fabs ( x );
+}
+
+f64
+math_floor_64
+(   f64 x
+)
+{
+    return floor ( x );
+}
+
+f64
+math_ceiling_64
+(   f64 x
+)
+{
+    return ceil ( x );
+}
+
+f64
+math_pow_64
+(   f64 x
+,   f64 y
+)
+{
+    return pow ( x , y );
+}
+
+f64
+math_sqrt_64
+(   f64 x
+)
+{
+    return sqrt ( x );
+}
+
+f64
+math_exp_64
+(   f64 x
+)
+{
+    return exp ( x );
+}
+
+f64
+math_ln_64
+(   f64 x
+)
+{
+    return log ( x );
+}
+
+f64
+math_log_64
+(   f64 x
+)
+{
+    return log10 ( x );
+}
+
+f64
+math_sin_64
+(   f64 x
+)
+{
+    return sin ( x );
+}
+
+f64
+math_cos_64
+(   f64 x
+)
+{
+    return cos ( x );
+}
+
+f64
+math_tan_64
+(   f64 x
+)
+{
+    return tan ( x );
+}
+
+f64
+math_asin_64
+(   f64 x
+)
+{
+    return asin ( x );
+}
+
+f64
+math_acos_64
+(   f64 x
+)
+{
+    return acos ( x );
+}
+
+f64
+math_atan_64
+(   f64 x
+)
+{
+    return atan ( x );
+}
+
+f64
+math_sinh_64
+(   f64 x
+)
+{
+    return sinh ( x );
+}
+
+f64
+math_cosh_64
+(   f64 x
+)
+{
+    return cosh ( x );
+}
+
+f64
+math_tanh_64
+(   f64 x
+)
+{
+    return tanh ( x );
+}
+
+i64
+math_random_64
+( void )
+{
+    const u64 lo = math_random () & 0xFFFFFFFF;
+    const u64 hi = math_random () & 0xFFFFFFFF;
+    return lo | ( hi << 32 );
+}
+
+i64
+math_random2_64
+(   i64 min
+,   i64 max
+)
+{
+    return ( math_random_64 () % ( max - min + 1 ) ) + min;
+}
+
+f64
+math_randomf_64
+( void )
+{
+    return ( f64 ) math_random_64 () / ( f64 ) RAND_MAX;
+}
+
+f64
+math_randomf2_64
+(   f64 min
+,   f64 max
+)
+{
+    return min + ( f64 ) math_random_64 () / ( ( f64 ) RAND_MAX / ( max - min ) );
+}
+
+// End 64-bit math.
+////////////////////////////////////////////////////////////////////////////////

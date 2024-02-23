@@ -11,7 +11,7 @@
 // Global constants.
 #define INFINITY        ( 1e30f*1e30f )         /** @brief Placeholder value for floating point number overflow. */
 #define FLOAT_EPSILON   1.192092896e-07f        /** @brief Smallest possible non-zero floating point number. */
-#define EULERS_NUMBER   2.71828182845904523536f /** @brief e.*/
+#define EULERS_NUMBER   2.71828182845904523536f /** @brief Euler's number: e.*/
 #define SQRT2           1.41421356237309504880f /** @brief sqrt(2). */
 #define SQRT3           1.73205080756887729352f /** @brief sqrt(3). */
 #define DIV_SQRT2       0.70710678118654752440f /** @brief 1 / sqrt(2). */
