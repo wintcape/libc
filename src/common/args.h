@@ -31,8 +31,6 @@
  * Currently doesn't support f32, and f64 has to be passed by address, not
  * value; this is due to C's implicit flooring behavior when casting float types
  * to int types.
- * 
- * More fixes and format specifier functionality hopefully coming soon.
  *
  * EXAMPLE USAGE :
  * 

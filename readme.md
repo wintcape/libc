@@ -86,7 +86,7 @@ Performing algebraic operations on 64-bit floating point numbers:
 ### System dependencies
 Requires GNU make.
 
-Makefiles use gcc by default. The library has been tested to on Clang as well.
+Makefiles use gcc by default. The library has been tested on Clang as well.
 
 ### Windows
 ```

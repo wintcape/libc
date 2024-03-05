@@ -643,10 +643,7 @@ platform_file_open
 {
     if ( !file_ )
     {
-        if ( !file_ )
-        {
-            LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
-        }
+        LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
         return false;
     }
 
