@@ -1,7 +1,7 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
  * @file container/string.h
- * @brief Provides an interface for a mutable string data structure.
+ * @brief Provides an interface for a resizable string data structure.
  */
 #ifndef STRING_H
 #define STRING_H
@@ -13,11 +13,11 @@
 
 #include "core/string.h"
 
-/** @brief Defines mutable string default capacity. */
+/** @brief Defines resizable string default capacity. */
 #define STRING_DEFAULT_CAPACITY 64
 
 /**
- * @brief Generates a handle to an empty mutable string.
+ * @brief Generates a handle to an empty resizable string.
  * 
  * Use _string_create to explicitly specify initial capacity, or string_create
  * to use the default.
@@ -25,7 +25,7 @@
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
  * @param initial_capacity The initial capacity for the string backend array.
- * @return An empty mutable string with the specified backend array capacity.
+ * @return An empty resizable string with the specified backend array capacity.
  */
 char*
 __string_create
@@ -39,20 +39,20 @@ __string_create
     __string_create ( initial_capacity )
 
 /**
- * @brief Creates a mutable copy of an existing string.
+ * @brief Creates a resizable copy of an existing string.
  * 
  * Use _string_copy to explicitly specify string length, or string_create_from
  * to compute the length of a null-terminated string before passing it to
- * _string_copy ( O(n) ). If the string being copied is itself a mutable string
- * (i.e. a string created via the string_create class of functions), string_copy
- * may be used to implicitly fetch the current length of the mutable string
- * before passing it to __string_copy ( O(1) ).
+ * _string_copy ( O(n) ). If the string being copied is itself a resizable
+ * string (i.e. a string created via the string_create class of functions),
+ * string_copy may be used to implicitly fetch the current length of the
+ * resizable string before passing it to __string_copy ( O(1) ).
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
  * @param src The string to copy. Must be non-zero.
  * @param src_length The amount to copy.
- * @return A mutable copy of s.
+ * @return A resizable copy of s.
  */
 char*
 __string_copy
@@ -77,9 +77,9 @@ __string_copy
     __string_copy ( (string) , (length) )
 
 /**
- * @brief Frees the memory used by a provided mutable string.
+ * @brief Frees the memory used by a provided resizable string.
  * 
- * @param string The mutable string to free.
+ * @param string The resizable string to free.
  */
 void
 string_destroy
@@ -87,9 +87,9 @@ string_destroy
 );
 
 /**
- * @brief Reads the current length of a mutable string. O(1).
+ * @brief Reads the current length of a resizable string. O(1).
  * 
- * @param string A mutable string. Must be non-zero.
+ * @param string A resizable string. Must be non-zero.
  * @return The number of characters currently contained by string.
  */
 u64
@@ -98,15 +98,15 @@ string_length
 );
 
 /**
- * @brief Appends to a mutable string.
+ * @brief Appends to a resizable string.
  * 
  * Use string_push to explicitly specify string length, or _string_push
  * to compute the length of a null-terminated string before passing it to
  * __string_push.
  * 
- * @param string The mutable string to append to. Must be non-zero.
+ * @param string The resizable string to append to. Must be non-zero.
  * @param src The string to append. Must be non-zero.
- * @return The mutable string (possibly with new address).
+ * @return The resizable string (possibly with new address).
  */
 char*
 __string_push
@@ -130,16 +130,16 @@ __string_push
     while ( 0 )
 
 /**
- * @brief Inserts into a mutable string.
+ * @brief Inserts into a resizable string.
  * 
  * Use string_insert to explicitly specify string length, or _string_insert
  * to compute the length of a null-terminated string before passing it to
  * __string_insert.
  * 
- * @param string The mutable string to append to. Must be non-zero.
+ * @param string The resizable string to append to. Must be non-zero.
  * @param index The index to insert at.
  * @param src The string to insert. Must be non-zero.
- * @return The mutable string (possibly with new address).
+ * @return The resizable string (possibly with new address).
  */
 char*
 __string_insert
@@ -165,12 +165,12 @@ __string_insert
     while ( 0 )
 
 /**
- * @brief Removes a substring from a mutable string.
+ * @brief Removes a substring from a resizable string.
  * 
- * @param string The mutable string to remove from. Must be non-zero.
+ * @param string The resizable string to remove from. Must be non-zero.
  * @param index The starting index of the substring to remove.
  * @param count The number of characters to remove.
- * @return The mutable string with the substring removed.
+ * @return The resizable string with the substring removed.
  */
 char*
 __string_remove
@@ -183,10 +183,10 @@ __string_remove
     __string_remove ( (string) , (index) , (count) )
 
 /**
- * @brief **Effectively** clears a mutable string.
+ * @brief **Effectively** clears a resizable string.
  * 
- * @param string The mutable string to clear. Must be non-zero.
- * @return The mutable string set to empty.
+ * @param string The resizable string to clear. Must be non-zero.
+ * @return The resizable string set to empty.
  */
 char*
 __string_clear
@@ -199,8 +199,8 @@ __string_clear
 /**
  * @brief Trims whitespace off front and back of a string. In-place.
  * 
- * @param string The mutable string to trim. Must be non-zero.
- * @return The mutable string with whitespace trimmed off the front and back.
+ * @param string The resizable string to trim. Must be non-zero.
+ * @return The resizable string with whitespace trimmed off the front and back.
  */
 char*
 __string_trim
@@ -218,11 +218,11 @@ __string_trim
  * to compute the lengths of null-terminated strings before passing them to
  * __string_replace.
  * 
- * @param string The mutable string to mutate. Must be non-zero.
+ * @param string The resizable string to mutate. Must be non-zero.
  * @param remove The substring to remove. Must be non-zero.
  * @param replace The substring to replace the removed substring with.
  * Must be non-zero.
- * @return The mutable string with all instances of the removed substring
+ * @return The resizable string with all instances of the removed substring
  * replaced by the replacement substring (possibly with new address).
  */
 char*

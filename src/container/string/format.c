@@ -137,7 +137,7 @@ void _string_format_validate_format_specifier_floating_point_mantissa_only ( sta
 void _string_format_validate_format_specifier_address ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_character ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_string ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
-void _string_format_validate_format_specifier_mutable_string ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
+void _string_format_validate_format_specifier_resizable_string ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_modifier_pad ( state_t* state , const char** read , const bool fixed , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_modifier_sign ( state_t* state , const char** read , STRING_FORMAT_SIGN sign, string_format_specifier_t* format_specifier );
 void _string_format_validate_format_modifier_fix_precision ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
@@ -167,13 +167,13 @@ u64 _string_format_parse_next_argument_floating_point_mantissa_only ( state_t* s
 u64 _string_format_parse_next_argument_address ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_character ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_string ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_mutable_string ( state_t* state , const string_format_specifier_t* format_specifier );
+u64 _string_format_parse_next_argument_resizable_string ( state_t* state , const string_format_specifier_t* format_specifier );
 
 /**
  * @brief Wrapper for string_push that respects the left- and right- 'padding'
  * format modifiers, if they are set.
  * 
- * @param string The handle to a mutable string to append to.
+ * @param string The handle to a resizable string to append to.
  * @param src The string to append.
  * @param src_length The number of characters contained by src.
  * @param format_specifier A format specifier.
@@ -373,9 +373,9 @@ _string_format_validate_format_specifier
             ( *format_specifier ).length = read - read_ + 1;
             return;
         }
-        case STRING_FORMAT_SPECIFIER_TOKEN_MUTABLE_STRING:
+        case STRING_FORMAT_SPECIFIER_TOKEN_RESIZABLE_STRING:
         {
-            _string_format_validate_format_specifier_mutable_string ( state , &read , format_specifier );
+            _string_format_validate_format_specifier_resizable_string ( state , &read , format_specifier );
             ( *format_specifier ).length = read - read_ + 1;
             return;
         }
@@ -465,9 +465,9 @@ _string_format_validate_format_specifier
                 ( *format_specifier ).length = read - read_ + 1;
                 return;
             }
-            case STRING_FORMAT_SPECIFIER_TOKEN_MUTABLE_STRING:
+            case STRING_FORMAT_SPECIFIER_TOKEN_RESIZABLE_STRING:
             {
-                _string_format_validate_format_specifier_mutable_string ( state , &read , format_specifier );
+                _string_format_validate_format_specifier_resizable_string ( state , &read , format_specifier );
                 ( *format_specifier ).length = read - read_ + 1;
                 return;
             }
@@ -576,13 +576,13 @@ _string_format_validate_format_specifier_string
 }
 
 void
-_string_format_validate_format_specifier_mutable_string
+_string_format_validate_format_specifier_resizable_string
 (   state_t*                    state
 ,   const char**                read
 ,   string_format_specifier_t*  format_specifier
 )
 {
-    ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_MUTABLE_STRING;
+    ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_RESIZABLE_STRING;
     *read += 1;
 }
 
@@ -736,7 +736,7 @@ _string_format_parse_next_argument
         case STRING_FORMAT_SPECIFIER_FLOATING_POINT_MANTISSA_ONLY: _string_format_parse_next_argument_floating_point_mantissa_only ( state , format_specifier ) ;break;
         case STRING_FORMAT_SPECIFIER_ADDRESS:                      _string_format_parse_next_argument_address ( state , format_specifier )                      ;break;
         case STRING_FORMAT_SPECIFIER_STRING:                       _string_format_parse_next_argument_string ( state , format_specifier )                       ;break;
-        case STRING_FORMAT_SPECIFIER_MUTABLE_STRING:               _string_format_parse_next_argument_mutable_string ( state , format_specifier )               ;break;
+        case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:             _string_format_parse_next_argument_resizable_string ( state , format_specifier )             ;break;
         default:                                                                                                                                                ;break;
     }
     _string_format_consume_next_argument ( state );
@@ -1080,7 +1080,7 @@ _string_format_parse_next_argument_string
 }
 
 u64
-_string_format_parse_next_argument_mutable_string
+_string_format_parse_next_argument_resizable_string
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
 )

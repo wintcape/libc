@@ -1,7 +1,7 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
  * @file container/array.h
- * @brief Provides an interface for a mutable array data structure.
+ * @brief Provides an interface for a resizable array data structure.
  */
 #ifndef ARRAY_H
 #define ARRAY_H

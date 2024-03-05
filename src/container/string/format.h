@@ -20,7 +20,7 @@ typedef enum
 ,   STRING_FORMAT_SPECIFIER_ADDRESS
 ,   STRING_FORMAT_SPECIFIER_CHARACTER
 ,   STRING_FORMAT_SPECIFIER_STRING
-,   STRING_FORMAT_SPECIFIER_MUTABLE_STRING
+,   STRING_FORMAT_SPECIFIER_RESIZABLE_STRING
 
 ,   STRING_FORMAT_SPECIFIER_COUNT
 }
@@ -53,7 +53,7 @@ STRING_FORMAT_MODIFIER;
 #define STRING_FORMAT_SPECIFIER_TOKEN_ADDRESS                      '@' /** @brief Format specifier: address. */
 #define STRING_FORMAT_SPECIFIER_TOKEN_CHARACTER                    'c' /** @brief Format specifier: character. */
 #define STRING_FORMAT_SPECIFIER_TOKEN_STRING                       's' /** @brief Format specifier: string. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_MUTABLE_STRING               'S' /** @brief Format specifier: mutable string. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_RESIZABLE_STRING             'S' /** @brief Format specifier: resizable string. */
 
 #define STRING_FORMAT_MODIFIER_TOKEN_PAD                           'p' /** @brief Format modifier: pad. */
 #define STRING_FORMAT_MODIFIER_TOKEN_PAD_MINIMUM                   'P' /** @brief Format modifier: pad (minimum width). */
@@ -88,7 +88,7 @@ STRING_FORMAT_MODIFIER;
  * %c : Single character.
  * %s : Null-terminated string of characters.
  *      Length is computed at runtime via O(n) _string_length.
- * %S : Mutable string of characters.
+ * %S : Resizable string of characters.
  *      This includes any string created with the __string_create class of
  *      functions; their length is fetched at runtime via O(1) string_length.
  *      

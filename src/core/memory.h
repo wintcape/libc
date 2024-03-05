@@ -195,7 +195,7 @@ memory_equal
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
- * @return A mutable string representation of memory usage statistics.
+ * @return A resizable string representation of memory usage statistics.
  * (see container/string.h)
  */
 char*

@@ -698,7 +698,7 @@ test_register_string
 ( void )
 {
     test_register ( test_string_allocate_and_free , "Allocating memory for a fixed-length string." );
-    test_register ( test_string_create_and_destroy , "Allocating memory for a mutable string data structure." );
+    test_register ( test_string_create_and_destroy , "Allocating memory for a resizable string data structure." );
     test_register ( test_string_push , "Testing string 'push' operation." );
     test_register ( test_string_insert_and_remove , "Testing string 'insert' and 'remove' operations." );
     test_register ( test_string_insert_and_remove_random , "Testing string 'insert' and 'remove' operations with random indices and elements." );

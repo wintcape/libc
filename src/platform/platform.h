@@ -383,13 +383,13 @@ platform_file_read
 );
 
 /**
- * @brief Reads content from a file from the host platform into a mutable string
- * buffer until EOF or line break encountered (see container/string.h).
+ * @brief Reads content from a file from the host platform into a resizable
+ * string buffer until EOF or line break encountered (see container/string.h).
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
  * @param file Handle to the file to read.
- * @param dst Output buffer to hold the handle to the mutable output string.
+ * @param dst Output buffer to hold the handle to the resizable output string.
  * @return true if the handle stored in dst is valid; false otherwise.
  */
 bool

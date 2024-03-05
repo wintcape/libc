@@ -11,7 +11,7 @@
 #include "core/memory.h"
 
 u8
-test_array_create
+test_array_create_and_destroy
 ( void )
 {
     u16* array = array_create_new ( u16 );
@@ -254,7 +254,7 @@ void
 test_register_array
 ( void )
 {
-    test_register ( test_array_create , "Allocating memory for an array." );
+    test_register ( test_array_create_and_destroy , "Allocating memory for a resizable array data structure." );
     test_register ( test_array_push_and_pop , "Testing array 'push' and 'pop' operations." );
     test_register ( test_array_insert_and_remove , "Testing array 'insert' and 'remove' operations." );
     test_register ( test_array_insert_and_remove_random , "Testing array 'insert' and 'remove' operations with random indices and elements." );
