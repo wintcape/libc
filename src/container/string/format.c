@@ -133,7 +133,7 @@ void _string_format_validate_format_specifier_raw ( state_t* state , const char*
 void _string_format_validate_format_specifier_integer ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_floating_point ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_floating_point_abbreviated ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
-void _string_format_validate_format_specifier_floating_point_mantissa_only ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
+void _string_format_validate_format_specifier_floating_point_fractional_only ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_address ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_character ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_string ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
@@ -163,7 +163,7 @@ u64 _string_format_parse_next_argument_raw ( state_t* state , const string_forma
 u64 _string_format_parse_next_argument_integer ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_floating_point ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_floating_point_abbreviated ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_floating_point_mantissa_only ( state_t* state , const string_format_specifier_t* format_specifier );
+u64 _string_format_parse_next_argument_floating_point_fractional_only ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_address ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_character ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_string ( state_t* state , const string_format_specifier_t* format_specifier );
@@ -349,9 +349,9 @@ _string_format_validate_format_specifier
             ( *format_specifier ).length = read - read_ + 1;
             return;
         }
-        case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_MANTISSA_ONLY:
+        case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_FRACTIONAL_ONLY:
         {
-            _string_format_validate_format_specifier_floating_point_mantissa_only ( state , &read , format_specifier );
+            _string_format_validate_format_specifier_floating_point_fractional_only ( state , &read , format_specifier );
             ( *format_specifier ).length = read - read_ + 1;
             return;
         }
@@ -441,9 +441,9 @@ _string_format_validate_format_specifier
                 ( *format_specifier ).length = read - read_ + 1;
                 return;
             }
-            case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_MANTISSA_ONLY:
+            case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_FRACTIONAL_ONLY:
             {
-                _string_format_validate_format_specifier_floating_point_mantissa_only ( state , &read , format_specifier );
+                _string_format_validate_format_specifier_floating_point_fractional_only ( state , &read , format_specifier );
                 ( *format_specifier ).length = read - read_ + 1;
                 return;
             }
@@ -532,13 +532,13 @@ _string_format_validate_format_specifier_floating_point_abbreviated
 }
 
 void
-_string_format_validate_format_specifier_floating_point_mantissa_only
+_string_format_validate_format_specifier_floating_point_fractional_only
 (   state_t*                    state
 ,   const char**                read
 ,   string_format_specifier_t*  format_specifier
 )
 {
-    ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_FLOATING_POINT_MANTISSA_ONLY;
+    ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY;
     *read += 1;
 }
 
@@ -728,16 +728,16 @@ _string_format_parse_next_argument
 {
     switch ( ( *format_specifier ).tag )
     {
-        case STRING_FORMAT_SPECIFIER_RAW:                          _string_format_parse_next_argument_raw ( state , format_specifier )                          ;break;
-        case STRING_FORMAT_SPECIFIER_CHARACTER:                    _string_format_parse_next_argument_character ( state , format_specifier )                    ;break;
-        case STRING_FORMAT_SPECIFIER_INTEGER:                      _string_format_parse_next_argument_integer ( state , format_specifier )                      ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT:               _string_format_parse_next_argument_floating_point ( state , format_specifier )               ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:   _string_format_parse_next_argument_floating_point_abbreviated ( state , format_specifier )   ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_MANTISSA_ONLY: _string_format_parse_next_argument_floating_point_mantissa_only ( state , format_specifier ) ;break;
-        case STRING_FORMAT_SPECIFIER_ADDRESS:                      _string_format_parse_next_argument_address ( state , format_specifier )                      ;break;
-        case STRING_FORMAT_SPECIFIER_STRING:                       _string_format_parse_next_argument_string ( state , format_specifier )                       ;break;
-        case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:             _string_format_parse_next_argument_resizable_string ( state , format_specifier )             ;break;
-        default:                                                                                                                                                ;break;
+        case STRING_FORMAT_SPECIFIER_RAW:                            _string_format_parse_next_argument_raw ( state , format_specifier )                            ;break;
+        case STRING_FORMAT_SPECIFIER_CHARACTER:                      _string_format_parse_next_argument_character ( state , format_specifier )                      ;break;
+        case STRING_FORMAT_SPECIFIER_INTEGER:                        _string_format_parse_next_argument_integer ( state , format_specifier )                        ;break;
+        case STRING_FORMAT_SPECIFIER_FLOATING_POINT:                 _string_format_parse_next_argument_floating_point ( state , format_specifier )                 ;break;
+        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:     _string_format_parse_next_argument_floating_point_abbreviated ( state , format_specifier )     ;break;
+        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY: _string_format_parse_next_argument_floating_point_fractional_only ( state , format_specifier ) ;break;
+        case STRING_FORMAT_SPECIFIER_ADDRESS:                        _string_format_parse_next_argument_address ( state , format_specifier )                        ;break;
+        case STRING_FORMAT_SPECIFIER_STRING:                         _string_format_parse_next_argument_string ( state , format_specifier )                         ;break;
+        case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:               _string_format_parse_next_argument_resizable_string ( state , format_specifier )               ;break;
+        default:                                                                                                                                                    ;break;
     }
     _string_format_consume_next_argument ( state );
 }
@@ -965,7 +965,7 @@ _string_format_parse_next_argument_floating_point_abbreviated
 }
 
 u64
-_string_format_parse_next_argument_floating_point_mantissa_only
+_string_format_parse_next_argument_floating_point_fractional_only
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
 )

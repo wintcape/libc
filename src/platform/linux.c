@@ -376,15 +376,9 @@ platform_thread_create
             }
             break;
         }
-
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_create ("PLATFORM_STRING"): %s failed.\n\t                                    Reason: %s\n\t                                    Code:   %i"
-                 , platform_function_name
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): %s failed."
+                           , platform_function_name
+                           );
         return false;
     }
 
@@ -403,14 +397,9 @@ platform_thread_destroy
 
     if ( _platform_thread_destroy ( thread ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_destroy ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                     Reason: %s\n\t                                     Code:   %i"
-                 , ( *thread ).id
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u."
+                           , ( *thread ).id
+                           );
     }
 }
 
@@ -426,14 +415,9 @@ platform_thread_detach
 
     if ( _platform_thread_detach ( thread ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on thread #%u.\n\t                                    Reason: %s\n\t                                    Code:   %i"
-                 , ( *thread ).id
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on mutex #%u."
+                           , ( *thread ).id
+                           );
     }
 }
 
@@ -449,14 +433,9 @@ platform_thread_cancel
 
     if ( _platform_thread_cancel ( thread ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u.\n\t                                    Reason: %s\n\t                                    Code:   %i"
-                 , ( *thread ).id
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on mutex #%u."
+                           , ( *thread ).id
+                           );
     }
 }
 
@@ -526,13 +505,9 @@ platform_mutex_create
 
     if ( _platform_mutex_create ( mutex ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_create ("PLATFORM_STRING"): pthread_mutex_init failed.\n\t                                   Reason: %s\n\t                                   Code:   %i"
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_mutex_create ("PLATFORM_STRING"): pthread_mutex_init failed on mutex %@."
+                           , mutex
+                           );
         return false;
     }
 
@@ -551,14 +526,9 @@ platform_mutex_destroy
     
     if ( _platform_mutex_destroy ( mutex ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_destroy ("PLATFORM_STRING"): pthread_mutex_destroy failed on mutex %@.\n\t                                    Reason: %s\n\t                                    Code:   %i"
-                 , mutex
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_mutex_destroy ("PLATFORM_STRING"): pthread_mutex_destroy failed on mutex %@."
+                           , mutex
+                           );
     }
 }
 
@@ -584,14 +554,9 @@ platform_mutex_lock
 
     if ( _platform_mutex_lock ( mutex ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_lock ("PLATFORM_STRING"): pthread_mutex_lock failed on mutex %@.\n\t                                 Reason: %s\n\t                                 Code:   %i"
-                 , mutex
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_mutex_lock ("PLATFORM_STRING"): pthread_mutex_lock failed on mutex %@."
+                           , mutex
+                           );
         return false;
     }
 
@@ -603,7 +568,7 @@ platform_mutex_unlock
 (   mutex_t* mutex
 )
 {
-if ( !mutex || !( *mutex ).internal )
+    if ( !mutex || !( *mutex ).internal )
     {
         if ( !mutex )
         {
@@ -620,14 +585,9 @@ if ( !mutex || !( *mutex ).internal )
 
     if ( _platform_mutex_unlock ( mutex ) )
     {
-        const i64 error = platform_error_code ();
-        char message[ STACK_STRING_MAX_SIZE ];
-        platform_error_message ( error , message , STACK_STRING_MAX_SIZE );
-        LOGERROR ( "platform_mutex_unlock ("PLATFORM_STRING"): pthread_mutex_unlock failed on mutex %@.\n\t                                   Reason: %s\n\t                                   Code:   %i"
-                 , mutex
-                 , message
-                 , error
-                 );
+        platform_log_error ( "platform_mutex_unlock ("PLATFORM_STRING"): pthread_mutex_unlock failed on mutex %@."
+                           , mutex
+                           );
         return false;
     }
 
@@ -676,10 +636,7 @@ platform_file_open
 {
     if ( !file_ )
     {
-        if ( !file_ )
-        {
-            LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
-        }
+        LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
         return false;
     }
 
@@ -749,6 +706,7 @@ platform_file_open
     ( *file ).descriptor = descriptor;
     ( *file ).mode = mode_;
     ( *file ).path = path;
+    ( *file ).initialized = true;
     
     ( *file_ ).handle = file;
     ( *file_ ).valid = true;
@@ -862,11 +820,11 @@ platform_file_read
     u64 total_bytes_read = 0;
     while ( total_bytes_read < size )
     {
-        const u64 bytes_read = read ( ( *file ).descriptor
-                                    , ( ( u8* ) dst ) + total_bytes_read
-                                    , size - total_bytes_read
-                                    );
-        if ( bytes_read == ( ( u64 ) -1 ) )
+        const ssize_t bytes_read = read ( ( *file ).descriptor
+                                        , ( ( u8* ) dst ) + total_bytes_read
+                                        , size - total_bytes_read
+                                        );
+        if ( bytes_read == -1 )
         {
             platform_log_error ( "platform_file_read ("PLATFORM_STRING"): read failed on file: %s."
                                , ( *file ).path
@@ -938,12 +896,12 @@ platform_file_read_line
     do
     {
         // Read file content into a buffer for processing.
-        const u64 bytes_read = read ( ( *file ).descriptor
-                                    , buffer
-                                    , MIN ( bytes_remaining
-                                          , STACK_STRING_MAX_SIZE
-                                          ));
-        if ( bytes_read == ( ( u64 ) -1 ) )
+        const ssize_t bytes_read = read ( ( *file ).descriptor
+                                        , buffer
+                                        , MIN ( bytes_remaining
+                                              , STACK_STRING_MAX_SIZE
+                                              ));
+        if ( bytes_read == -1 )
         {
             platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): read failed on file: %s."
                                , ( *file ).path
@@ -955,7 +913,7 @@ platform_file_read_line
 
         // End of line? Y/N
         u64 length = 0;
-        while ( length < bytes_read )
+        while ( length < ( ( u64 ) bytes_read ) )
         {
             if ( !buffer[ length ] || newline ( buffer[ length ] ) )
             {
@@ -1057,11 +1015,11 @@ platform_file_read_all
     u64 total_bytes_read = 0;
     while ( total_bytes_read < file_size )
     {
-        const u64 bytes_read = read ( ( *file ).descriptor
-                                    , string + total_bytes_read
-                                    , file_size - total_bytes_read
-                                    );
-        if ( bytes_read == ( ( u64 ) -1 ) )
+        const ssize_t bytes_read = read ( ( *file ).descriptor
+                                        , string + total_bytes_read
+                                        , file_size - total_bytes_read
+                                        );
+        if ( bytes_read == -1 )
         {
             platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): read failed on file: %s."
                                , ( *file ).path
@@ -1136,11 +1094,11 @@ platform_file_write
     u64 total_bytes_written = 0;
     while ( total_bytes_written < size )
     {
-        const u64 bytes_written = write ( ( *file ).descriptor
-                                        , ( ( u8* ) src ) + total_bytes_written
-                                        , size - total_bytes_written
-                                        );
-        if ( bytes_written == ( ( u64 ) -1 ) )
+        const ssize_t bytes_written = write ( ( *file ).descriptor
+                                            , ( ( u8* ) src ) + total_bytes_written
+                                            , size - total_bytes_written
+                                            );
+        if ( bytes_written == -1 )
         {
             platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
                                , ( *file ).path
@@ -1194,11 +1152,11 @@ platform_file_write_line
     u64 total_bytes_written = 0;
     while ( total_bytes_written < size )
     {
-        const u64 bytes_written = write ( ( *file ).descriptor
-                                        , ( ( u8* ) src ) + total_bytes_written
-                                        , size - total_bytes_written
-                                        );
-        if ( bytes_written == ( ( u64 ) -1 ) )
+        const ssize_t bytes_written = write ( ( *file ).descriptor
+                                            , ( ( u8* ) src ) + total_bytes_written
+                                            , size - total_bytes_written
+                                            );
+        if ( bytes_written == -1 )
         {
             platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
                                , ( *file ).path
@@ -1211,11 +1169,11 @@ platform_file_write_line
 
     // Append a newline to the file.
     const char newline = '\n';
-    const u64 bytes_written = write ( ( *file ).descriptor
-                                    , &newline
-                                    , sizeof ( newline )
-                                    );
-    if ( bytes_written == ( ( u64 ) -1 ) )
+    const ssize_t bytes_written = write ( ( *file ).descriptor
+                                        , &newline
+                                        , sizeof ( newline )
+                                        );
+    if ( bytes_written == -1 )
     {
         platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
                             , ( *file ).path

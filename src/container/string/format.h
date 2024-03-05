@@ -16,7 +16,7 @@ typedef enum
 ,   STRING_FORMAT_SPECIFIER_INTEGER
 ,   STRING_FORMAT_SPECIFIER_FLOATING_POINT
 ,   STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED
-,   STRING_FORMAT_SPECIFIER_FLOATING_POINT_MANTISSA_ONLY
+,   STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY
 ,   STRING_FORMAT_SPECIFIER_ADDRESS
 ,   STRING_FORMAT_SPECIFIER_CHARACTER
 ,   STRING_FORMAT_SPECIFIER_STRING
@@ -45,23 +45,23 @@ STRING_FORMAT_MODIFIER;
 #define STRING_FORMAT_SPECIFIER_TOKEN_ID     '%'                              /** @brief The format specifier token. */
 #define STRING_FORMAT_SPECIFIER_TOKEN_IGNORE STRING_FORMAT_SPECIFIER_TOKEN_ID /** @brief Format specifier: ignore. */
 
-#define STRING_FORMAT_SPECIFIER_TOKEN_RAW                          'u' /** @brief Format specifier: raw. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_INTEGER                      'i' /** @brief Format specifier: integer. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT               'f' /** @brief Format specifier: floating point. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_ABBREVIATED   'e' /** @brief Format specifier: floating point (abbreviated notation). */
-#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_MANTISSA_ONLY 'd' /** @brief Format specifier: floating point (abbreviated notation). */
-#define STRING_FORMAT_SPECIFIER_TOKEN_ADDRESS                      '@' /** @brief Format specifier: address. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_CHARACTER                    'c' /** @brief Format specifier: character. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_STRING                       's' /** @brief Format specifier: string. */
-#define STRING_FORMAT_SPECIFIER_TOKEN_RESIZABLE_STRING             'S' /** @brief Format specifier: resizable string. */
-
-#define STRING_FORMAT_MODIFIER_TOKEN_PAD                           'p' /** @brief Format modifier: pad. */
-#define STRING_FORMAT_MODIFIER_TOKEN_PAD_MINIMUM                   'P' /** @brief Format modifier: pad (minimum width). */
-#define STRING_FORMAT_MODIFIER_TOKEN_LEFT                          'l' /** @brief Format modifier: left. */
-#define STRING_FORMAT_MODIFIER_TOKEN_RIGHT                         'r' /** @brief Format modifier: right. */
-#define STRING_FORMAT_MODIFIER_TOKEN_SHOW_SIGN                     '+' /** @brief Format modifier: show sign. */
-#define STRING_FORMAT_MODIFIER_TOKEN_HIDE_SIGN                     '-' /** @brief Format modifier: hide sign. */
-#define STRING_FORMAT_MODIFIER_TOKEN_FIX_PRECISION                 '.' /** @brief Format modifier: fix precision. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_RAW                            'u' /** @brief Format specifier: raw. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_INTEGER                        'i' /** @brief Format specifier: integer. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT                 'f' /** @brief Format specifier: floating point. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_ABBREVIATED     'e' /** @brief Format specifier: floating point (abbreviated notation). */
+#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_FRACTIONAL_ONLY 'd' /** @brief Format specifier: floating point (fractional only). */
+#define STRING_FORMAT_SPECIFIER_TOKEN_ADDRESS                        '@' /** @brief Format specifier: address. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_CHARACTER                      'c' /** @brief Format specifier: character. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_STRING                         's' /** @brief Format specifier: string. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_RESIZABLE_STRING               'S' /** @brief Format specifier: resizable string. */
+                                                                     
+#define STRING_FORMAT_MODIFIER_TOKEN_PAD                             'p' /** @brief Format modifier: pad. */
+#define STRING_FORMAT_MODIFIER_TOKEN_PAD_MINIMUM                     'P' /** @brief Format modifier: pad (minimum width). */
+#define STRING_FORMAT_MODIFIER_TOKEN_LEFT                            'l' /** @brief Format modifier: left. */
+#define STRING_FORMAT_MODIFIER_TOKEN_RIGHT                           'r' /** @brief Format modifier: right. */
+#define STRING_FORMAT_MODIFIER_TOKEN_SHOW_SIGN                       '+' /** @brief Format modifier: show sign. */
+#define STRING_FORMAT_MODIFIER_TOKEN_HIDE_SIGN                       '-' /** @brief Format modifier: hide sign. */
+#define STRING_FORMAT_MODIFIER_TOKEN_FIX_PRECISION                   '.' /** @brief Format modifier: fix precision. */
 
 /**
  * @brief String format function.
@@ -81,7 +81,7 @@ STRING_FORMAT_MODIFIER;
  * %e : Floating point number (short-notation). The corresponding argument
  *      must be the address of an f64. (For additional information about this
  *      limitation, see common/args.h).
- * %d : Floating point number (mantissa-only). The corresponding argument
+ * %d : Floating point number (fractional-only). The corresponding argument
  *      must be the address of an f64. (For additional information about this
  *      limitation, see common/args.h).
  * %@ : Address.
@@ -114,7 +114,7 @@ STRING_FORMAT_MODIFIER;
  * - - : Never include sign. Default behavior is to include the sign only for
  *       a negative number.
  *       Works only with signed numeric format specifiers: %f, %e, %i.
- * - .<number> : Fix mantissa precision to <number> * 10.
+ * - .<number> : Fix fractional precision to <number> decimal places.
  *               Works only with floating point format specifiers: %f, %e, %d.
  *
  * @param format Formatting string.
