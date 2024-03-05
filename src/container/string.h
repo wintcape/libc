@@ -28,12 +28,15 @@
  * @return An empty mutable string with the specified backend array capacity.
  */
 char*
-_string_create
+__string_create
 (   ARRAY_FIELD initial_capacity
 );
 
 #define string_create() \
-    _string_create ( STRING_DEFAULT_CAPACITY )
+    __string_create ( STRING_DEFAULT_CAPACITY )
+
+#define _string_create(initial_capacity) \
+    __string_create ( initial_capacity )
 
 /**
  * @brief Creates a mutable copy of an existing string.
@@ -43,7 +46,7 @@ _string_create
  * _string_copy ( O(n) ). If the string being copied is itself a mutable string
  * (i.e. a string created via the string_create class of functions), string_copy
  * may be used to implicitly fetch the current length of the mutable string
- * before passing it to _string_copy ( O(1) ).
+ * before passing it to __string_copy ( O(1) ).
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
@@ -52,21 +55,31 @@ _string_create
  * @return A mutable copy of s.
  */
 char*
-_string_copy
+__string_copy
 (   const char* src
 ,   const u64   src_length
 );
 
-#define string_copy(string) \
-    _string_copy ( (string) , string_length ( string ) )
+#define string_copy(string)                                        \
+    ({                                                             \
+        const char* string__ = (string);                           \
+        __string_copy ( (string__) , string_length ( string__ ) ); \
+    })
+    
 
-#define string_create_from(string) \
-    _string_copy ( (string) , _string_length ( string ) )
+#define string_create_from(string)                                  \
+    ({                                                              \
+        const char* string__ = (string);                            \
+        __string_copy ( (string__) , _string_length ( string__ ) ); \
+    })
+
+#define _string_copy(string,length) \
+    __string_copy ( (string) , (length) )
 
 /**
  * @brief Frees the memory used by a provided mutable string.
  * 
- * @param string The mutable string to free. Must be non-zero.
+ * @param string The mutable string to free.
  */
 void
 string_destroy
@@ -105,15 +118,15 @@ __string_push
 #define string_push(string,src,length) \
     ( (string) = __string_push ( (string) , (src) , (length) ) )
 
-#define _string_push(string,src_)                                                \
-    do                                                                           \
-    {                                                                            \
-        const char* src__ = (src_);                                              \
-        (string) = __string_push ( (string)                                      \
-                                 , src__                                         \
-                                 , _string_length ( src__ )                      \
-                                 );                                              \
-    }                                                                            \
+#define _string_push(string,src)                            \
+    do                                                      \
+    {                                                       \
+        const char* src__ = (src);                          \
+        (string) = __string_push ( (string)                 \
+                                 , src__                    \
+                                 , _string_length ( src__ ) \
+                                 );                         \
+    }                                                       \
     while ( 0 )
 
 /**
@@ -139,10 +152,10 @@ __string_insert
 #define string_insert(string,index,src,length) \
     ( (string) = __string_insert ( (string) , (index) , (src) , (length) ) )
 
-#define _string_insert(string,index,src_)                     \
+#define _string_insert(string,index,src)                      \
     do                                                        \
     {                                                         \
-        const char* src__ = (src_);                           \
+        const char* src__ = (src);                            \
         (string) = __string_insert ( (string)                 \
                                    , (index)                  \
                                    , src__                    \
@@ -160,14 +173,14 @@ __string_insert
  * @return The mutable string with the substring removed.
  */
 char*
-_string_remove
+__string_remove
 (   void*   string
 ,   u64     index
 ,   u64     count
 );
 
 #define string_remove(string,index,count) \
-    _string_remove ( (string) , (index) , (count) )
+    __string_remove ( (string) , (index) , (count) )
 
 /**
  * @brief **Effectively** clears a mutable string.
@@ -176,12 +189,12 @@ _string_remove
  * @return The mutable string set to empty.
  */
 char*
-_string_clear
+__string_clear
 (   char* string
 );
 
 #define string_clear(string) \
-    _string_clear ( string )
+    __string_clear ( string )
 
 /**
  * @brief Trims whitespace off front and back of a string. In-place.
@@ -190,11 +203,57 @@ _string_clear
  * @return The mutable string with whitespace trimmed off the front and back.
  */
 char*
-_string_trim
+__string_trim
 (   char* string
 );
 
 #define string_trim(string) \
-    _string_trim ( string )
+    __string_trim ( string )
+
+/**
+ * @brief Replaces all instances of a substring within a string with a different
+ * substring.
+ * 
+ * Use string_replace to explicitly specify string length, or _string_replace
+ * to compute the lengths of null-terminated strings before passing them to
+ * __string_replace.
+ * 
+ * @param string The mutable string to mutate. Must be non-zero.
+ * @param remove The substring to remove. Must be non-zero.
+ * @param replace The substring to replace the removed substring with.
+ * Must be non-zero.
+ * @return The mutable string with all instances of the removed substring
+ * replaced by the replacement substring (possibly with new address).
+ */
+char*
+__string_replace
+(   char*       string
+,   const char* remove
+,   const u64   remove_length
+,   const char* replace
+,   const u64   replace_length
+);
+
+#define string_replace(string,remove,remove_length,replace,replace_length) \
+    ( (string) = __string_replace ( (string)                               \
+                                  , (remove)                               \
+                                  , (remove_length)                        \
+                                  , (replace)                              \
+                                  , (replace_length)                       \
+                                  ) )
+
+#define _string_replace(string,remove,replace)                     \
+    do                                                             \
+    {                                                              \
+        const char* remove__ = (remove);                           \
+        const char* replace__ = (replace);                         \
+        (string) = __string_replace ( (string)                     \
+                                    , remove__                     \
+                                    , _string_length ( remove__ )  \
+                                    , replace__                    \
+                                    , _string_length ( replace__ ) \
+                                    );                             \
+    }                                                              \
+    while ( 0 )
 
 #endif  // STRING_H

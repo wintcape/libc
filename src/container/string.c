@@ -12,7 +12,7 @@
 #include "math/math.h"
 
 char*
-_string_create
+__string_create
 (   ARRAY_FIELD initial_capacity
 )
 {
@@ -22,7 +22,7 @@ _string_create
 }
 
 char*
-_string_copy
+__string_copy
 (   const char* src
 ,   const u64   src_length
 )
@@ -129,7 +129,7 @@ __string_insert
 }
 
 char*
-_string_remove
+__string_remove
 (   void*   string
 ,   u64     index
 ,   u64     count
@@ -160,7 +160,7 @@ _string_remove
 }
 
 char*
-_string_clear
+__string_clear
 (   char* string
 )
 {
@@ -170,7 +170,7 @@ _string_clear
 }
 
 char*
-_string_trim
+__string_trim
 (   char* string
 )
 {
@@ -198,5 +198,71 @@ _string_trim
 
     _array_field_set ( string , ARRAY_FIELD_LENGTH , size + 1 );
     
+    return string;
+}
+
+char*
+__string_replace
+(   char*       string
+,   const char* remove
+,   const u64   remove_length
+,   const char* replace
+,   const u64   replace_length
+)
+{
+    // CASE: Substring to remove and substring to replace are equivalent.
+    if ( string_equal ( remove , remove_length , replace , replace_length ) )
+    {
+        return string;
+    }
+
+    // CASE: Substring to remove is empty.
+    if ( !remove_length && replace_length )
+    {
+        // Duplicate the substring to replace once for each character in the
+        // original string.
+        const u64 count = string_length ( string );
+        string_clear ( string );
+        for ( u64 i = 0; i < count; ++i )
+        {
+            string_push ( string , replace , replace_length );
+        }
+    }
+
+    // CASE: Substring to remove and substring to replace are the same length.
+    else if ( remove_length == replace_length )
+    {
+        u64 index = 0;
+        while ( string_contains ( string + index
+                                , string_length ( string ) - index
+                                , remove
+                                , remove_length
+                                , false
+                                , &index
+                                ))
+        {
+            memory_copy ( string + index , replace , replace_length );
+        }
+    }
+
+    // CASE: Substring to remove and substring to replace differ in length.
+    else
+    {
+        u64 index = 0;
+        u64 index_;
+        while ( string_contains ( string + index
+                                , string_length ( string ) - index
+                                , remove
+                                , remove_length
+                                , false
+                                , &index_
+                                ))
+        {
+            index += index_;
+            string_remove ( string , index , remove_length );
+            string_insert ( string , index , replace , replace_length );
+        }
+    }
+
     return string;
 }

@@ -17,26 +17,6 @@ Pseudorandom number generation:
 - `rand`
 - `srand`
 
-### `<stdio.h>`
-
-Thread-safe interaction with buffered files on the host platform:
-- `fopen`
-- `fclose`
-- `fread`
-- `fwrite`
-- `fseek`
-- `ftell`
-- `fflush`
-- `ferror`
-- `fgets`
-- `rewind`
-- `stdin`
-- `stdout`
-- `stderr`
-
-**TEMPORARY**: Crutch for printing fixed-precision floating point numbers (until `string_f64` is implemented):
-- `snprintf`
-
 ### `<string.h>`
 
 Highly-optimized string operations:
@@ -91,15 +71,62 @@ Performing algebraic operations on 64-bit floating point numbers:
 - `cosh`
 - `tanh`
 
-### `<errno.h>`
+### **TEMPORARY**: `<stdio.h>`
 
-Platform-dependent error reporting:
-- `errno`
+ Crutch for printing fixed-precision floating point numbers (until `string_f64` is implemented):
+- `snprintf`
+
+## Testing
+
+### System requirements
+~6.00 GiB free disk space.
+
+~2.81 GiB free RAM.
+
+### System dependencies
+Requires GNU make.
+
+Makefiles use gcc by default. The library has been tested to on Clang as well.
+
+### Windows
+```
+make windows-test
+```
+
+### GNU/Linux
+To test on GNU/Linux:
+```
+make linux-test
+```
+
+### macOS
+To test on macOS:
+```
+make macos-test
+```
 
 ## Known bugs
 - Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows.
 
+## To-do
+- Implement `string_f64`, removing dependency `<stdio.h>`.
+- Implement unbuffered file I/O for Windows platform layer; currently lets Windows handle alignment and buffering.
+- Implement `platform_thread_wait`, `platform_thread_wait_timeout`, and `platform_thread_active` for macOS/Linux platform layers.
+- Change implementation of `platform/test_filesystem.c` such that one failed test doesn't result in all of the other filesystem I/O tests failing due to broken pipe (Currently, when a test fails, the test function exits early, meaning the file handle never gets closed before the next test tries to open the same handle again).
+- Implement `FILE_MODE_APPEND`.
+- Verify thread safety for `platform/filesystem.h`.
+- Tests for `platform/thread.h` and `platform/mutex.h`.
+
 ## Changelog
+
+### 0.3.0
+- `platform/filesystem.h` now uses the platform layer internally, rather than `<stdio.h>`. With it comes much more extensive testing done by `platform/test_filesystem.c`.
+- Function signature changes: `file_open` no longer accepts a `bool` argument indicating text- versus binary- encoding (if converting between LF and CRLF newlines for text files, you need to handle this yourself; `file_read_line` and `file_write_line` consider a single LF as the newline delimiter). `file_write_line` no longer accepts a `u64*` argument indicating an output buffer for the number of bytes written.
+- Added preprocessor binding `_file_write` as shorthand for writing null-terminated strings to a file.
+- `core/thread.h` and `core/mutex.h` are now `platform/thread.h` and `platform/mutex.h`.
+- New function `string_replace` to replace substrings within a string. + tests for it.
+- Fixed a bug with `logger_log` so it correctly writes to the log file, as long as `logger_startup` has succeeded prior to its invocation.
+- `string_format` no longer crashes if passed null pointers for `%s`, `%S`, `%f`, `%e`, or `%d`.
 
 ### 0.2.4
 -`file_read_line` returns on `\r` or `\n` (previously was just `\n`)

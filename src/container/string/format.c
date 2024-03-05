@@ -806,8 +806,15 @@ _string_format_parse_next_argument_floating_point
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
     const u64 arg = *( ( *state ).next_arg );
+    if ( !arg )
+    {
+        return _string_format_parse_next_argument_string ( state
+                                                         , format_specifier
+                                                         );
+    }
+
+    char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
     const char* format;
     if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_NONE )
     {
@@ -881,8 +888,15 @@ _string_format_parse_next_argument_floating_point_abbreviated
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    char string[ STRING_FORMAT_MAX_FLOATING_POINT_ABBREVIATED_STRING_LENGTH ];
     const u64 arg = *( ( *state ).next_arg );
+    if ( !arg )
+    {
+        return _string_format_parse_next_argument_string ( state
+                                                         , format_specifier
+                                                         );
+    }
+
+    char string[ STRING_FORMAT_MAX_FLOATING_POINT_ABBREVIATED_STRING_LENGTH ];
     const char* format;
     if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_NONE )
     {
@@ -956,8 +970,15 @@ _string_format_parse_next_argument_floating_point_mantissa_only
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
     const u64 arg = *( ( *state ).next_arg );
+    if ( !arg )
+    {
+        return _string_format_parse_next_argument_string ( state
+                                                         , format_specifier
+                                                         );
+    }
+
+    char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
     const char* format;
     if ( ( *format_specifier ).fix_precision.tag )
     {
@@ -1049,7 +1070,7 @@ _string_format_parse_next_argument_string
 )
 {
     const u64 arg = *( ( *state ).next_arg );
-    char* string = ( char* ) arg;
+    char* string = arg ? ( ( char* ) arg ) : "";
     const u64 length = _string_length ( string );
     return _string_format_push ( &( *state ).string
                                , string
@@ -1065,6 +1086,13 @@ _string_format_parse_next_argument_mutable_string
 )
 {
     const u64 arg = *( ( *state ).next_arg );
+    if ( !arg )
+    {
+        return _string_format_parse_next_argument_string ( state
+                                                         , format_specifier
+                                                         );
+    }
+
     char* string = ( char* ) arg;
     const u64 length = string_length ( string );
     return _string_format_push ( &( *state ).string

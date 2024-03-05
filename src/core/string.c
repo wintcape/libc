@@ -103,7 +103,9 @@ string_equal
 ,   const u64   s2_length
 )
 {
-    return s1_length == s2_length && memory_equal ( s1 , s2 , s2_length );
+    return ( s1_length == s2_length )
+        && ( s1 == s2 || memory_equal ( s1 , s2 , s1_length ) )
+        ;
 }
 
 bool
@@ -278,6 +280,10 @@ string_free
 (   void* string
 )
 {
+    if ( !string )
+    {
+        return;
+    }
     const u64 header_size = sizeof ( u64 );
     string -= header_size;
     memory_free ( string

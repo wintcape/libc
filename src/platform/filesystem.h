@@ -8,7 +8,7 @@
 
 #include "common.h"
 
-/** @brief Type definition for a file handle. */
+/** @brief Type definition for a file. */
 typedef struct
 {
     void*   handle;
@@ -35,7 +35,7 @@ FILE_MODE;
  * FILE_MODE_READ |
  * FILE_MODE_WRITE  : Test for file with both read and write permission.
  * 
- * @param path The filepath to test. Must be non-zero.
+ * @param path The filepath to test.
  * @param mode Mode flag.
  * @return true if file exists; false otherwise.
  */
@@ -48,24 +48,22 @@ file_exists
 /**
  * @brief Attempts to open a file on the host platform.
  * 
- * @param path The filepath. Must be non-zero.
+ * @param path The filepath.
  * @param mode Mode flag.
- * @param binary Open in binary mode? Y/N
- * @param file Output buffer for file handle. Must be non-zero.
+ * @param file Output buffer for file handle.
  * @return true if file opened successfully; false otherwise.
  */
 bool
 file_open
 (   const char* path
 ,   FILE_MODE   mode
-,   bool        binary
 ,   file_t*     file
 );
 
 /**
  * @brief Attempts to close a file on the host platform.
  * 
- * @param file Handle to the file to close. Must be non-zero.
+ * @param file Handle to the file to close.
  */
 void
 file_close
@@ -75,7 +73,7 @@ file_close
 /**
  * @brief Computes the size of a file on the host platform.
  * 
- * @param file Handle to a file. Must be non-zero.
+ * @param file Handle to a file.
  * @return The filesize of file in bytes.
  */
 u64
@@ -87,10 +85,10 @@ file_size
  * @brief Reads a specified amount of content from a file on the host platform
  * into an output buffer.
  * 
- * @param file Handle to the file to read. Must be non-zero.
+ * @param file Handle to the file to read.
  * @param size Number of bytes to read.
- * @param dst Output buffer for the content. Must be non-zero.
- * @param read Output buffer to hold number of bytes read. Must be non-zero.
+ * @param dst Output buffer for the content.
+ * @param read Output buffer to hold number of bytes read.
  * @return true if file read into dst successfully; false otherwise.
  */
 bool
@@ -107,9 +105,8 @@ file_read
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
- * @param file Handle to the file to read. Must be non-zero.
+ * @param file Handle to the file to read.
  * @param dst Output buffer to hold the handle to the mutable output string.
- * Must be non-zero.
  * @return true if the handle stored in dst is valid; false otherwise.
  */
 bool
@@ -125,10 +122,10 @@ file_read_line
  * Uses dynamic memory allocation. Call string_free to free.
  * (see core/string.h)
  * 
- * @param file Handle to the file to read. Must be non-zero.
+ * @param file Handle to the file to read.
  * @param dst Output buffer to hold the handle to the null-terminated output
- * string. Must be non-zero.
- * @param read Output buffer to hold number of bytes read. Must be non-zero.
+ * string.
+ * @param read Output buffer to hold number of bytes read.
  * @return true if the handle stored in dst is valid; false otherwise.
  */
 bool
@@ -141,11 +138,14 @@ file_read_all
 /**
  * @brief Writes a specified amount of data to a file on the host platform.
  * 
- * @param file Handle to the file to write to. Must be non-zero.
+ * Use file_write to explicitly specify string length, or _file_write to compute
+ * the length of a null-terminated string before passing it to file_write.
+ * 
+ * @param file Handle to the file to write to.
  * @param size Number of bytes to write.
- * @param src The data to write. Must be non-zero.
+ * @param src The data to write.
  * @param written Output buffer to hold number of bytes written.
- * Must be non-zero.
+ *
  * @return true if src written to file successfully; false otherwise.
  */
 bool
@@ -156,6 +156,13 @@ file_write
 ,   u64*        written
 );
 
+#define _file_write(file,src,written)                                         \
+    ({                                                                        \
+        const char* src__ = (src);                                            \
+        file_write ( (file) , _string_length ( src__ ) , src__ , (written) ); \
+    })
+   
+
 /**
  * @brief Writes a string to file on the host platform and appends the `\n`
  * character.
@@ -164,11 +171,10 @@ file_write
  * to compute the length of a null-terminated string before passing it to
  * file_write_line.
  * 
- * @param file Handle to the file to write to. Must be non-zero.
+ * @param file Handle to the file to write to.
  * @param size Number of bytes to write.
- * @param src The string to write. Must be non-zero.
- * @param written Output buffer to hold number of bytes written.
- * Must be non-zero.
+ * @param src The string to write.
+ *
  * @return true if src written to file successfully; false otherwise.
  */
 bool
@@ -176,14 +182,16 @@ file_write_line
 (   file_t*     file
 ,   u64         size
 ,   const char* src
-,   u64*        written
 );
 
-#define _file_write_line(file,src,written) \
-    file_write_line ( (file) , _string_length ( src ) , (src) , (written) )
+#define _file_write_line(file,src)                                     \
+    ({                                                                 \
+        const char* src__ = (src);                                     \
+        file_write_line ( (file) , _string_length ( src__ ) , src__ ); \
+    })
 
 /**
- * @brief Obtains a handle to stdin.
+ * @brief Obtains a handle to the host platform's standard input stream.
  * 
  * @param file Output buffer. Must be non-zero.
  */
@@ -193,7 +201,7 @@ file_stdin
 );
 
 /**
- * @brief Obtains a handle to stdout.
+ * @brief Obtains a handle to the host platform's standard output stream.
  * 
  * @param file Output buffer. Must be non-zero.
  */
@@ -203,7 +211,7 @@ file_stdout
 );
 
 /**
- * @brief Obtains a handle to stderr.
+ * @brief Obtains a handle to the host platform's standard error stream.
  * 
  * @param file Output buffer. Must be non-zero.
  */

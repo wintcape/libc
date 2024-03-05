@@ -89,7 +89,7 @@ STRING_FORMAT_MODIFIER;
  * %s : Null-terminated string of characters.
  *      Length is computed at runtime via O(n) _string_length.
  * %S : Mutable string of characters.
- *      This includes any string created with the _string_create class of
+ *      This includes any string created with the __string_create class of
  *      functions; their length is fetched at runtime via O(1) string_length.
  *      
  * FORMAT MODIFIERS :

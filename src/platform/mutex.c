@@ -1,11 +1,10 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
- * @file core/mutex.c
- * @brief Implementation of the core/mutex header.
- * (see core/mutex.h for additional details)
+ * @file platform/mutex.c
+ * @brief Implementation of the platform/mutex header.
+ * (see platform/mutex.h for additional details)
  */
-#include "core/mutex.h"
-
+#include "platform/mutex.h"
 #include "platform/platform.h"
 
 bool

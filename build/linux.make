@@ -8,7 +8,7 @@ CFLAGS := -g -O2 -W -Wvarargs -Wall -Werror -Werror=vla -Wno-unused-parameter
 DEPS := m
 INCLUDE := src test/src
 
-SHARED_OBJFILES := memory.o logger.o clock.o array.o queue.o hashtable.o thread.o mutex.o string_utils.o string.o string_format.o math.o test.o memory_linear_allocator.o memory_dynamic_allocator.o freelist.o platform.o filesystem.o
+SHARED_OBJFILES := memory.o logger.o clock.o array.o queue.o hashtable.o string_utils.o string.o string_format.o math.o test.o memory_linear_allocator.o memory_dynamic_allocator.o freelist.o platform.o filesystem.o thread.o mutex.o
 TARGET_OBJFILES := main.o
 TEST_OBJFILES := test_main.o test_array.o test_queue.o test_hashtable.o test_string.o test_freelist.o test_memory_linear_allocator.o test_memory_dynamic_allocator.o test_filesystem.o
 
@@ -58,8 +58,6 @@ obj/clock.o: 							src/core/clock.c
 obj/array.o: 							src/container/array.c
 obj/queue.o:							src/container/queue.c
 obj/hashtable.o:						src/container/hashtable.c
-obj/thread.o: 							src/core/thread.c
-obj/mutex.o: 							src/core/mutex.c
 obj/string_utils.o: 					src/core/string.c
 obj/string.o: 							src/container/string.c
 obj/string_format.o:					src/container/string/format.c
@@ -70,6 +68,8 @@ obj/memory_linear_allocator.o: 			src/memory/linear_allocator.c
 obj/memory_dynamic_allocator.o: 		src/memory/dynamic_allocator.c
 obj/platform.o: 						src/platform/linux.c
 obj/filesystem.o:						src/platform/filesystem.c
+obj/thread.o: 							src/platform/thread.c
+obj/mutex.o: 							src/platform/mutex.c
 
 .PHONY: app
 app: mkdir clean bin/$(TARGET) post

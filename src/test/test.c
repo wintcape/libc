@@ -79,12 +79,12 @@ test_run_all
         }
         else if ( result == BYPASS )
         {
-            LOGWARN ( "    SKIPPED:\t%s" , tests[ i ].description );
+            LOGWARN ( "SKIPPED: %s" , tests[ i ].description );
             skip += 1;
         }
         else
         {
-            LOGERROR ( "    FAILED:\t%s" , tests[ i ].description );
+            LOGERROR ( "FAILED: %s" , tests[ i ].description );
             fail += 1;
         }
 

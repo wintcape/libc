@@ -1,14 +1,13 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
- * @file core/thread.c
- * @brief Implementation of the core/thread header.
- * (see core/thread.h for additional details)
+ * @file platform/thread.c
+ * @brief Implementation of the platform/thread header.
+ * (see platform/thread.h for additional details)
  */
-#include "core/thread.h"
+#include "platform/thread.h"
+#include "platform/platform.h"
 
 #include "core/logger.h"
-
-#include "platform/platform.h"
 
 bool
 thread_create

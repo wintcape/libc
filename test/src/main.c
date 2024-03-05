@@ -2,6 +2,9 @@
  * @author Matthew Weissel (mweissel3@gatech.edu)
  * @file main.c
  * @brief Entry point for the test suite program.
+ * 
+ * SYSTEM REQUIREMENTS: ~6.00 GiB free disk space.
+ *                      ~2.81 GiB free RAM.
  */
 #include "test/test.h"
 
@@ -23,14 +26,37 @@
 #define TEST_MEMORY_REQUIREMENT \
     GIBIBYTES ( 2.5 )
 
+/** @brief Type definition for program state. */
+typedef struct
+{
+    u64     logger_memory_requirement;
+    void*   logger;
+}
+state_t;
+
+/** @brief Program state. */
+static state_t* state;
+
 int
 main
 ( void )
 {
     memory_startup ( TEST_MEMORY_REQUIREMENT );
-    test_startup ();
+    state = memory_allocate ( sizeof ( state_t )
+                            , MEMORY_TAG_APPLICATION
+                            );
+    
+    // Initialize logger.
+    logger_startup ( &( *state ).logger_memory_requirement , 0 );
+    ( *state ).logger = memory_allocate ( ( *state ).logger_memory_requirement
+                                        , MEMORY_TAG_APPLICATION
+                                        );
+    logger_startup ( &( *state ).logger_memory_requirement
+                   , ( *state ).logger
+                   );
 
     // Initialize tests.
+    test_startup ();
     test_register_linear_allocator ();
     test_register_freelist ();
     test_register_dynamic_allocator ();
@@ -44,6 +70,14 @@ main
     LOGDEBUG ( "Running test suite. . ." );
     const bool fail = test_run_all ();
 
+    // Shutdown logger.
+    logger_shutdown ( ( *state ).logger );
+    memory_free ( ( *state ).logger
+                , ( *state ).logger_memory_requirement
+                , MEMORY_TAG_APPLICATION
+                );
+
+    memory_free ( state , sizeof ( state_t ) , MEMORY_TAG_APPLICATION );
     memory_shutdown ();
 
     return fail;

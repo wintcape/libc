@@ -74,8 +74,15 @@ string_equal
 ,   const u64   s2_length
 );
 
-#define _string_equal (s1,s2) \
-    string_equal ( s1 , _string_length ( s1 ) , s2 , _string_length ( s2 ) )
+#define _string_equal (s1,s2)                         \
+    ({                                                \
+        const char* s1__ = (s1);                      \
+        const char* s2__ = (s2);                      \
+        string_equal ( s1__ , _string_length ( s1__ ) \
+                     , s2__ , _string_length ( s2__ ) \
+                     );                               \
+    })
+    
 
 /**
  * @brief Empty string test predicate.
@@ -116,12 +123,16 @@ string_contains
 ,   u64*        index
 );
 
-#define _string_contains (search,find,reverse,index)     \
-    string_contains ( search , _string_length ( search ) \
-                    , find , _string_length ( find )     \
-                    , reverse                            \
-                    , index                              \
-                    )
+#define _string_contains(search,find,reverse,index)              \
+    ({                                                           \
+        const char* search__ = (search);                         \
+        const char* find__ = (find);                             \
+        string_contains ( search__ , _string_length ( search__ ) \
+                        , find__ , _string_length ( find__ )     \
+                        , (reverse)                              \
+                        , (index)                                \
+                        );                                       \
+    })
 
 /**
  * @brief Reverses a string. O(n). In-place.
@@ -140,8 +151,12 @@ string_reverse
 ,   u64     string_length
 );
 
-#define _string_reverse(string) \
-    string_reverse ( (string) , _string_length ( string ) )
+#define _string_reverse(string)                                    \
+    ({                                                             \
+        char* string__ = (string);                                 \
+        string_reverse ( string__ , _string_length ( string__ ) ); \
+    })
+    
 
 /**
  * @brief Signed integer stringify utility.
@@ -222,6 +237,7 @@ string_f64
  * 
  * @param size Size in bytes.
  * @param amount Output buffer for size (after conversion to appropriate units).
+ * Must be non-zero.
  * @return "GiB" | "MiB" | "KiB" | "B"
  */
 const char*
@@ -248,7 +264,7 @@ string_allocate
  * 
  * Uses dynamic memory allocation. Call string_free to free.
  * 
- * @param string The null-terminated string to copy.
+ * @param string The null-terminated string to copy. Must be non-zero.
  * @return A copy of string.
  */
 char*

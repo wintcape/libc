@@ -34,6 +34,10 @@ _array_destroy
 (   void* array
 )
 {
+    if ( !array )
+    {
+        return;
+    }
     const u64 header_size = ARRAY_FIELD_COUNT * sizeof ( u64 );
     u64* header = ( u64* ) array - ARRAY_FIELD_COUNT;
     memory_free ( header

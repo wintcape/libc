@@ -1,6 +1,6 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
- * @file core/thread.h
+ * @file platform/thread.h
  * @brief Defines an interface for performing multi-threaded operations.
  */
 #ifndef THREAD_H

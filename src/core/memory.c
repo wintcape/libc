@@ -9,7 +9,7 @@
 #include "container/string.h"
 
 #include "core/logger.h"
-#include "core/mutex.h"
+#include "platform/mutex.h"
 
 #include "memory/dynamic_allocator.h"
 
@@ -25,6 +25,8 @@ static const char* memory_tags[ MEMORY_TAG_COUNT ] = { "UNKNOWN           "
                                                      , "DYNAMIC_ALLOCATOR "
                                                      , "THREAD            "
                                                      , "MUTEX             "
+                                                     , "FILE              "
+                                                     , "APPLICATION       "
                                                      };
 
 /** @brief Type definition for a container to hold global statistics. */

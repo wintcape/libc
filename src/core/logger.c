@@ -106,13 +106,9 @@ logger_startup
 
     state = state_;
     memory_clear ( state , sizeof ( state_t ) );
-
+    
     // Initialize log file.
-    if ( !file_open ( LOG_FILEPATH
-                    , FILE_MODE_WRITE
-                    , false
-                    , &( *state ).file
-                    ))
+    if ( !file_open ( LOG_FILEPATH , FILE_MODE_WRITE , &( *state ).file ) )
     {
         PRINTERROR ( LOG_LEVEL_COLOR_ERROR LOG_LEVEL_PREFIX_ERROR
                      "logger_startup: Unable to open '"LOG_FILEPATH"' for writing."
@@ -229,18 +225,16 @@ logger_file_append
     if (   !state
         || !( *state ).file.handle
         || !( *state ).file.valid
-        || message
+        || !message
+        || !message_length
        )
     {
         return;
     }
-    
-    u64 written;
-    if ( !file_write ( &( *state ).file
-                     , ( message_length + 1 ) * sizeof ( char )
-                     , message
-                     , &written
-                     ))
+    if ( !file_write_line ( &( *state ).file
+                          , ( message_length + 1 ) * sizeof ( char )
+                          , message
+                          ))
     {
         PRINTERROR ( LOG_LEVEL_COLOR_ERROR
                      "logger_file_append: Error writing to log file '"LOG_FILEPATH"'."

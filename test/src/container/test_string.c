@@ -346,6 +346,55 @@ test_string_reverse
 }
 
 u8
+test_string_replace
+( void )
+{
+    const char* original = "Replace\r\nall\r\nnewlines\r\nwith\r\n4\r\nspaces.\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n";
+    const char* replaced = "Replace    all    newlines    with    4    spaces.                                            ";
+    const char* removed = "Replaceallnewlineswith4spaces.";
+    const char* removed_replaced = "                                                                                                                        ";
+    const char* empty = "";
+    const char* to_replace = "\r\n";
+    const char* replace_with = "    ";
+    char* string = string_create_from ( original );
+    _string_replace ( string , to_replace , to_replace );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+    _string_replace ( string , to_replace , "\r\n" );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+    _string_replace ( string , "Not found." , replace_with );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+    _string_replace ( string , to_replace , replace_with );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( replaced ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , replaced , string_length ( string ) + 1 ) );
+    _string_replace ( string , replace_with , to_replace );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+    _string_replace ( string , to_replace , empty );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( removed ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , removed , string_length ( string ) + 1 ) );
+    _string_replace ( string , empty , replace_with );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( removed_replaced ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , removed_replaced , string_length ( string ) + 1 ) );
+    string_clear ( string );
+    _string_replace ( string , to_replace , replace_with );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( empty ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , empty , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    return true;
+}
+
+u8
 test_string_u64_and_i64
 ( void )
 {
@@ -428,6 +477,7 @@ u8
 test_string_f64
 ( void )
 {
+    // TODO: Implement this.
     return BYPASS;
 }
 
@@ -629,6 +679,16 @@ test_string_format
     EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
     string_destroy ( string );
+    string = string_format ( "%s" , 0 );
+    string_destroy ( string );
+    string = string_format ( "%S" , 0 );
+    string_destroy ( string );
+    string = string_format ( "%f" , 0 );
+    string_destroy ( string );
+    string = string_format ( "%e" , 0 );
+    string_destroy ( string );
+    string = string_format ( "%d" , 0 );
+    string_destroy ( string );
     string_destroy ( string_in );
     return true;
 }
@@ -645,6 +705,7 @@ test_register_string
     test_register ( test_string_trim , "Testing string 'trim' operation." );
     test_register ( test_string_contains , "Testing string 'contains' operation." );
     test_register ( test_string_reverse , "Testing string in-place 'reverse' operation." );
+    test_register ( test_string_replace , "Testing string 'replace' operation." );
     test_register ( test_string_u64_and_i64 , "Testing 'stringify' operation on 64-bit integers." );
     test_register ( test_string_f64 , "Testing 'stringify' operation on 64-bit floating point numbers." );
     test_register ( test_string_format , "Constructing a string using format specifiers." );

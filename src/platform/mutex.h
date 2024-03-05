@@ -1,6 +1,6 @@
 /**
  * @author Matthew Weissel (mweissel3@gatech.edu)
- * @file core/mutex.h
+ * @file platform/mutex.h
  * @brief Defines an interface for performing synchronous mutual exclusion
  * operations.
  */

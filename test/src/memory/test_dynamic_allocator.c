@@ -416,6 +416,7 @@ test_dynamic_allocator_util_allocate
     EXPECT_EQ ( total_allocator_size - *currently_allocated , free );
     return true;
 }
+
 u8
 test_dynamic_allocator_util_free
 (   dynamic_allocator_t*    allocator

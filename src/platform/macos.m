@@ -10,14 +10,17 @@
 // Begin platform layer.
 #if PLATFORM_MAC == 1
 
+#include "container/string.h"
 #include "core/logger.h"
 #include "core/memory.h"
-#include "core/string.h"
-
 #include "math/clamp.h"
 
 // Platform layer dependencies.
+#define _FILE_OFFSET_BITS 64
+#include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -26,10 +29,22 @@
 #endif
 
 // Standard libc dependencies.
-#include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/** @brief Type definition for a platform-dependent file data structure. */
+typedef struct
+{
+    i32         descriptor;
+    FILE_MODE   mode;
+    const char* path;
+}
+platform_file_t;
+
+// Global definitions for standard input, output, and error file streams.
+static platform_file_t platform_stdin;  /** @brief Standard input stream handle. */
+static platform_file_t platform_stdout; /** @brief Standard output stream handle. */
+static platform_file_t platform_stderr; /** @brief Standard error stream handle. */
 
 #define PLATFORM_MAC_ERROR_PTHREAD_CREATE        1 /** @brief Internal error code. */
 #define PLATFORM_MAC_ERROR_PTHREAD_DETACH        2 /** @brief Internal error code. */
@@ -274,79 +289,6 @@ platform_string_length_clamped
 )
 {
     return strnlen ( string , limit );
-}
-f64
-platform_absolute_time
-( void )
-{
-    mach_timebase_info_data_t mach_timebase_info;
-    mach_timebase_info ( &mach_timebase_info );
-    const u64 time = mach_absolute_time ();
-    const u64 ns = ( f64 )( time * ( ( u64 ) mach_timebase_info.numer ) / ( ( f64 ) clock_timebase.denom ) );
-    return ns / 1.0E9;
-}
-
-void
-platform_sleep
-(   u64 ms
-)
-{
-    #if _POSIX_C_SOURCE >= 199309L
-        struct timespec time;
-        time.tv_sec = ms / 1000;
-        time.tv_nsec = ( ms % 1000 ) * 1000 * 1000;
-        nanosleep ( &time , 0 );
-    #else
-        if ( ms >= 1000 )
-        {
-            sleep ( ms / 1000 );
-        }
-        usleep ( ( ms % 1000 ) * 1000 );
-    #endif
-}
-
-i64
-platform_error_code
-( void )
-{
-    return errno;
-}
-
-u64
-platform_error_message
-(   const i64   error
-,   char*       dst
-,   const u64   dst_length
-)
-{
-    if ( !dst || !dst_length )
-    {
-        if ( !dst )
-        {
-            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
-        }
-        if ( !dst_length )
-        {
-            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Value of dst_length argument must be non-zero." );
-        }
-        return 0;
-    }
-    if ( strerror_r ( error , dst , dst_length ) )
-    {
-        LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Failed to retrieve an error report from the host platform." );
-        return 0;
-    }
-    return MIN ( _string_length ( dst ) , dst_length );
-}
-
-i32
-platform_processor_core_count
-( void )
-{
-    LOGINFO ( "platform_processor_core_count: %i cores available."
-            , [ [ NSProcessInfo processInfo ] processorCount ]
-            );
-    return [ [ NSProcessInfo processInfo ] processorCount ];
 }
 
 bool
@@ -657,19 +599,20 @@ if ( !mutex || !( *mutex ).internal )
 
     return true;
 }
-
 bool
 platform_file_exists
 (   const char* path
 ,   FILE_MODE   mode_
 )
 {
-    i32 mode;
-    if ( mode_ == FILE_MODE_ACCESS )
+    if ( !path )
     {
-        mode = F_OK;
+        LOGERROR ( "platform_file_exists ("PLATFORM_STRING"): Missing argument: path (filepath to test)." );
+        return false;
     }
-    else if ( ( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+
+    i32 mode;
+    if ( ( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
     {
         mode = R_OK | W_OK;
     }
@@ -683,10 +626,612 @@ platform_file_exists
     }
     else
     {
-        LOGERROR ( "file_exists: Invalid file mode." );
+        mode = F_OK;
+    }
+
+    return !access ( path , mode );
+}
+
+bool
+platform_file_open
+(   const char* path
+,   FILE_MODE   mode_
+,   file_t*     file_
+)
+{
+    if ( !path || !file_ )
+    {
+        if ( !path )
+        {
+            LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: path (filepath to open)." );
+        }
+        if ( !file_ )
+        {
+            LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
+        }
         return false;
     }
-    return !access ( path , mode );
+
+    ( *file_ ).valid = false;
+    ( *file_ ).handle = 0;
+
+    i32 mode;
+    bool truncate;
+    if ( ( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = O_RDWR;
+        truncate = false;
+    }
+    else if ( ( mode_ & FILE_MODE_READ ) && !( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = O_RDONLY;
+        truncate = false;
+    }
+    else if ( !( mode_ & FILE_MODE_READ ) && ( mode_ & FILE_MODE_WRITE ) )
+    {
+        mode = O_WRONLY;
+        truncate = true;
+    }
+    else
+    {
+        LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Value of mode argument was invalid; it should be a valid file mode." );
+        return false;
+    }
+
+    i32 descriptor = open ( path , mode | O_CREAT , S_IRWXU );
+
+    if ( descriptor == -1 )
+    {
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): open failed for file: %s."
+                           , path
+                           );
+        return false;
+    }
+
+    // Set file pointer to the start of the file.
+    if ( lseek ( descriptor , 0 , SEEK_SET ) == ( ( u64 ) -1 ) )
+    {
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): lseek failed for file: %s."
+                           , path
+                           );
+        return false;
+    }
+
+    // If in write mode, truncate the file content.
+    if ( truncate && ftruncate ( descriptor , 0 ) )
+    {
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): ftruncate failed for file: %s."
+                           , path
+                           );
+        return false;
+    }
+
+    platform_file_t* file = memory_allocate ( sizeof ( platform_file_t )
+                                            , MEMORY_TAG_FILE
+                                            );
+    ( *file ).descriptor = descriptor;
+    ( *file ).path = path;
+    
+    ( *file_ ).handle = file;
+    ( *file_ ).valid = true;
+
+    return true;
+}
+
+void
+platform_file_close
+(   file_t* file_
+)
+{
+    if ( !file_ || !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return;
+    }
+
+    ( *file_ ).valid = false;
+
+    platform_file_t* file = ( *file_ ).handle;
+    if ( !close ( ( *file ).handle ) )
+    {
+        platform_log_error ( "platform_file_close ("PLATFORM_STRING"): close failed on file: %s."
+                           , ( *file ).path
+                           );
+    }
+
+    memory_free ( file
+                , sizeof ( platform_file_t )
+                , MEMORY_TAG_FILE
+                );
+    ( *file_ ).handle = 0;
+}
+
+u64
+platform_file_size
+(   file_t* file
+)
+{
+    if ( !file )
+    {
+        LOGERROR ( "platform_file_size ("PLATFORM_STRING"): Missing argument: file." );
+        return 0;
+    }
+    if ( !( *file ).handle || !( *file ).valid )
+    {
+        return 0;
+    }
+    return _platform_file_size ( ( *file ).handle );
+}
+
+bool
+platform_file_read
+(   file_t* file_
+,   u64     size
+,   void*   dst
+,   u64*    read_
+)
+{
+    if ( !file_ || !dst || !read_ )
+    {
+        if ( !file_ )
+        {
+            LOGERROR ( "platform_file_read ("PLATFORM_STRING"): Missing argument: file (file to read)." );
+        }
+        if ( !dst )
+        {
+            LOGERROR ( "platform_file_read ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
+        }
+        if ( !read_ )
+        {
+            LOGERROR ( "platform_file_read ("PLATFORM_STRING"): Missing argument: read (output buffer)." );
+        }
+        return false;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return false;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    // Nothing to copy? Y/N
+    if ( !size )
+    {
+        *read_ = 0;
+        return true;
+    }
+
+    const u64 file_size = _platform_file_size ( file );
+    if ( file_size < size )
+    {
+        size = file_size;
+    }
+
+    u64 total_bytes_read = 0;
+    while ( total_bytes_read < size )
+    {
+        const u64 bytes_read = read ( ( *file ).descriptor
+                                    , ( ( u8* ) dst ) + total_bytes_read
+                                    , size - total_bytes_read
+                                    );
+        if ( bytes_read == ( ( u64 ) -1 ) )
+        {
+            platform_log_error ( "platform_file_read ("PLATFORM_STRING"): read failed on file: %s."
+                               , ( *file ).path
+                               );
+            *read_ = total_bytes_read;
+            return false;
+        }
+        total_bytes_read += bytes_read;
+    }
+
+    *read_ = total_bytes_read;
+    return total_bytes_read == size;
+}
+
+bool
+platform_file_read_line
+(   file_t* file_
+,   char**  dst
+)
+{
+    if ( !file_ || !dst )
+    {
+        if ( !file_ )
+        {
+            LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): Missing argument: file (file to read)." );
+        }
+        if ( !dst )
+        {
+            LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
+        }
+        return false;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        *dst = 0;
+        return false;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    char buffer[ STACK_STRING_MAX_SIZE ];
+    char* string = string_create ();
+
+    // Nothing to copy? Y/N
+    const u64 file_size = _platform_file_size ( file );
+    if ( !file_size )
+    {
+        *dst = string;
+        return true;
+    }
+
+    u64 bytes_remaining = file_size;
+    bool end_of_line = false;
+    do
+    {
+        // Read file content into a buffer for processing.
+        const u64 bytes_read = read ( ( *file ).descriptor
+                                    , buffer
+                                    , MIN ( bytes_remaining
+                                          , STACK_STRING_MAX_SIZE
+                                          ));
+        if ( bytes_read == ( ( u64 ) -1 ) )
+        {
+            platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): read failed on file: %s."
+                               , ( *file ).path
+                               );
+            string_destroy ( string );
+            *dst = 0;
+            return false;
+        }
+
+        // End of line? Y/N
+        u64 length = 0;
+        while ( length < bytes_read )
+        {
+            if ( !buffer[ length ] || newline ( buffer[ length ] ) )
+            {
+                end_of_line = true;
+
+                // Move the file pointer back to the terminator index (+1).
+                const u64 amount = bytes_read - length - 1;
+                if ( lseek ( ( *file ).descriptor , -amount , SEEK_CUR ) == ( ( u64 ) -1 ) )
+                {
+                    platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): lseek failed on file: %s."
+                                       , ( *file ).path
+                                       );
+                    string_destroy ( string );
+                    *dst = 0;
+                    return false;
+                }
+
+                break;
+            }
+
+            length += 1;
+        }
+
+        // Append the line segment to the output buffer.
+        string_push ( string , buffer , length );
+        *dst = string;
+        
+        bytes_remaining -= bytes_read;
+    }
+    while ( bytes_remaining && !end_of_line );
+    
+    return true;
+}
+
+bool
+platform_file_read_all
+(   file_t* file_
+,   u8**    dst
+,   u64*    read_
+)
+{
+    if ( !file_ || !dst || !read_ )
+    {
+        if ( !file_ )
+        {
+            LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: file (file to read)." );
+        }
+        if ( !dst )
+        {
+            LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
+        }
+        if ( !read_ )
+        {
+            LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: read (output buffer)." );
+        }
+        return false;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return false;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    const u64 file_size = _platform_file_size ( file );
+
+    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * file_size );
+
+    // Nothing to copy? Y/N
+    if ( !file_size )
+    {
+        *dst = string;
+        *read_ = 0;
+        return true;
+    }
+
+    u64 total_bytes_read = 0;
+    while ( total_bytes_read < file_size )
+    {
+        const u64 bytes_read = read ( ( *file ).descriptor
+                                    , string + total_bytes_read
+                                    , file_size - total_bytes_read
+                                    );
+        if ( bytes_read == ( ( u64 ) -1 ) )
+        {
+            platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): read failed on file: %s."
+                               , ( *file ).path
+                               );
+            string_free ( string );
+            *dst = 0;
+            *read_ = total_bytes_read;
+            return false;
+        }
+        total_bytes_read += bytes_read;
+    }
+
+    ( ( char* ) string )[ total_bytes_read ] = 0; // Append terminator.
+
+    *read_ = total_bytes_read;
+    return total_bytes_read == file_size;
+}
+
+bool
+platform_file_write
+(   file_t*     file_
+,   u64         size
+,   const void* src
+,   u64*        written
+)
+{
+    if ( !file_ || !src || !written )
+    {
+        if ( !file_ )
+        {
+            LOGERROR ( "platform_file_write ("PLATFORM_STRING"): Missing argument: file (file to write to)." );
+        }
+        if ( !src )
+        {
+            LOGERROR ( "platform_file_write ("PLATFORM_STRING"): Missing argument: src (content to write)." );
+        }
+        if ( !written )
+        {
+            LOGERROR ( "platform_file_write ("PLATFORM_STRING"): Missing argument: written (output buffer)." );
+        }
+        return false;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return false;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    // Nothing to copy? Y/N
+    if ( !size )
+    {
+        *written = 0;
+        return true;
+    }
+
+    u64 total_bytes_written = 0;
+    while ( total_bytes_written < size )
+    {
+        const u64 bytes_written = write ( ( *file ).descriptor
+                                        , ( ( u8* ) src ) + total_bytes_written
+                                        , size - total_bytes_written
+                                        );
+        if ( bytes_written == ( ( u64 ) -1 ) )
+        {
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+                               , ( *file ).path
+                               );
+            *written = bytes_written;
+            return false;
+        }
+        total_bytes_written += bytes_written;
+    }
+
+    *written = total_bytes_written;
+    return total_bytes_written == size;
+}
+
+bool
+platform_file_write_line
+(   file_t*     file_
+,   u64         size
+,   const char* src
+)
+{
+    if ( !file_ || !src )
+    {
+        if ( !file_ )
+        {
+            LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): Missing argument: file (file to write to)." );
+        }
+        if ( !src )
+        {
+            LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): Missing argument: src (content to write)." );
+        }
+        return false;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return false;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    u64 total_bytes_written = 0;
+    while ( total_bytes_written < size )
+    {
+        const u64 bytes_written = write ( ( *file ).descriptor
+                                        , ( ( u8* ) src ) + total_bytes_written
+                                        , size - total_bytes_written
+                                        );
+        if ( bytes_written == ( ( u64 ) -1 ) )
+        {
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+                               , ( *file ).path
+                               );
+            return false;
+        }
+
+        total_bytes_written += bytes_written;
+    }
+
+    // Append a newline to the file.
+    const char newline = '\n';
+    const u64 bytes_written = write ( ( *file ).descriptor
+                                    , &newline
+                                    , sizeof ( newline )
+                                    );
+    if ( bytes_written == ( ( u64 ) -1 ) )
+    {
+        platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+                            , ( *file ).path
+                            );
+        return false;
+    }
+
+    total_bytes_written += bytes_written;
+
+    return total_bytes_written == size + sizeof ( newline );
+}
+
+void
+platform_file_stdin
+(   file_t* file
+)
+{
+    if ( !platform_stdin.handle )
+    {
+        platform_stdin.descriptor = 0;
+        platform_stdin.path = "stdin";
+    }
+    ( *file ).handle = &platform_stdin;
+    ( *file ).valid = true;
+}
+
+void
+platform_file_stdout
+(   file_t* file
+)
+{
+    if ( !platform_stdout.handle )
+    {
+        platform_stdout.descriptor = 1;
+        platform_stdout.path = "stdout";
+    }
+    ( *file ).handle = &platform_stdout;
+    ( *file ).valid = true;
+}
+
+void
+platform_file_stderr
+(   file_t* file
+)
+{
+    if ( !platform_stderr.handle )
+    {
+        platform_stderr.descriptor = 2;
+        platform_stderr.path = "stderr";
+    }
+    ( *file ).handle = &platform_stderr;
+    ( *file ).valid = true;
+}
+
+f64
+platform_absolute_time
+( void )
+{
+    mach_timebase_info_data_t mach_timebase_info;
+    mach_timebase_info ( &mach_timebase_info );
+    const u64 time = mach_absolute_time ();
+    const u64 ns = ( f64 )( time * ( ( u64 ) mach_timebase_info.numer ) / ( ( f64 ) clock_timebase.denom ) );
+    return ns / 1.0E9;
+}
+
+void
+platform_sleep
+(   u64 ms
+)
+{
+    #if _POSIX_C_SOURCE >= 199309L
+        struct timespec time;
+        time.tv_sec = ms / 1000;
+        time.tv_nsec = ( ms % 1000 ) * 1000 * 1000;
+        nanosleep ( &time , 0 );
+    #else
+        if ( ms >= 1000 )
+        {
+            sleep ( ms / 1000 );
+        }
+        usleep ( ( ms % 1000 ) * 1000 );
+    #endif
+}
+
+i64
+platform_error_code
+( void )
+{
+    return errno;
+}
+
+u64
+platform_error_message
+(   const i64   error
+,   char*       dst
+,   const u64   dst_length
+)
+{
+    if ( !dst || !dst_length )
+    {
+        if ( !dst )
+        {
+            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
+        }
+        if ( !dst_length )
+        {
+            LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Value of dst_length argument must be non-zero." );
+        }
+        return 0;
+    }
+    if ( strerror_r ( error , dst , dst_length ) )
+    {
+        LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Failed to retrieve an error report from the host platform." );
+        return 0;
+    }
+    return MIN ( _string_length ( dst ) , dst_length );
+}
+
+i32
+platform_processor_core_count
+( void )
+{
+    LOGINFO ( "platform_processor_core_count: %i cores available."
+            , [ [ NSProcessInfo processInfo ] processorCount ]
+            );
+    return [ [ NSProcessInfo processInfo ] processorCount ];
 }
 
 i32

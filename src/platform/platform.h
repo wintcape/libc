@@ -8,10 +8,8 @@
 
 #include "common.h"
 
-#include "core/mutex.h"
-#include "core/thread.h"
-
-#include "platform/filesystem.h"
+////////////////////////////////////////////////////////////////////////////////
+// Begin memory operations.
 
 /**
  * @brief Platform-independent memory allocation function (see core/memory.h).
@@ -32,6 +30,10 @@ void
 platform_memory_free
 (   void* blk
 );
+
+// End memory operations.
+////////////////////////////////////////////////////////////////////////////////
+// Begin string operations.
 
 /**
  * @brief Platform-independent memory clear function (see core/memory.h).
@@ -121,7 +123,6 @@ platform_string_length
 (   const char* string
 );
 
-
 /**
  * @brief Clamped variant of platform_string_length for unsafe strings.
  * 
@@ -136,6 +137,355 @@ platform_string_length_clamped
 ,   const u64   limit
 );
 
+// End string operations.
+////////////////////////////////////////////////////////////////////////////////
+// Begin thread operations.
+
+#include "platform/thread.h"
+
+/**
+ * @brief Platform-independent 'thread create' function (see platform/thread.h).
+ * 
+ * Uses dynamic memory allocation; call platform_thread_destroy to free.
+ * 
+ * @param function The callback function to run threaded.
+ * @param args Internal state arguments.
+ * @param auto_detach Thread should immediately release resources when work is
+ * complete? Y/N
+ * @param thread Output buffer.
+ * @return true if successfully created; otherwise false.
+ */
+bool
+platform_thread_create
+(   thread_start_function_t function
+,   void*                   args
+,   bool                    auto_detach
+,   thread_t*               thread
+);
+
+/**
+ * @brief Platform-independent 'thread destroy' function (see platform/thread.h).
+ * 
+ * @param thread The thread to free.
+ */
+void
+platform_thread_destroy
+(   thread_t* thread
+);
+
+/**
+ * @brief Platform-independent 'thread detach' function (see platform/thread.h).
+ * 
+ * @param thread The thread to detach.
+ */
+void
+platform_thread_detach
+(   thread_t* thread
+);
+
+/**
+ * @brief Platform-independent 'thread cancel' function (see platform/thread.h).
+ * 
+ * @param thread The thread to cancel.
+ */
+void
+platform_thread_cancel
+(   thread_t* thread
+);
+
+/**
+ * @brief Platform-independent 'thread wait' function (see platform/thread.h).
+ * 
+ * @param thread The thread to wait for.
+ * @return true on success; false otherwise.
+ */
+bool
+platform_thread_wait
+(   thread_t* thread
+);
+
+/**
+ * @brief Variant of platform_thread_wait which accepts an explicit timeout as
+ * an argument.
+ * 
+ * @param thread A pointer to the thread to wait for.
+ * @param timeout_ms The number of milliseconds to wait prior to timeout.
+ * @return true on success; false on timeout or error.
+ */
+bool
+platform_thread_wait_timeout
+(   thread_t*   thread
+,   const u64   timeout_ms
+);
+
+/**
+ * @brief Platform-independent 'thread active' function (see platform/thread.h).
+ * 
+ * @param thread The thread to query.
+ * @return true if thread currently active; otherwise false.
+ */
+bool
+platform_thread_active
+(   thread_t* thread
+);
+
+/**
+ * @brief Platform-independent 'thread sleep' function (see platform/thread.h).
+ * 
+ * @param thread The thread to sleep on.
+ * @param ms The time to sleep, in milliseconds.
+ */
+void
+platform_thread_sleep
+(   thread_t*   thread
+,   const u64   ms
+);
+
+/**
+ * @brief Platform-independent function to obtain the identifier for the current
+ * thread (see platform/thread.h).
+ * 
+ * @return The identifier for the current thread.
+ */
+u64
+platform_thread_id
+( void );
+
+// End thread operations.
+////////////////////////////////////////////////////////////////////////////////
+// Begin mutex operations.
+
+#include "platform/mutex.h"
+
+/**
+ * @brief Platform-independent 'mutex create' function (see platform/mutex.h).
+ *
+ * Uses dynamic memory allocation; call platform_mutex_destroy to free.
+ * 
+ * @param mutex Output buffer.
+ * @return true on success; false otherwise.
+ */
+bool
+platform_mutex_create
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Platform-independent 'mutex destroy' function (see platform/mutex.h).
+ * 
+ * @param mutex The mutex to free.
+ */
+void
+platform_mutex_destroy
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Platform-independent 'mutex lock' function (see platform/mutex.h).
+ * 
+ * @param mutex The mutex to lock.
+ * @return true on success; false otherwise.
+ */
+bool
+platform_mutex_lock
+(   mutex_t* mutex
+);
+
+/**
+ * @brief Platform-independent 'mutex unlock' function (see platform/mutex.h).
+ * 
+ * @param mutex The mutex to unlock.
+ * @return true on success; false otherwise.
+ */
+bool
+platform_mutex_unlock
+(   mutex_t* mutex
+);
+
+// End mutex operations.
+////////////////////////////////////////////////////////////////////////////////
+// Begin filesystem operations.
+
+#include "platform/filesystem.h"
+
+/**
+ * @brief Tests if a file with the provided mode exists at the provided path on
+ * the host platform.
+ * 
+ * FILE_MODE_ACCESS : Test only for file existence.
+ * FILE_MODE_READ   : Test for read-only file.
+ * FILE_MODE_WRITE  : Test for write-only file.
+ * FILE_MODE_READ |
+ * FILE_MODE_WRITE  : Test for file with both read and write permission.
+ * 
+ * @param path The filepath to test.
+ * @param mode Mode flag.
+ * @return true if file exists; false otherwise.
+ */
+bool
+platform_file_exists
+(   const char* path
+,   FILE_MODE   mode
+);
+
+/**
+ * @brief Attempts to open a file on the host platform.
+ * 
+ * @param path The filepath.
+ * @param mode Mode flag.
+ * @param file Output buffer for file handle.
+ * @return true if file opened successfully; false otherwise.
+ */
+bool
+platform_file_open
+(   const char* path
+,   FILE_MODE   mode
+,   file_t*     file
+);
+
+/**
+ * @brief Attempts to close a file on the host platform.
+ * 
+ * @param file Handle to the file to close.
+ */
+void
+platform_file_close
+(   file_t* file
+);
+
+/**
+ * @brief Computes the size of a file on the host platform.
+ * 
+ * @param file Handle to a file.
+ * @return The filesize of file in bytes.
+ */
+u64
+platform_file_size
+(   file_t* file
+);
+
+/**
+ * @brief Reads a specified amount of content from a file on the host platform
+ * into an output buffer.
+ * 
+ * @param file Handle to the file to read.
+ * @param size Number of bytes to read.
+ * @param dst Output buffer for the content.
+ * @param read Output buffer to hold number of bytes read.
+ * @return true if file read into dst successfully; false otherwise.
+ */
+bool
+platform_file_read
+(   file_t* file
+,   u64     size
+,   void*   dst
+,   u64*    read
+);
+
+/**
+ * @brief Reads content from a file from the host platform into a mutable string
+ * buffer until EOF or line break encountered (see container/string.h).
+ * 
+ * Uses dynamic memory allocation. Call string_destroy to free.
+ * 
+ * @param file Handle to the file to read.
+ * @param dst Output buffer to hold the handle to the mutable output string.
+ * @return true if the handle stored in dst is valid; false otherwise.
+ */
+bool
+platform_file_read_line
+(   file_t* file
+,   char**  dst
+);
+
+/**
+ * @brief Generates a copy of the entire contents of a file on the host
+ * platform.
+ * 
+ * Uses dynamic memory allocation. Call string_free to free.
+ * (see core/string.h)
+ * 
+ * @param file Handle to the file to read.
+ * @param dst Output buffer to hold the handle to the null-terminated output
+ * string.
+ * @param read Output buffer to hold number of bytes read.
+ * @return true if the handle stored in dst is valid; false otherwise.
+ */
+bool
+platform_file_read_all
+(   file_t* file
+,   u8**    dst
+,   u64*    read
+);
+
+/**
+ * @brief Writes a specified amount of data to a file on the host platform.
+ * 
+ * @param file Handle to the file to write to.
+ * @param size Number of bytes to write.
+ * @param src The data to write.
+ * @param written Output buffer to hold number of bytes written.
+ *
+ * @return true if src written to file successfully; false otherwise.
+ */
+bool
+platform_file_write
+(   file_t*     file
+,   u64         size
+,   const void* src
+,   u64*        written
+);
+
+/**
+ * @brief Writes a string to file on the host platform and appends the `\n`
+ * character.
+ * 
+ * @param file Handle to the file to write to.
+ * @param size Number of bytes to write.
+ * @param src The string to write.
+ *
+ * @return true if src written to file successfully; false otherwise.
+ */
+bool
+platform_file_write_line
+(   file_t*     file
+,   u64         size
+,   const char* src
+);
+
+/**
+ * @brief Obtains a handle to the host platform's standard input stream.
+ * 
+ * @param file Output buffer. Must be non-zero.
+ */
+void
+platform_file_stdin
+(   file_t* file
+);
+
+/**
+ * @brief Obtains a handle to the host platform's standard output stream.
+ * 
+ * @param file Output buffer. Must be non-zero.
+ */
+void
+platform_file_stdout
+(   file_t* file
+);
+
+/**
+ * @brief Obtains a handle to the host platform's standard error stream.
+ * 
+ * @param file Output buffer. Must be non-zero.
+ */
+void
+platform_file_stderr
+(   file_t* file
+);
+
+// End filesystem operations.
+////////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Platform-independent function to query the system time
  * (see core/clock.h).
@@ -145,16 +495,6 @@ platform_string_length_clamped
 f64
 platform_absolute_time
 ( void );
-
-/**
- * @brief Platform-independent sleep function.
- * 
- * @param ms The number of ms to sleep on the current thread for.
- */
-void
-platform_sleep
-(   u64 ms
-);
 
 /**
  * @brief Queries the most recent platform-specific error code.
@@ -191,178 +531,5 @@ platform_error_message
 i32
 platform_processor_core_count
 ( void );
-
-/**
- * @brief Platform-independent 'thread create' function (see core/thread.h).
- * 
- * Uses dynamic memory allocation; call platform_thread_destroy to free.
- * 
- * @param function The callback function to run threaded.
- * @param args Internal state arguments.
- * @param auto_detach Thread should immediately release resources when work is
- * complete? Y/N
- * @param thread Output buffer.
- * @return true if successfully created; otherwise false.
- */
-bool
-platform_thread_create
-(   thread_start_function_t function
-,   void*                   args
-,   bool                    auto_detach
-,   thread_t*               thread
-);
-
-/**
- * @brief Platform-independent 'thread destroy' function (see core/thread.h).
- * 
- * @param thread The thread to free.
- */
-void
-platform_thread_destroy
-(   thread_t* thread
-);
-
-/**
- * @brief Platform-independent 'thread detach' function (see core/thread.h).
- * 
- * @param thread The thread to detach.
- */
-void
-platform_thread_detach
-(   thread_t* thread
-);
-
-/**
- * @brief Platform-independent 'thread cancel' function (see core/thread.h).
- * 
- * @param thread The thread to cancel.
- */
-void
-platform_thread_cancel
-(   thread_t* thread
-);
-
-/**
- * @brief Platform-independent 'thread wait' function (see core/thread.h).
- * 
- * @param thread The thread to wait for.
- * @return true on success; false otherwise.
- */
-bool
-platform_thread_wait
-(   thread_t* thread
-);
-
-/**
- * @brief Variant of platform_thread_wait which accepts an explicit timeout as
- * an argument.
- * 
- * @param thread A pointer to the thread to wait for.
- * @param timeout_ms The number of milliseconds to wait prior to timeout.
- * @return true on success; false on timeout or error.
- */
-bool
-platform_thread_wait_timeout
-(   thread_t*   thread
-,   const u64   timeout_ms
-);
-
-/**
- * @brief Platform-independent 'thread active' function (see core/thread.h).
- * 
- * @param thread The thread to query.
- * @return true if thread currently active; otherwise false.
- */
-bool
-platform_thread_active
-(   thread_t* thread
-);
-
-/**
- * @brief Platform-independent 'thread sleep' function (see core/thread.h).
- * 
- * @param thread The thread to sleep on.
- * @param ms The time to sleep, in milliseconds.
- */
-void
-platform_thread_sleep
-(   thread_t*   thread
-,   const u64   ms
-);
-
-/**
- * @brief Platform-independent function to obtain the identifier for the current
- * thread (see core/thread.h).
- * 
- * @return The identifier for the current thread.
- */
-u64
-platform_thread_id
-( void );
-
-/**
- * @brief Platform-independent 'mutex create' function (see core/mutex.h).
- *
- * Uses dynamic memory allocation; call platform_mutex_destroy to free.
- * 
- * @param mutex Output buffer.
- * @return true on success; false otherwise.
- */
-bool
-platform_mutex_create
-(   mutex_t* mutex
-);
-
-/**
- * @brief Platform-independent 'mutex destroy' function (see core/mutex.h).
- * 
- * @param mutex The mutex to free.
- */
-void
-platform_mutex_destroy
-(   mutex_t* mutex
-);
-
-/**
- * @brief Platform-independent 'mutex lock' function (see core/mutex.h).
- * 
- * @param mutex The mutex to lock.
- * @return true on success; false otherwise.
- */
-bool
-platform_mutex_lock
-(   mutex_t* mutex
-);
-
-/**
- * @brief Platform-independent 'mutex unlock' function (see core/mutex.h).
- * 
- * @param mutex The mutex to unlock.
- * @return true on success; false otherwise.
- */
-bool
-platform_mutex_unlock
-(   mutex_t* mutex
-);
-
-/**
- * @brief Tests if a file with the provided mode exists at the provided path on
- * the host platform.
- * 
- * FILE_MODE_ACCESS : Test only for file existence.
- * FILE_MODE_READ   : Test for read-only file.
- * FILE_MODE_WRITE  : Test for write-only file.
- * FILE_MODE_READ |
- * FILE_MODE_WRITE  : Test for file with both read and write permission.
- * 
- * @param path The filepath to test. Must be non-zero.
- * @param mode Mode flag.
- * @return true if file exists; false otherwise.
- */
-bool
-platform_file_exists
-(   const char* path
-,   FILE_MODE   mode
-);
 
 #endif  // PLATFORM_H
