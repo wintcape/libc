@@ -305,7 +305,7 @@ test_file_read_all
     file_t file;
     u64 read;
     u64 written;
-    char* string_in = string_allocate ( filesize );
+    char* string_in = string_allocate ( filesize + 1 );
     u8* string_out;
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
     file_t invalid_file;
@@ -328,6 +328,7 @@ test_file_read_all
     file_close ( &file );
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
     EXPECT ( file_read_all ( &file , &string_out , &read ) );
+    EXPECT_NEQ ( 0 , string_out );
     EXPECT_EQ ( filesize , read );
     EXPECT ( memory_equal ( string_in , string_out , read ) );
     file_close ( &file );

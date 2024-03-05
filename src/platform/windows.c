@@ -928,7 +928,7 @@ platform_file_read_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
-        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
+        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
                  , ( *file ).path
                  );
         *dst = 0;
@@ -1057,7 +1057,7 @@ platform_file_read_all
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
-        LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
+        LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
                  , ( *file ).path
                  );
         *dst = 0;
@@ -1138,8 +1138,6 @@ platform_file_read_all
 
     total_bytes_read += bytes_read;
 
-    ( ( char* ) string )[ total_bytes_read ] = 0; // Append terminator.
-
     *dst = string;
     *read = total_bytes_read;
     return total_bytes_read == file_size;
@@ -1185,7 +1183,7 @@ platform_file_write
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
+        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
                  , ( *file ).path
                  );
         *written = 0;
@@ -1278,7 +1276,7 @@ platform_file_write_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
+        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
                  , ( *file ).path
                  );
         return false;

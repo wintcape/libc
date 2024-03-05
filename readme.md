@@ -109,6 +109,7 @@ make macos-test
 - Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows.
 
 ## To-do
+- Set up a git branch so I can push one platform layer at a time without modifying the others until I can test them.
 - Implement `string_f64`, removing dependency `<stdio.h>`.
 - Implement unbuffered file I/O for Windows platform layer; currently lets Windows handle alignment and buffering.
 - Implement `platform_thread_wait`, `platform_thread_wait_timeout`, and `platform_thread_active` for macOS/Linux platform layers.
@@ -118,6 +119,9 @@ make macos-test
 - Tests for `platform/thread.h` and `platform/mutex.h`.
 
 ## Changelog
+
+### 0.3.1
+- Fixed GNU/Linux and macOS platform layers so they compile and pass all tests. I need to set up a branch so I can push one platform layer at a time wthout modifying the others until I can test them.
 
 ### 0.3.0
 - `platform/filesystem.h` now uses the platform layer internally, rather than `<stdio.h>`. With it comes much more extensive testing done by `platform/test_filesystem.c`.

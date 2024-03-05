@@ -39,6 +39,7 @@ typedef struct
     i32         descriptor;
     FILE_MODE   mode;
     const char* path;
+    bool        initialized;
 }
 platform_file_t;
 
@@ -239,7 +240,7 @@ _platform_mutex_unlock
  */
 u64
 _platform_file_size
-(   file_t* file
+(   platform_file_t* file
 );
 
 void*
@@ -725,7 +726,7 @@ platform_file_open
     }
 
     // Set file pointer to the start of the file.
-    if ( lseek ( descriptor , 0 , SEEK_SET ) == ( ( u64 ) -1 ) )
+    if ( lseek ( descriptor , 0 , SEEK_SET ) == -1 )
     {
         platform_log_error ( "platform_file_open ("PLATFORM_STRING"): lseek failed for file: %s."
                            , path
@@ -767,7 +768,7 @@ platform_file_close
     ( *file_ ).valid = false;
 
     platform_file_t* file = ( *file_ ).handle;
-    if ( !close ( ( *file ).handle ) )
+    if ( close ( ( *file ).descriptor ) == -1 )
     {
         platform_log_error ( "platform_file_close ("PLATFORM_STRING"): close failed on file: %s."
                            , ( *file ).path
@@ -838,7 +839,7 @@ platform_file_read
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
-        LOGERROR ( "platform_file_read ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
+        LOGERROR ( "platform_file_read ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
                  , ( *file ).path
                  );
         *read_ = 0;
@@ -914,7 +915,7 @@ platform_file_read_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
-        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
+        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
                  , ( *file ).path
                  );
         *dst = 0;
@@ -962,7 +963,7 @@ platform_file_read_line
 
                 // Move the file pointer back to the terminator index (+1).
                 const u64 amount = bytes_read - length - 1;
-                if ( lseek ( ( *file ).descriptor , -amount , SEEK_CUR ) == ( ( u64 ) -1 ) )
+                if ( lseek ( ( *file ).descriptor , -amount , SEEK_CUR ) == -1 )
                 {
                     platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): lseek failed on file: %s."
                                        , ( *file ).path
@@ -1030,9 +1031,20 @@ platform_file_read_all
 
     platform_file_t* file = ( *file_ ).handle;
 
+    // Illegal mode? Y/N
+    if ( !( ( *file ).mode & FILE_MODE_READ ) )
+    {
+        LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
+                 , ( *file ).path
+                 );
+        *dst = 0;
+        *read_ = 0;
+        return false;
+    }
+
     const u64 file_size = _platform_file_size ( file );
 
-    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * file_size );
+    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * ( file_size + 1 ) );
 
     // Nothing to copy? Y/N
     if ( !file_size )
@@ -1062,8 +1074,7 @@ platform_file_read_all
         total_bytes_read += bytes_read;
     }
 
-    ( ( char* ) string )[ total_bytes_read ] = 0; // Append terminator.
-
+    *dst = string;
     *read_ = total_bytes_read;
     return total_bytes_read == file_size;
 }
@@ -1108,7 +1119,7 @@ platform_file_write
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
+        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
                  , ( *file ).path
                  );
         *written = 0;
@@ -1174,7 +1185,7 @@ platform_file_write_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
+        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
                  , ( *file ).path
                  );
         return false;
@@ -1222,11 +1233,12 @@ platform_file_stdin
 (   file_t* file
 )
 {
-    if ( !platform_stdin.handle )
+    if ( !platform_stdin.initialized )
     {
         platform_stdin.descriptor = 0;
         platform_stdin.mode = FILE_MODE_READ;
         platform_stdin.path = "stdin";
+        platform_stdin.initialized = true;
     }
     ( *file ).handle = &platform_stdin;
     ( *file ).valid = true;
@@ -1237,11 +1249,12 @@ platform_file_stdout
 (   file_t* file
 )
 {
-    if ( !platform_stdout.handle )
+    if ( !platform_stdout.initialized )
     {
         platform_stdout.descriptor = 1;
-        platform_stderr.mode = FILE_MODE_WRITE;
+        platform_stdout.mode = FILE_MODE_WRITE;
         platform_stdout.path = "stdout";
+        platform_stdout.initialized = true;
     }
     ( *file ).handle = &platform_stdout;
     ( *file ).valid = true;
@@ -1252,11 +1265,12 @@ platform_file_stderr
 (   file_t* file
 )
 {
-    if ( !platform_stderr.handle )
+    if ( !platform_stderr.initialized )
     {
         platform_stderr.descriptor = 2;
         platform_stderr.mode = FILE_MODE_WRITE;
         platform_stderr.path = "stderr";
+        platform_stderr.initialized = true;
     }
     ( *file ).handle = &platform_stderr;
     ( *file ).valid = true;
