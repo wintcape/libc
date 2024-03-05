@@ -599,6 +599,7 @@ if ( !mutex || !( *mutex ).internal )
 
     return true;
 }
+
 bool
 platform_file_exists
 (   const char* path
@@ -639,12 +640,8 @@ platform_file_open
 ,   file_t*     file_
 )
 {
-    if ( !path || !file_ )
+    if ( !file_ )
     {
-        if ( !path )
-        {
-            LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: path (filepath to open)." );
-        }
         if ( !file_ )
         {
             LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
@@ -654,6 +651,12 @@ platform_file_open
 
     ( *file_ ).valid = false;
     ( *file_ ).handle = 0;
+
+    if ( !path )
+    {
+        LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: path (filepath to open)." );
+        return false;
+    }
 
     i32 mode;
     bool truncate;
@@ -710,11 +713,11 @@ platform_file_open
                                             , MEMORY_TAG_FILE
                                             );
     ( *file ).descriptor = descriptor;
+    ( *file ).mode = mode_;
     ( *file ).path = path;
     
     ( *file_ ).handle = file;
     ( *file_ ).valid = true;
-
     return true;
 }
 
@@ -784,27 +787,42 @@ platform_file_read
         {
             LOGERROR ( "platform_file_read ("PLATFORM_STRING"): Missing argument: read (output buffer)." );
         }
+        else
+        {
+            *read_ = 0;
+        }
         return false;
     }
 
     if ( !( *file_ ).handle || !( *file_ ).valid )
     {
+        *read_ = 0;
         return false;
     }
 
     platform_file_t* file = ( *file_ ).handle;
 
-    // Nothing to copy? Y/N
-    if ( !size )
+    // Illegal mode? Y/N
+    if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
+        LOGERROR ( "platform_file_read ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
+                 , ( *file ).path
+                 );
         *read_ = 0;
-        return true;
+        return false;
     }
 
     const u64 file_size = _platform_file_size ( file );
     if ( file_size < size )
     {
         size = file_size;
+    }
+
+    // Nothing to copy? Y/N
+    if ( !size )
+    {
+        *read_ = 0;
+        return true;
     }
 
     u64 total_bytes_read = 0;
@@ -845,6 +863,10 @@ platform_file_read_line
         {
             LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
         }
+        else
+        {
+            *dst = 0;
+        }
         return false;
     }
 
@@ -855,6 +877,16 @@ platform_file_read_line
     }
 
     platform_file_t* file = ( *file_ ).handle;
+
+    // Illegal mode? Y/N
+    if ( !( ( *file ).mode & FILE_MODE_READ ) )
+    {
+        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
+                 , ( *file ).path
+                 );
+        *dst = 0;
+        return false;
+    }
 
     char buffer[ STACK_STRING_MAX_SIZE ];
     char* string = string_create ();
@@ -941,15 +973,25 @@ platform_file_read_all
         {
             LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
         }
+        else
+        {
+            *dst = 0;
+        }
         if ( !read_ )
         {
             LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: read (output buffer)." );
+        }
+        else
+        {
+            *read_ = 0;
         }
         return false;
     }
 
     if ( !( *file_ ).handle || !( *file_ ).valid )
     {
+        *dst = 0;
+        *read_ = 0;
         return false;
     }
 
@@ -1015,15 +1057,30 @@ platform_file_write
         {
             LOGERROR ( "platform_file_write ("PLATFORM_STRING"): Missing argument: written (output buffer)." );
         }
+        else
+        {
+            *written = 0;
+        }
         return false;
     }
 
     if ( !( *file_ ).handle || !( *file_ ).valid )
     {
+        *written = 0;
         return false;
     }
 
     platform_file_t* file = ( *file_ ).handle;
+
+    // Illegal mode? Y/N
+    if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
+    {
+        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
+                 , ( *file ).path
+                 );
+        *written = 0;
+        return false;
+    }
 
     // Nothing to copy? Y/N
     if ( !size )
@@ -1081,6 +1138,15 @@ platform_file_write_line
 
     platform_file_t* file = ( *file_ ).handle;
 
+    // Illegal mode? Y/N
+    if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
+    {
+        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
+                 , ( *file ).path
+                 );
+        return false;
+    }
+
     u64 total_bytes_written = 0;
     while ( total_bytes_written < size )
     {
@@ -1126,6 +1192,7 @@ platform_file_stdin
     if ( !platform_stdin.handle )
     {
         platform_stdin.descriptor = 0;
+        platform_stdin.mode = FILE_MODE_READ;
         platform_stdin.path = "stdin";
     }
     ( *file ).handle = &platform_stdin;
@@ -1140,6 +1207,7 @@ platform_file_stdout
     if ( !platform_stdout.handle )
     {
         platform_stdout.descriptor = 1;
+        platform_stderr.mode = FILE_MODE_WRITE;
         platform_stdout.path = "stdout";
     }
     ( *file ).handle = &platform_stdout;
@@ -1154,6 +1222,7 @@ platform_file_stderr
     if ( !platform_stderr.handle )
     {
         platform_stderr.descriptor = 2;
+        platform_stderr.mode = FILE_MODE_WRITE;
         platform_stderr.path = "stderr";
     }
     ( *file ).handle = &platform_stderr;
@@ -1416,6 +1485,16 @@ _platform_mutex_unlock
         return PLATFORM_MAC_ERROR_PTHREAD_MUTEX_UNLOCK;
     }
     return 0;
+}
+
+u64
+_platform_file_size
+(   platform_file_t* file
+)
+{
+    struct stat file_info;
+    fstat ( ( *file ).descriptor , &file_info );
+    return file_info.st_size;
 }
 
 #endif  // End platform layer.

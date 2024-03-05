@@ -641,12 +641,8 @@ platform_file_open
 ,   file_t*     file_
 )
 {
-    if ( !path || !file_ )
+    if ( !file_ )
     {
-        if ( !path )
-        {
-            LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: path (filepath to open)." );
-        }
         if ( !file_ )
         {
             LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: file (output buffer)." );
@@ -656,6 +652,12 @@ platform_file_open
 
     ( *file_ ).valid = false;
     ( *file_ ).handle = 0;
+
+    if ( !path )
+    {
+        LOGERROR ( "platform_file_open ("PLATFORM_STRING"): Missing argument: path (filepath to open)." );
+        return false;
+    }
 
     i32 mode;
     bool truncate;
@@ -724,7 +726,6 @@ platform_file_open
     
     ( *file_ ).handle = file;
     ( *file_ ).valid = true;
-
     return true;
 }
 
@@ -733,7 +734,7 @@ platform_file_close
 (   file_t* file_
 )
 {
-    if ( !file_ || !( *file_ ).handle || !( *file_ ).valid )
+    if ( !file_ || !( *file_ ).valid || !( *file_ ).handle )
     {
         return;
     }
@@ -794,11 +795,16 @@ platform_file_read
         {
             LOGERROR ( "platform_file_read ("PLATFORM_STRING"): Missing argument: read (output buffer)." );
         }
+        else
+        {
+            *read = 0;
+        }
         return false;
     }
 
     if ( !( *file_ ).handle || !( *file_ ).valid )
     {
+        *read = 0;
         return false;
     }
 
@@ -810,6 +816,7 @@ platform_file_read
         LOGERROR ( "platform_file_read ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
                  , ( *file ).path
                  );
+        *read = 0;
         return false;
     }
 
@@ -903,6 +910,10 @@ platform_file_read_line
         {
             LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
         }
+        else
+        {
+            *dst = 0;
+        }
         return false;
     }
 
@@ -920,6 +931,7 @@ platform_file_read_line
         LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
                  , ( *file ).path
                  );
+        *dst = 0;
         return false;
     }
 
@@ -1018,15 +1030,25 @@ platform_file_read_all
         {
             LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: dst (output buffer)." );
         }
+        else
+        {
+            *dst = 0;
+        }
         if ( !read )
         {
             LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): Missing argument: read (output buffer)." );
+        }
+        else
+        {
+            *read = 0;
         }
         return false;
     }
 
     if ( !( *file_ ).handle || !( *file_ ).valid )
     {
+        *dst = 0;
+        *read = 0;
         return false;
     }
 
@@ -1038,12 +1060,14 @@ platform_file_read_all
         LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
                  , ( *file ).path
                  );
+        *dst = 0;
+        *read = 0;
         return false;
     }
 
     const u64 file_size = _platform_file_size ( file );
 
-    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * file_size );
+    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * ( file_size + 1 ) );
 
     // Nothing to copy? Y/N
     if ( !file_size )
@@ -1143,11 +1167,16 @@ platform_file_write
         {
             LOGERROR ( "platform_file_write ("PLATFORM_STRING"): Missing argument: written (output buffer)." );
         }
+        else
+        {
+            *written = 0;
+        }
         return false;
     }
 
     if ( !( *file_ ).handle || !( *file_ ).valid )
     {
+        *written = 0;
         return false;
     }
 
@@ -1159,6 +1188,7 @@ platform_file_write
         LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
+        *written = 0;
         return false;
     }
 
