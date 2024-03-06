@@ -99,17 +99,16 @@ To test on GNU/Linux:
 make linux-test
 ```
 
-### macOS
-To test on macOS:
+### macOS/OSX
+To test on macOS/OSX:
 ```
 make macos-test
 ```
 
 ## Known bugs
-- Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows.
+- Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows. macOS platform layer is still untested.
 
 ## To-do
-- Set up a git branch so I can push one platform layer at a time without modifying the others until I can test them.
 - Implement `string_f64`, removing dependency `<stdio.h>`.
 - Implement unbuffered file I/O for Windows platform layer; currently lets Windows handle alignment and buffering.
 - Implement `platform_thread_wait`, `platform_thread_wait_timeout`, and `platform_thread_active` for macOS/Linux platform layers.
@@ -119,6 +118,12 @@ make macos-test
 - Tests for `platform/thread.h` and `platform/mutex.h`.
 
 ## Changelog
+
+### 0.3.3
+- Added a 'dev' branch so I can: (1) push stuff prior to testing if it works cross-platform, (2) pull it on other platforms and run the tests, (3) update the 'master' branch only if it has been tested on all of them. This should resolve issues like those mentioned in the changelog for versions 0.2.1 and 0.3.1.
+- New function `string_strip_ansi` to strip ANSI formatting codes. +tests for it.
+- Log file is now plaintext; strips the ANSI color codes using `string_strip_ansi`.
+- Additional tests for empty files in `platform/test_filesystem.c`.
 
 ### 0.3.2
 - Added explicit types `arg_t` and `args_t` in `common/args.h` to make the usage of `ARGS(...)` preprocessor binding more clear from the function signature (albeit still cumbersome).

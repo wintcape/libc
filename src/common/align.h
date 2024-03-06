@@ -27,8 +27,8 @@ aligned_range_t;
 INLINE
 u64
 aligned
-(   u64 operand
-,   u64 granularity
+(   const u64 operand
+,   const u64 granularity
 )
 {
     return ( ( operand + ( granularity - 1 ) ) & ~( granularity - 1 ) );
@@ -46,9 +46,9 @@ aligned
 INLINE
 aligned_range_t
 aligned_range
-(   u64 offset
-,   u64 size
-,   u64 granularity
+(   const u64 offset
+,   const u64 size
+,   const u64 granularity
 )
 {
     return ( aligned_range_t ){ aligned ( offset , granularity )

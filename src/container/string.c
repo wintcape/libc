@@ -266,3 +266,52 @@ __string_replace
 
     return string;
 }
+
+#include <stdio.h>
+char*
+__string_strip_ansi
+(   char* string
+)
+{
+    u64 i = 0;
+    for (;;)
+    {
+        const u64 length = string_length ( string );
+        if ( !length || i >=  length - 1 )
+        {
+            break;
+        }
+
+        if ( string[ i ] != '\033' || string[ i + 1 ]  != '[' )
+        {
+            i += 1;
+            continue;
+        }
+
+        u64 j = i + 2;
+        for (;;)
+        {
+            if ( j >= string_length ( string ) )
+            {
+                i += 1;
+                break;
+            }
+
+            if ( string[ j ] == 'm' )
+            {
+                string_remove ( string , i , j - i + 1 );
+                break;
+            }
+
+            if ( !digit ( string[ j ] ) && string[ j ] != ';' )
+            {
+                i += 1;
+                break;
+            }
+
+            j += 1;
+        }
+    }
+
+    return string;
+}

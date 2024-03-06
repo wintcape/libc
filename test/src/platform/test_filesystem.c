@@ -202,7 +202,7 @@ test_file_read_line
     const u64 max_line_length = MEGABYTES ( 1 );
     const u64 line_count = 100;
     char* in_lines[ 100 ];
-    char* out_lines[ 100 ];
+    char* out_lines[ 101 ];
     for ( u64 i = 0; i < line_count; ++i )
     {
         in_lines[ i ] = string_create ();
@@ -242,13 +242,16 @@ test_file_read_line
         EXPECT_EQ ( string_length ( in_lines[ i ] ) - 1 , string_length ( out_lines[ i ] ) );
         EXPECT ( memory_equal ( in_lines[ i ] , out_lines[ i ]  , string_length ( out_lines[ i ] ) ) );
     }
+    EXPECT ( file_read_line ( &file , &out_lines[ line_count ] ) );
+    EXPECT_EQ ( 0 , string_length ( out_lines[ line_count ] ) );
+    EXPECT_EQ ( 0 , *( out_lines[ line_count ] ) );
     file_close ( &file );
-
     for ( u64 i = 0; i < line_count; ++i )
     {
         string_destroy ( in_lines[ i ] );
         string_destroy ( out_lines[ i ] );
     }
+    string_destroy ( out_lines[ line_count ] );
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     file_close ( &file );
     return true;
@@ -316,6 +319,11 @@ test_file_read_all
     EXPECT_NOT ( file_read_all ( &invalid_file , &string_out , &read ) );
     EXPECT_NOT ( file_read_all ( &file , 0 , &read ) );
     EXPECT_NOT ( file_read_all ( &file , &string_out , 0 ) );
+    EXPECT ( file_read_all ( &file , &string_out , &read ) );
+    EXPECT_EQ ( 0 , read );
+    EXPECT_EQ ( 0 , _string_length ( ( char* ) string_out ) );
+    EXPECT_EQ ( 0 , *( string_out ) );
+    string_free ( string_out );
     file_close ( &file );
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     EXPECT_NOT ( file_read_all ( &file , &string_out , &read ) );
@@ -338,7 +346,7 @@ test_file_read_all
 }
 
 u8
-test_file_read_and_write_huge_file
+test_file_read_and_write_large_file
 ( void )
 {
     const u64 buffer_size = GIBIBYTES ( 1 );
@@ -406,5 +414,5 @@ test_register_filesystem
     test_register ( test_file_read_line , "Reading a line of text from a file on the host platform." );
     test_register ( test_file_write_line , "Writing a line of text to a file on the host platform." );
     test_register ( test_file_read_all , "Reading the entire contents of a file on the host platform into program memory." );
-    test_register ( test_file_read_and_write_huge_file , "Testing file 'read' and 'write' operations on a file larger than 4 GiB." );
+    test_register ( test_file_read_and_write_large_file , "Testing file 'read' and 'write' operations on a file larger than 4 GiB." );
 }

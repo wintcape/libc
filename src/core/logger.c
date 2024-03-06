@@ -138,23 +138,32 @@ logger_log
     const bool colored = level != LOG_INFO;
 
     char* raw = _string_format ( message , args );
+    char* plaintext = 0;
+    char* formatted = 0;
 
     // Write plaintext to log file.
-    _string_insert ( raw , 0 , log_level_prefixes[ level ] );
-    logger_file_append ( raw , string_length ( raw ) );
+    if ( state )
+    {
+        plaintext = string_copy ( raw );
+        string_strip_ansi ( plaintext );
+        _string_insert ( plaintext , 0 , log_level_prefixes[ level ] );
+        logger_file_append ( plaintext , string_length ( plaintext ) );
+    }
+
     if ( level == LOG_SILENT )
     {
+        string_destroy ( raw );
+        string_destroy ( plaintext );
         return;
     }
-    string_remove ( raw , 0 , _string_length ( log_level_prefixes[ level ] ) );
 
     // Write ANSI-formatted text to console.
-    char* formatted = string_format ( ANSI_CC_RESET"%s%s%s%S"ANSI_CC_RESET"\n"
-                                    , log_level_colors[ level ]
-                                    , log_level_prefixes[ level ]
-                                    , ( colored ) ? "" : ANSI_CC_RESET
-                                    , raw
-                                    );
+    formatted = string_format ( ANSI_CC_RESET"%s%s%s%S"ANSI_CC_RESET"\n"
+                              , log_level_colors[ level ]
+                              , log_level_prefixes[ level ]
+                              , ( colored ) ? "" : ANSI_CC_RESET
+                              , raw
+                              );
     file_t file;
     ( err ) ? file_stderr ( &file )
             : file_stdout ( &file )
@@ -162,6 +171,7 @@ logger_log
     _print ( &file , formatted , string_length ( formatted ) );
 
     string_destroy ( raw );
+    string_destroy ( plaintext );
     string_destroy ( formatted );
 }
 

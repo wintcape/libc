@@ -51,7 +51,7 @@ _array_create
     _array_create ( ARRAY_DEFAULT_CAPACITY , sizeof ( type ) )
 
 /**
- * @brief Copies a resizable array.
+ * @brief Copies a resizable array. O(n).
  * 
  * Uses dynamic memory allocation. Call array_destroy to free.
  * 
@@ -116,7 +116,7 @@ _array_field_set
 );
 
 /**
- * @brief Resizes an existing array.
+ * @brief Resizes an existing array. O(n).
  * 
  * @param array The array to resize. Must be non-zero.
  * @return The new array.

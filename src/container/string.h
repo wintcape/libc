@@ -39,19 +39,19 @@ __string_create
     __string_create ( initial_capacity )
 
 /**
- * @brief Creates a resizable copy of an existing string.
+ * @brief Creates a resizable copy of an existing string. O(n).
  * 
  * Use _string_copy to explicitly specify string length, or string_create_from
- * to compute the length of a null-terminated string before passing it to
- * _string_copy ( O(n) ). If the string being copied is itself a resizable
- * string (i.e. a string created via the string_create class of functions),
+ * to compute the length of a null-terminated string ( O(n) ) before passing it
+ * to _string_copy. If the string being copied is itself a resizable string
+ * (i.e. a string itself created via the string_create class of functions),
  * string_copy may be used to implicitly fetch the current length of the
- * resizable string before passing it to __string_copy ( O(1) ).
+ * resizable string ( O(1) ) before passing it to __string_copy.
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
  * @param src The string to copy. Must be non-zero.
- * @param src_length The amount to copy.
+ * @param src_length The number of characters to copy from src.
  * @return A resizable copy of s.
  */
 char*
@@ -65,7 +65,6 @@ __string_copy
         const char* string__ = (string);                           \
         __string_copy ( (string__) , string_length ( string__ ) ); \
     })
-    
 
 #define string_create_from(string)                                  \
     ({                                                              \
@@ -98,7 +97,7 @@ string_length
 );
 
 /**
- * @brief Appends to a resizable string.
+ * @brief Appends to a resizable string. O(1), on average.
  * 
  * Use string_push to explicitly specify string length, or _string_push
  * to compute the length of a null-terminated string before passing it to
@@ -106,6 +105,7 @@ string_length
  * 
  * @param string The resizable string to append to. Must be non-zero.
  * @param src The string to append. Must be non-zero.
+ * @param src_length The number of characters to copy from src.
  * @return The resizable string (possibly with new address).
  */
 char*
@@ -130,7 +130,7 @@ __string_push
     while ( 0 )
 
 /**
- * @brief Inserts into a resizable string.
+ * @brief Inserts into a resizable string. O(n).
  * 
  * Use string_insert to explicitly specify string length, or _string_insert
  * to compute the length of a null-terminated string before passing it to
@@ -139,6 +139,7 @@ __string_push
  * @param string The resizable string to append to. Must be non-zero.
  * @param index The index to insert at.
  * @param src The string to insert. Must be non-zero.
+ * @param src_length The number of characters to copy from src.
  * @return The resizable string (possibly with new address).
  */
 char*
@@ -165,7 +166,7 @@ __string_insert
     while ( 0 )
 
 /**
- * @brief Removes a substring from a resizable string.
+ * @brief Removes a substring from a resizable string. O(n).
  * 
  * @param string The resizable string to remove from. Must be non-zero.
  * @param index The starting index of the substring to remove.
@@ -183,7 +184,7 @@ __string_remove
     __string_remove ( (string) , (index) , (count) )
 
 /**
- * @brief **Effectively** clears a resizable string.
+ * @brief **Effectively** clears a resizable string. O(1).
  * 
  * @param string The resizable string to clear. Must be non-zero.
  * @return The resizable string set to empty.
@@ -197,7 +198,7 @@ __string_clear
     __string_clear ( string )
 
 /**
- * @brief Trims whitespace off front and back of a string. In-place.
+ * @brief Trims whitespace off front and back of a string. O(n). In-place.
  * 
  * @param string The resizable string to trim. Must be non-zero.
  * @return The resizable string with whitespace trimmed off the front and back.
@@ -212,7 +213,7 @@ __string_trim
 
 /**
  * @brief Replaces all instances of a substring within a string with a different
- * substring.
+ * substring. O(n).
  * 
  * Use string_replace to explicitly specify string length, or _string_replace
  * to compute the lengths of null-terminated strings before passing them to
@@ -255,5 +256,19 @@ __string_replace
                                     );                             \
     }                                                              \
     while ( 0 )
+
+/**
+ * @brief Strips a string of ANSI formatting codes. O(n). In-place.
+ * 
+ * @param string The resizable string to strip. Must be non-zero.
+ * @return The resizable string stripped of ANSI formatting codes.
+ */
+char*
+__string_strip_ansi
+(   char* string
+);
+
+#define string_strip_ansi(string) \
+    __string_strip_ansi ( string )
 
 #endif  // STRING_H

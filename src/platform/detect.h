@@ -46,10 +46,10 @@
     #if TARGET_OS_IPHONE
         #define PLATFORM_IOS 1
         #define PLATFORM_STRING "iOS"
-    // Apple: macOS.
+    // Apple: macOS/OSX.
     #elif TARGET_OS_MAC
         #define PLATFORM_MAC 1
-        #define PLATFORM_STRING "macOS"
+        #define PLATFORM_STRING "macOS/OSX"
     // Apple: iOS Emulator.
     #elif TARGET_IPHONE_SIMULATOR
         #define PLATFORM_IOS 1

@@ -395,6 +395,64 @@ test_string_replace
 }
 
 u8
+test_string_strip_ansi
+( void )
+{
+    const char* in1 = ANSI_CC ( ANSI_CC_BG_DARK_RED ) "Strip me." ANSI_CC_RESET;
+    const char* in2 = "Strip \033[0;1;2;43;44;45;46m" ANSI_CC ( ANSI_CC_BG_DARK_RED ) "me." ANSI_CC_RESET;
+    const char* in3 = ANSI_CC_RESET;
+    const char* empty = "";
+    const char* in_illegal1 = "This should not\033[;;;;;]m be stripped.";
+    const char* in_illegal2 = "This should not\033[890345298430958349058;324234234243324234234;23423423423423;234234234234234;234234234234234322342342342342342343\033m be stripped.";
+    const char* in_illegal3 = "This should not\033[47;106 be stripped.";
+    const char* out = "Strip me.";
+    char* string;
+    string = string_create_from ( empty );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( 0 , string_length ( string ) );
+    EXPECT ( memory_equal ( string , empty , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    string = string_create_from ( in1 );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( out ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    string = string_create_from ( in2 );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( out ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    string = string_create_from ( in3 );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( 0 , string_length ( string ) );
+    EXPECT ( memory_equal ( string , empty , 1 ) );
+    string_destroy ( string );
+    string = string_create_from ( in_illegal1 );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( in_illegal1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , in_illegal1 , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    string = string_create_from ( in_illegal2 );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( in_illegal2 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , in_illegal2 , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    string = string_create_from ( in_illegal3 );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_EQ ( _string_length ( in_illegal3 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , in_illegal3 , string_length ( string ) + 1 ) );
+    string_destroy ( string );
+    return true;
+}
+
+u8
 test_string_u64_and_i64
 ( void )
 {
@@ -706,6 +764,7 @@ test_register_string
     test_register ( test_string_contains , "Testing string 'contains' operation." );
     test_register ( test_string_reverse , "Testing string in-place 'reverse' operation." );
     test_register ( test_string_replace , "Testing string 'replace' operation." );
+    test_register ( test_string_strip_ansi , "Stripping a string of ANSI formatting codes." );
     test_register ( test_string_u64_and_i64 , "Testing 'stringify' operation on 64-bit integers." );
     test_register ( test_string_f64 , "Testing 'stringify' operation on 64-bit floating point numbers." );
     test_register ( test_string_format , "Constructing a string using format specifiers." );
