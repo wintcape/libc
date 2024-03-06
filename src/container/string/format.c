@@ -79,10 +79,8 @@ typedef struct
     const char* format;
     u64         format_length;
 
-    u64*        args;
-    u64         arg_count;
-
-    u64*        next_arg;
+    args_t      args;
+    arg_t*      next_arg;
     u64         args_remaining;
 
     const char* copy_start;
@@ -190,20 +188,19 @@ _string_format_push
 char*
 _string_format
 (   const char* format
-,   u64         arg_count
-,   u64*        args
+,   args_t      args
 )
 {
-    if ( !format || ( !args && arg_count ) )
+    if ( !format || ( args.arg_count && !args.args ) )
     {
         if ( !format )
         {
             LOGERROR ( "_string_format: Missing argument: format." );
         }
-        if ( !args && arg_count )
+        if ( args.arg_count && !args.args )
         {
-            LOGERROR ( "_string_format: Missing argument: args. Supposed to contain %u elements."
-                     , arg_count
+            LOGERROR ( "_string_format: Invalid argument: args. List is null, but count indicates it should contain %u elements."
+                     , args.arg_count
                      );
         }
         return string_create_from ( "" );
@@ -213,9 +210,8 @@ _string_format
     state.format = format;
     state.format_length = _string_length ( format );
     state.args = args;
-    state.arg_count = arg_count;
-    state.next_arg = state.args;
-    state.args_remaining = state.arg_count;
+    state.next_arg = state.args.args;
+    state.args_remaining = state.args.arg_count;
     state.string = _string_create ( state.format_length );
 
     const char* read = state.format;
@@ -245,7 +241,7 @@ _string_format
             {
                 LOGWARN ( "_string_format: Illegal format specifier encountered on index %i of the formatting string. Skipping argument %i.\n\t                `%s`"
                         , read - state.format
-                        , state.arg_count - state.args_remaining + 1
+                        , state.args.arg_count - state.args_remaining + 1
                         , state.format
                         );
                 _string_format_consume_next_argument ( &state );

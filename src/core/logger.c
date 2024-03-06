@@ -50,21 +50,12 @@ static state_t* state = 0;
  * @param string The string to print.
  * @param string_length The number of characters in the string.
  */
-INLINE
 void
 _print
 (   file_t*         file
 ,   const char*     string
 ,   const u64       string_length
-)
-{
-    u64 written;
-    file_write ( file
-               , ( string_length + 1 ) * sizeof ( char )
-               , string
-               , &written
-               );
-}
+);
 
 /**
  * @brief Appends a message to the log file.
@@ -140,14 +131,13 @@ void
 logger_log
 (   const LOG_LEVEL level
 ,   const char*     message
-,   u64             arg_count
-,   u64*            args
+,   args_t          args
 )
 {
     const bool err = level < LOG_WARN;
     const bool colored = level != LOG_INFO;
 
-    char* raw = _string_format ( message , arg_count , args );
+    char* raw = _string_format ( message , args );
 
     // Write plaintext to log file.
     _string_insert ( raw , 0 , log_level_prefixes[ level ] );
@@ -179,15 +169,14 @@ void
 print
 (   file_t*         file
 ,   const char*     message
-,   u64             arg_count
-,   u64*            args
+,   args_t          args
 )
 {
     if ( !file || !( *file ).handle || !( *file ).valid )
     {
         return;
     }
-    char* raw = _string_format ( message , arg_count , args );
+    char* raw = _string_format ( message , args );
     char* formatted = string_format ( ANSI_CC_RESET"%S"ANSI_CC_RESET  , raw );
     _print ( file , formatted , string_length ( formatted ) );
     string_destroy ( raw );
@@ -214,6 +203,21 @@ assertf
                  , file , line , expression , message
                  );
     }
+}
+
+void
+_print
+(   file_t*         file
+,   const char*     string
+,   const u64       string_length
+)
+{
+    u64 written;
+    file_write ( file
+               , ( string_length + 1 ) * sizeof ( char )
+               , string
+               , &written
+               );
 }
 
 void

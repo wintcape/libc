@@ -86,15 +86,13 @@ logger_shutdown
  * 
  * @param level The log elevation.
  * @param message Formatted message to log.
- * @param arg_count Number of elements in the variadic argument list.
- * @param args Variadic argument list.
+ * @param args Variadic argument list (see common/args.h).
  */
 void
 logger_log
 (   const LOG_LEVEL level
 ,   const char*     message
-,   u64             arg_count
-,   u64*            args
+,   args_t          args
 );
 
 /** @brief Alias for calling logger_log with __VA_ARGS__. */
@@ -162,15 +160,13 @@ logger_log
  * 
  * @param file The file to print to.
  * @param message Formatted message to print to file.
- * @param arg_count Number of elements in the variadic argument list.
- * @param args Variadic argument list.
+ * @param args Variadic argument list (see common/args.h).
  */
 void
 print
 (   file_t*         file
 ,   const char*     message
-,   u64             arg_count
-,   u64*            args
+,   args_t          args
 );
 
 /** @brief Alias for calling print with __VA_ARGS__. */

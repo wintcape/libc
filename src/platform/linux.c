@@ -1293,7 +1293,7 @@ platform_error_message
         LOGERROR ( "platform_error_message ("PLATFORM_STRING"): Failed to retrieve an error report from the host platform." );
         return 0;
     }
-    return MIN ( _string_length ( dst ) , dst_length );
+    return _string_length_clamped ( dst , dst_length );
 }
 
 i32

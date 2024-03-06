@@ -118,15 +118,13 @@ STRING_FORMAT_MODIFIER;
  *               Works only with floating point format specifiers: %f, %e, %d.
  *
  * @param format Formatting string.
- * @param arg_count Number of elements in the variadic argument list.
- * @param args Variadic argument list.
+ * @param args Variadic argument list (see common/args.h).
  * @return The formatted string.
  */
 char*
 _string_format
 (   const char* format
-,   u64         arg_count
-,   u64*        args
+,   args_t      args
 );
 
 /** @brief Alias for calling _string_format with __VA_ARGS__. */

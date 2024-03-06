@@ -120,6 +120,9 @@ make macos-test
 
 ## Changelog
 
+### 0.3.2
+- Added explicit types `arg_t` and `args_t` in `common/args.h` to make the usage of `ARGS(...)` preprocessor binding more clear from the function signature (albeit still cumbersome).
+
 ### 0.3.1
 - Fixed GNU/Linux and macOS platform layers so they compile and pass all tests. I need to set up a branch so I can push one platform layer at a time wthout modifying the others until I can test them.
 
