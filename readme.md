@@ -3,7 +3,7 @@ Ongoing project to add robustness to libc for improved programming of C applicat
 
 ## About
 
-This project is not intended to reinvent the wheel. There are some standard libc functions whose implementation is typically already highly optimized for the target platform, and other features which provide detailed platform-specific error handling out-of-the-box.
+This project is not intended to rewrite the entirety of libc; it is mostly just a learning exercise for me that doubles as a method of creating useful tools for future projects. There are some standard libc functions whose implementation is typically already highly optimized for the target platform, and other features which provide detailed platform-specific error handling out-of-the-box.
 
 As such, there are some standard libc headers that this library assumes are available on the host platform, regardless of what platform layer is used:
 
