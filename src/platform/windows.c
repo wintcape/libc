@@ -28,20 +28,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PLATFORM_WINDOWS_ERROR_CREATE_THREAD        1 /** @brief Internal error code. */
-#define PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE         2 /** @brief Internal error code. */
-#define PLATFORM_WINDOWS_ERROR_GET_EXIT_CODE_THREAD 3 /** @brief Internal error code. */
-#define PLATFORM_WINDOWS_ERROR_TERMINATE_THREAD     4 /** @brief Internal error code. */
-#define PLATFORM_WINDOWS_ERROR_CREATE_MUTEX         5 /** @brief Internal error code. */
-#define PLATFORM_WINDOWS_ERROR_ABANDONED_MUTEX      6 /** @brief Internal error code. */
-#define PLATFORM_WINDOWS_ERROR_RELEASE_MUTEX        7 /** @brief Internal error code. */
-
 /** @brief Type definition for a platform-dependent file data structure. */
 typedef struct
 {
     HANDLE      handle;
-    FILE_MODE   mode;
     const char* path;
+    FILE_MODE   mode;
+    u64         size;
+    u64         position;
 }
 platform_file_t;
 
@@ -53,193 +47,6 @@ static platform_file_t platform_stderr; /** @brief Standard error stream handle.
 // Global system clock.
 static f64              platform_clock_frequency;   /** @brief Global system clock frequency. */
 static LARGE_INTEGER    platform_clock_start_time; /** @brief Global system clock start time. */
-
-/**
- * @brief Logs a platform-specific error message.
- */
-#define platform_log_error(message,...)                      \
-    do                                                       \
-    {                                                        \
-        const i64 error__ = platform_error_code ();          \
-        char message__[ STACK_STRING_MAX_SIZE ];             \
-        platform_error_message ( error__                     \
-                               , message__                   \
-                               , STACK_STRING_MAX_SIZE       \
-                               );                            \
-        LOGERROR ( message "\n\tReason:  %s.\n\tCode:    %i" \
-                 , ##__VA_ARGS__                             \
-                 , message__                                 \
-                 , error__                                   \
-                 );                                          \
-    }                                                        \
-    while ( 0 );
-
-/**
- * @brief Primary implementation of platform_thread_create
- * (see platform_thread_create).
- * 
- * @param function The callback function to run threaded.
- * @param args Internal state arguments.
- * @param auto_detach Thread should immediately release resources when work is
- * complete? Y/N. If true, the output buffer will be unset.
- * @param thread Output buffer (only set if auto_detach is false).
- * @return 0 on success; error code false.
- */
-i32
-_platform_thread_create
-(   thread_start_function_t function
-,   void*                   args
-,   bool                    auto_detach
-,   thread_t*               thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_destroy
- * (see platform_thread_destroy).
- * 
- * @param thread The thread to free.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_destroy
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_detach
- * (see platform_thread_detach).
- * 
- * @param thread The thread to detach.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_detach
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_cancel
- * (see platform_thread_cancel).
- * 
- * @param thread The thread to cancel.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_cancel
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_wait
- * (see platform_thread_wait).
- * 
- * @param thread The thread to wait for.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_wait
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_wait_timeout
- * (see platform_thread_wait_timeout).
- * 
- * @param thread The thread to wait for.
- * @param timeout_ms The number of milliseconds to wait prior to timeout.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_wait_timeout
-(   thread_t*   thread
-,   const u64   timeout_ms
-);
-
-/**
- * @brief Primary implementation of platform_thread_active
- * (see platform_thread_active).
- * 
- * @param thread The thread to query.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_active
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_active
- * (see platform_thread_active).
- * 
- * @param thread The thread to sleep on.
- * @param ms The time to sleep, in milliseconds.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_sleep
-(   thread_t*   thread
-,   const u64   ms
-);
-
-/**
- * @brief Primary implementation of platform_mutex_create
- * (see platform_mutex_create).
- * 
- * @param mutex Output buffer.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_create
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_mutex_destroy
- * (see platform_mutex_destroy).
- * 
- * @param mutex The mutex to free.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_destroy
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_mutex_lock
- * (see platform_mutex_lock).
- * 
- * @param mutex The mutex to lock.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_lock
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_mutex_unlock
- * (see platform_mutex_unlock).
- * 
- * @param mutex The mutex to unlock.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_unlock
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_file_size
- * (see platform_file_size).
- * 
- * @param file Handle to a file.
- * @return The filesize of file in bytes.
- */
-u64
-_platform_file_size
-(   platform_file_t* file
-);
 
 /**
  * @brief Initializes the system clock.
@@ -352,40 +159,32 @@ platform_thread_create
         }
     }
 
-    const i32 result = _platform_thread_create ( function
-                                               , args
-                                               , auto_detach
-                                               , thread
-                                               );
+    ( *thread ).internal = CreateThread ( 0
+                                        , 0
+                                        , ( LPTHREAD_START_ROUTINE ) function
+                                        , args
+                                        , 0
+                                        , ( LPDWORD )( &( *thread ).id )
+                                        );
 
-    if ( result )
+    if ( !( *thread ).internal )
     {
-        const char* platform_function_name;
-        switch ( result )
-        {
-            case PLATFORM_WINDOWS_ERROR_CREATE_THREAD:
-            {
-                platform_function_name = "CreateThread";
-            }
-            break;
-
-            case PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE:
-            {
-                platform_function_name = "CloseHandle";
-            }
-            break;
-
-            default:
-            {
-                platform_function_name = "An unknown Windows process";
-            }
-            break;
-        }
-        platform_log_error ( "platform_thread_create ("PLATFORM_STRING"): %s failed."
-                           , platform_function_name
-                           );
+        platform_log_error ( "platform_thread_create ("PLATFORM_STRING"): CreateThread failed." );
         return false;
     }
+
+    if ( auto_detach )
+    {
+        if ( !CloseHandle ( ( *thread ).internal ) )
+        {
+            platform_log_error ( "platform_thread_create ("PLATFORM_STRING"): CloseHandle failed on auto-detach thread #%u."
+                               , ( *thread ).id
+                               );
+            return false;
+        }
+        ( *thread ).internal = 0;
+    }
+
     return true;
 }
 
@@ -399,37 +198,24 @@ platform_thread_destroy
         return;
     }
 
-    const i32 result = _platform_thread_destroy ( thread );
-
-    if ( result )
+    DWORD code;
+    if ( !GetExitCodeThread ( ( *thread ).internal , &code ) )
     {
-        const char* platform_function_name;
-        switch ( result )
-        {
-            case PLATFORM_WINDOWS_ERROR_GET_EXIT_CODE_THREAD:
-            {
-                platform_function_name = "GetExitCodeThread";
-            }
-            break;
-
-            case PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE:
-            {
-                platform_function_name = "CloseHandle";
-            }
-            break;
-
-            default:
-            {
-                platform_function_name = "An unknown Windows process";
-            }
-            break;
-        }
-
-        platform_log_error ( "platform_thread_destroy ("PLATFORM_STRING"): %s failed on thread #%u."
-                           , platform_function_name
+        platform_log_error ( "platform_thread_destroy ("PLATFORM_STRING"): GetExitCodeThread failed on thread #%u."
                            , ( *thread ).id
                            );
     }
+
+    if ( !CloseHandle ( ( *thread ).internal ) )
+    {
+        platform_log_error ( "platform_thread_destroy ("PLATFORM_STRING"): CloseHandle failed on thread #%u."
+                           , ( *thread ).id
+                           );
+        return;
+    }
+
+    ( *thread ).internal = 0;
+    ( *thread ).id = 0;
 }
 
 void
@@ -442,12 +228,15 @@ platform_thread_detach
         return;
     }
 
-    if ( _platform_thread_detach ( thread ) )
+    if ( !CloseHandle ( ( *thread ).internal ) )
     {
         platform_log_error ( "platform_thread_detach ("PLATFORM_STRING"): CloseHandle failed on thread #%u."
                            , ( *thread ).id
                            );
+        return;
     }
+
+    ( *thread ).internal = 0;
 }
 
 void
@@ -460,12 +249,15 @@ platform_thread_cancel
         return;
     }
 
-    if ( _platform_thread_cancel ( thread ) )
+    if ( !TerminateThread ( ( *thread ).internal , 0 ) )
     {
         platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): TerminateThread failed on thread #%u."
                            , ( *thread ).id
                            );
+        return;
     }
+
+    ( *thread ).internal = 0;
 }
 
 bool
@@ -473,11 +265,7 @@ platform_thread_wait
 (   thread_t* thread
 )
 {
-    if ( !thread || !( *thread ).internal )
-    {
-        return false;
-    }
-    return !_platform_thread_wait ( thread );
+    return platform_thread_wait_timeout ( thread , INFINITE );
 }
 
 bool
@@ -490,7 +278,7 @@ platform_thread_wait_timeout
     {
         return false;
     }
-    return !_platform_thread_wait_timeout ( thread , timeout_ms );
+    return WaitForSingleObject ( ( *thread ).internal , timeout_ms ) == WAIT_OBJECT_0;
 }
 
 bool
@@ -502,7 +290,7 @@ platform_thread_active
     {
         return false;
     }
-    return !_platform_thread_active ( thread );
+    return WaitForSingleObject ( ( *thread ).internal , 0 ) == WAIT_TIMEOUT;
 }
 
 void
@@ -511,8 +299,8 @@ platform_thread_sleep
 ,   const u64   ms
 )
 {
-    /* if ( */ _platform_thread_sleep ( thread , ms ) /* ) {} */;
-}//            ^^^^^^^^^^^^^^^^^^^^^^ Does not fail.
+    platform_sleep ( ms );
+}
 
 u64
 platform_thread_id
@@ -532,7 +320,8 @@ platform_mutex_create
         return false;
     }
 
-    if ( _platform_mutex_create ( mutex ) )
+    ( *mutex ).internal = CreateMutex ( 0 , 0 , 0 );
+    if ( !( *mutex ).internal )
     {
         platform_log_error ( "platform_mutex_create ("PLATFORM_STRING"): CreateMutex failed." );
         return false;
@@ -551,12 +340,14 @@ platform_mutex_destroy
         return;
     }
 
-    if ( _platform_mutex_destroy ( mutex ) )
+    if ( !CloseHandle ( ( *mutex ).internal ) )
     {
         platform_log_error ( "platform_mutex_destroy ("PLATFORM_STRING"): CloseHandle failed on mutex %@."
                            , mutex
                            );
     }
+
+    ( *mutex ).internal = 0;
 }
 
 bool
@@ -569,12 +360,19 @@ platform_mutex_lock
         return false;
     }
 
-    if ( _platform_mutex_lock ( mutex ) )
+    switch ( WaitForSingleObject ( ( *mutex ).internal , INFINITE ) )
     {
-        platform_log_error ( "platform_mutex_lock ("PLATFORM_STRING"): WaitForSingleObject failed on mutex %@."
-                           , mutex
-                           );
-        return false;
+        case WAIT_OBJECT_0:
+        {
+            return true;
+        }
+        case WAIT_ABANDONED:
+        {
+            platform_log_error ( "platform_mutex_lock ("PLATFORM_STRING"): WaitForSingleObject failed on mutex %@."
+                               , mutex
+                               );
+            return false;
+        }
     }
 
     return true;
@@ -590,7 +388,7 @@ platform_mutex_unlock
         return false;
     }
 
-    if ( _platform_mutex_unlock ( mutex ) )
+    if ( !ReleaseMutex ( ( *mutex ).internal ) )
     {
         platform_log_error ( "platform_mutex_unlock ("PLATFORM_STRING"): ReleaseMutex failed on mutex %@."
                            , mutex
@@ -690,16 +488,16 @@ platform_file_open
     
     if ( handle == INVALID_HANDLE_VALUE )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): CreateFile failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): CreateFile failed for file: %s"
                            , path
                            );
         return false;
     }
 
-    // Set file pointer to the start of the file.
+    // Set read-write position to the start of the file.
     if ( SetFilePointer ( handle , 0 , 0 , FILE_BEGIN ) == INVALID_SET_FILE_POINTER )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetFilePointer failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
                            , path
                            );
         return false;
@@ -708,7 +506,17 @@ platform_file_open
     // If in write mode, truncate the file content.
     if ( truncate && !SetEndOfFile ( handle ) )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetEndOfFile failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetEndOfFile failed for file: %s"
+                           , path
+                           );
+        return false;
+    }
+
+    // Precompute the file size.
+    LARGE_INTEGER size;
+    if ( !GetFileSizeEx ( handle , &size ) )
+    {
+        platform_log_error ( "platform_file_size ("PLATFORM_STRING"): GetFileSizeEx failed on file: %s."
                            , path
                            );
         return false;
@@ -718,8 +526,10 @@ platform_file_open
                                             , MEMORY_TAG_FILE
                                             );
     ( *file ).handle = handle;
-    ( *file ).mode = mode_;
     ( *file ).path = path;
+    ( *file ).mode = mode_;
+    ( *file ).size = size.QuadPart;
+    ( *file ).position = 0;
     
     ( *file_ ).handle = file;
     ( *file_ ).valid = true;
@@ -755,19 +565,89 @@ platform_file_close
 
 u64
 platform_file_size
-(   file_t* file
+(   file_t* file_
 )
 {
-    if ( !file )
+    if ( !file_ )
     {
         LOGERROR ( "platform_file_size ("PLATFORM_STRING"): Missing argument: file." );
         return 0;
     }
-    if ( !( *file ).handle || !( *file ).valid )
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
     {
         return 0;
     }
-    return _platform_file_size ( ( *file ).handle );
+
+    platform_file_t* file = ( *file_ ).handle;
+    return ( *file ).size;
+}
+
+u64
+platform_file_position_get
+(   file_t* file_
+)
+{
+    if ( !file_ )
+    {
+        LOGERROR ( "platform_file_position_get ("PLATFORM_STRING"): Missing argument: file." );
+        return 0;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return 0;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+    return ( *file ).position;
+}
+
+bool
+platform_file_position_set
+(   file_t*     file_
+,   const u64   position
+)
+{
+    if ( !file_ )
+    {
+        LOGERROR ( "platform_file_position_set ("PLATFORM_STRING"): Missing argument: file." );
+        return 0;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return 0;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    // Out-of-bounds position? Y/N
+    if ( position > ( *file ).size )
+    {
+        LOGERROR ( "platform_file_position_set ("PLATFORM_STRING"): The provided position is outside of the file boundary." );
+        return 0;
+    }
+
+    // Update host platform file position.
+    LARGE_INTEGER amount;
+    amount.QuadPart = position;
+    if ( !SetFilePointerEx ( ( *file ).handle
+                           , amount
+                           , 0
+                           , FILE_BEGIN
+                           ))
+    {
+        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+                           , ( *file ).path
+                           );
+        return false;
+    }
+
+    // Update host platform file position.
+    ( *file ).position = position;
+    
+    return true;
 }
 
 bool
@@ -817,31 +697,17 @@ platform_file_read
         return false;
     }
 
-    const u64 file_size = _platform_file_size ( file );
-    if ( file_size < size )
-    {
-        size = file_size;
-    }
-
-    // Nothing to copy? Y/N
-    if ( !size )
-    {
-        *read = 0;
-        return true;
-    }
-
-    u64 total_bytes_read = 0;
-    u64 bytes_remaining = size;
-
     // Files >= 4 GiB in size must be read by iteratively invoking ReadFile.
     const u64 max_read_size = GIBIBYTES ( 4 ) - 1;
-    while ( bytes_remaining > max_read_size )
+
+    size = MIN ( size , ( *file ).size - ( *file ).position );
+    u64 total_bytes_read = 0;
+    while ( total_bytes_read < size )
     {
-        // Read file content directly into the output buffer.
         DWORD bytes_read;
         if ( !ReadFile ( ( *file ).handle
                         , ( ( u8* ) dst ) + total_bytes_read
-                        , max_read_size
+                        , MIN ( size - total_bytes_read , max_read_size )
                         , &bytes_read
                         , 0
                         ))
@@ -853,40 +719,12 @@ platform_file_read
             return false;
         }
 
-        // End of file? Y/N
-        if ( !bytes_read )
-        {
-            bytes_read = bytes_remaining;
-        }
+        // Update internal file position.
+        ( *file ).position += bytes_read;
 
         total_bytes_read += bytes_read;
-        bytes_remaining -= bytes_read;
     }
-    
-    // Read remaining file content directly into the output buffer.
-    DWORD bytes_read;
-    if ( !ReadFile ( ( *file ).handle
-                    , ( ( u8* ) dst ) + total_bytes_read
-                    , bytes_remaining
-                    , &bytes_read
-                    , 0
-                    ))
-    {
-        platform_log_error ( "platform_file_read ("PLATFORM_STRING"): ReadFile failed on file: %s."
-                            , ( *file ).path
-                            );
-        *read = total_bytes_read;
-        return false;
-    }
-
-    // End of file? Y/N
-    if ( !bytes_read )
-    {
-        bytes_read = bytes_remaining;
-    }
-
-    total_bytes_read += bytes_read;
-
+   
     *read = total_bytes_read;
     return total_bytes_read == size;
 }
@@ -936,8 +774,8 @@ platform_file_read_line
     char* string = string_create ();
 
     // Nothing to copy? Y/N
-    const u64 file_size = _platform_file_size ( file );
-    if ( !file_size )
+    u64 bytes_remaining = ( *file ).size - ( *file ).position;
+    if ( !bytes_remaining )
     {
         *dst = string;
         return true;
@@ -950,7 +788,7 @@ platform_file_read_line
         DWORD bytes_read;
         if ( !ReadFile ( ( *file ).handle
                        , buffer
-                       , STACK_STRING_MAX_SIZE
+                       , MIN ( bytes_remaining , STACK_STRING_MAX_SIZE )
                        , &bytes_read
                        , 0
                        ))
@@ -963,11 +801,8 @@ platform_file_read_line
             return false;
         }
 
-        // End of file? Y/N
-        if ( !bytes_read )
-        {
-            break;
-        }
+        // Update internal file position.
+        ( *file ).position += bytes_read;
 
         // End of line? Y/N
         u64 length = 0;
@@ -977,7 +812,7 @@ platform_file_read_line
             {
                 end_of_line = true;
 
-                // Move the file pointer back to the terminator index (+1).
+                // Update host platform file position.
                 LARGE_INTEGER amount;
                 amount.QuadPart = bytes_read - length - 1;
                 amount.QuadPart = -amount.QuadPart;
@@ -995,6 +830,9 @@ platform_file_read_line
                     return false;
                 }
 
+                // Update internal file position.
+                ( *file ).position += amount.QuadPart;
+
                 break;
             }
 
@@ -1003,8 +841,10 @@ platform_file_read_line
 
         // Append the line segment to the output buffer.
         string_push ( string , buffer , length );
+
+        bytes_remaining -= bytes_read;
     }
-    while ( !end_of_line );
+    while ( bytes_remaining && !end_of_line );
     
     *dst = string;
     return true;
@@ -1062,30 +902,43 @@ platform_file_read_all
         return false;
     }
 
-    const u64 file_size = _platform_file_size ( file );
-
-    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * ( file_size + 1 ) );
+    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * ( ( *file ).size + 1 ) );
 
     // Nothing to copy? Y/N
-    if ( !file_size )
+    if ( !( *file ).size )
     {
         *dst = string;
         *read = 0;
         return true;
     }
 
-    u64 bytes_remaining = file_size;
-    u64 total_bytes_read = 0;
+    // Set host platform read-write position to the start of the file.
+    if ( SetFilePointer ( ( *file ).handle , 0 , 0 , FILE_BEGIN ) == INVALID_SET_FILE_POINTER )
+    {
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+                           , ( *file ).path
+                           );
+        string_free ( string );
+        *dst = 0;
+        *read = 0;
+        return false;
+    }
+
+    // Update internal file position.
+    ( *file ).position = 0;
 
     // Files >= 4 GiB in size must be read by iteratively invoking ReadFile.
     const u64 max_read_size = GIBIBYTES ( 4 ) - 1;
-    while ( bytes_remaining > max_read_size )
+
+    u64 total_bytes_read = 0;
+    do
     {
-        // Read file content directly into the output buffer.
         DWORD bytes_read;
         if ( !ReadFile ( ( *file ).handle
                        , string + total_bytes_read
-                       , max_read_size
+                       , MIN ( ( *file ).size - total_bytes_read
+                             , max_read_size
+                             )
                        , &bytes_read
                        , 0
                        ))
@@ -1099,26 +952,17 @@ platform_file_read_all
             return false;
         }
 
-        // End of file? Y/N
-        if ( !bytes_read )
-        {
-            bytes_read = bytes_remaining;
-        }
+        // Update internal file position.
+        ( *file ).position += bytes_read;
 
         total_bytes_read += bytes_read;
-        bytes_remaining -= bytes_read;
     }
-        
-    // Read remaining file content directly into the output buffer.
-    DWORD bytes_read;
-    if ( !ReadFile ( ( *file ).handle
-                    , string + total_bytes_read
-                    , bytes_remaining
-                    , &bytes_read
-                    , 0
-                    ))
+    while ( total_bytes_read < ( *file ).size );
+
+    // Rewind host platform file position.
+    if ( SetFilePointer ( ( *file ).handle , 0 , 0 , FILE_BEGIN ) == INVALID_SET_FILE_POINTER )
     {
-        platform_log_error ( "platform_file_read ("PLATFORM_STRING"): ReadFile failed on file: %s."
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
                            , ( *file ).path
                            );
         string_free ( string );
@@ -1127,17 +971,12 @@ platform_file_read_all
         return false;
     }
 
-    // End of file? Y/N
-    if ( !bytes_read )
-    {
-        bytes_read = bytes_remaining;
-    }
-
-    total_bytes_read += bytes_read;
+    // Update internal file position.
+    ( *file ).position = 0;
 
     *dst = string;
     *read = total_bytes_read;
-    return total_bytes_read == file_size;
+    return total_bytes_read == ( *file ).size;
 }
 
 bool
@@ -1187,26 +1026,17 @@ platform_file_write
         return false;
     }
 
-    // Nothing to copy? Y/N
-    if ( !size )
-    {
-        *written = 0;
-        return true;
-    }
-
-    u64 total_bytes_written = 0;
-    u64 bytes_remaining = size;
-
     // Buffers >= 4 GiB in size must be written by iteratively invoking
     // WriteFile.
     const u64 max_write_size = GIBIBYTES ( 4 ) - 1;
-    while ( bytes_remaining > max_write_size )
+
+    u64 total_bytes_written = 0;
+    while ( total_bytes_written < size )
     {
-        // Copy the buffer data directly into the file.
         DWORD bytes_written;
         if ( !WriteFile ( ( *file ).handle
                         , ( ( u8* ) src ) + total_bytes_written
-                        , max_write_size
+                        , MIN ( size - total_bytes_written , max_write_size )
                         , &bytes_written
                         , 0
                         ))
@@ -1218,26 +1048,12 @@ platform_file_write
             return false;
         }
 
+        // Update internal file position and size.
+        ( *file ).position += bytes_written;
+        ( *file ).size += bytes_written;
+
         total_bytes_written += bytes_written;
     }
-
-    // Copy the remaining buffer data directly into the file.
-    DWORD bytes_written;
-    if ( !WriteFile ( ( *file ).handle
-                    , ( ( u8* ) src ) + total_bytes_written
-                    , bytes_remaining
-                    , &bytes_written
-                    , 0
-                    ))
-    {
-        platform_log_error ( "platform_file_write ("PLATFORM_STRING"): WriteFile failed on file: %s."
-                            , ( *file ).path
-                            );
-        *written = total_bytes_written;
-        return false;
-    }
-
-    total_bytes_written += bytes_written;
 
     *written = total_bytes_written;
     return total_bytes_written == size;
@@ -1279,19 +1095,17 @@ platform_file_write_line
         return false;
     }
 
-    u64 total_bytes_written = 0;
-    u64 bytes_remaining = size;
-
     // Buffers >= 4 GiB in size must be written by iteratively invoking
     // WriteFile.
     const u64 max_write_size = GIBIBYTES ( 4 ) - 1;
-    while ( bytes_remaining > max_write_size )
+
+    u64 total_bytes_written = 0;
+    while ( total_bytes_written < size )
     {
-        // Copy the buffer data directly into the file.
         DWORD bytes_written;
         if ( !WriteFile ( ( *file ).handle
                         , ( ( u8* ) src ) + total_bytes_written
-                        , max_write_size
+                        , MIN ( size - total_bytes_written , max_write_size )
                         , &bytes_written
                         , 0
                         ))
@@ -1302,28 +1116,16 @@ platform_file_write_line
             return false;
         }
 
+        // Update internal file position and size.
+        ( *file ).position += bytes_written;
+        ( *file ).size += bytes_written;
+
         total_bytes_written += bytes_written;
     }
 
-    // Copy the remaining buffer data directly into the file.
-    DWORD bytes_written;
-    if ( !WriteFile ( ( *file ).handle
-                    , ( ( u8* ) src ) + total_bytes_written
-                    , bytes_remaining
-                    , &bytes_written
-                    , 0
-                    ))
-    {
-        platform_log_error ( "platform_file_write_line ("PLATFORM_STRING"): WriteFile failed on file: %s."
-                            , ( *file ).path
-                            );
-        return false;
-    }
-
-    total_bytes_written += bytes_written;
-
     // Append a newline to the file.
     const char newline = '\n';
+    DWORD bytes_written;
     if ( !WriteFile ( ( *file ).handle
                     , &newline
                     , sizeof ( newline )
@@ -1336,6 +1138,10 @@ platform_file_write_line
                             );
         return false;
     }
+
+    // Update internal file position and size.
+    ( *file ).position += bytes_written;
+    ( *file ).size += bytes_written;
 
     total_bytes_written += bytes_written;
 
@@ -1352,6 +1158,8 @@ platform_file_stdin
         platform_stdin.handle = GetStdHandle ( STD_INPUT_HANDLE );
         platform_stdin.mode = FILE_MODE_READ;
         platform_stdin.path = "stdin";
+        platform_stdin.size = 0;
+        platform_stdin.position = 0;
     }
     ( *file ).handle = &platform_stdin;
     ( *file ).valid = true;
@@ -1367,6 +1175,8 @@ platform_file_stdout
         platform_stdout.handle = GetStdHandle ( STD_OUTPUT_HANDLE );
         platform_stdout.mode = FILE_MODE_WRITE;
         platform_stdout.path = "stdout";
+        platform_stdout.size = 0;
+        platform_stdout.position = 0;
     }
     ( *file ).handle = &platform_stdout;
     ( *file ).valid = true;
@@ -1382,31 +1192,11 @@ platform_file_stderr
         platform_stderr.handle = GetStdHandle ( STD_ERROR_HANDLE );
         platform_stderr.mode = FILE_MODE_WRITE;
         platform_stderr.path = "stderr";
+        platform_stderr.size = 0;
+        platform_stderr.position = 0;
     }
     ( *file ).handle = &platform_stderr;
     ( *file ).valid = true;
-}
-
-f64
-platform_absolute_time
-( void )
-{    
-    if ( !platform_clock_frequency )
-    {
-        platform_clock_init ();
-    }
-    
-    LARGE_INTEGER time;
-    QueryPerformanceCounter ( &time );
-    return ( ( f64 ) time.QuadPart ) * platform_clock_frequency;
-}
-
-void
-platform_sleep
-(   u64 ms
-)
-{
-    Sleep ( ms );
 }
 
 i64
@@ -1443,6 +1233,28 @@ platform_error_message
     return _string_length_clamped ( dst , dst_length );
 }
 
+f64
+platform_absolute_time
+( void )
+{    
+    if ( !platform_clock_frequency )
+    {
+        platform_clock_init ();
+    }
+    
+    LARGE_INTEGER time;
+    QueryPerformanceCounter ( &time );
+    return ( ( f64 ) time.QuadPart ) * platform_clock_frequency;
+}
+
+void
+platform_sleep
+(   const u64 ms
+)
+{
+    Sleep ( ms );
+}
+
 i32
 platform_processor_core_count
 ( void )
@@ -1453,195 +1265,6 @@ platform_processor_core_count
             , system_info.dwNumberOfProcessors
             );
     return system_info.dwNumberOfProcessors;
-}
-
-i32
-_platform_thread_create
-(   thread_start_function_t function
-,   void*                   args
-,   bool                    auto_detach
-,   thread_t*               thread
-)
-{
-    ( *thread ).internal = CreateThread ( 0
-                                        , 0
-                                        , ( LPTHREAD_START_ROUTINE ) function
-                                        , args
-                                        , 0
-                                        , ( LPDWORD )( &( *thread ).id )
-                                        );
-
-    if ( !( *thread ).internal )
-    {
-        return PLATFORM_WINDOWS_ERROR_CREATE_THREAD;
-    }
-
-    if ( auto_detach )
-    {
-        if ( !CloseHandle ( ( *thread ).internal ) )
-        {
-            return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
-        }
-        ( *thread ).internal = 0;
-    }
-
-    return 0;
-}
-
-i32
-_platform_thread_destroy
-(   thread_t* thread
-)
-{
-    DWORD code;
-    GetExitCodeThread ( ( *thread ).internal , &code );
-
-    if ( !CloseHandle ( ( *thread ).internal ) )
-    {
-        return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
-    }
-
-    ( *thread ).internal = 0;
-    ( *thread ).id = 0;
-
-    return 0;
-}
-
-i32
-_platform_thread_detach
-(   thread_t* thread
-)
-{
-    if ( !CloseHandle ( ( *thread ).internal ) )
-    {
-        return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
-    }
-
-    ( *thread ).internal = 0;
-
-    return 0;
-}
-
-i32
-_platform_thread_cancel
-(   thread_t* thread
-)
-{
-    if ( !TerminateThread ( ( *thread ).internal , 0 ) )
-    {
-        return PLATFORM_WINDOWS_ERROR_TERMINATE_THREAD;
-    }
-
-    ( *thread ).internal = 0;
-
-    return 0;
-}
-
-i32
-_platform_thread_wait
-(   thread_t* thread
-)
-{
-    return _platform_thread_wait_timeout ( thread , INFINITE );
-}
-
-i32
-_platform_thread_wait_timeout
-(   thread_t*   thread
-,   const u64   timeout_ms
-)
-{
-    return !( WaitForSingleObject ( ( *thread ).internal , timeout_ms ) == WAIT_OBJECT_0 );
-}
-
-i32
-_platform_thread_active
-(   thread_t* thread
-)
-{
-    return !( WaitForSingleObject ( ( *thread ).internal , 0 ) == WAIT_TIMEOUT );
-}
-
-i32
-_platform_thread_sleep
-(   thread_t*   thread
-,   const u64   ms
-)
-{
-    platform_sleep ( ms );
-    return 0;
-}
-
-i32
-_platform_mutex_create
-(   mutex_t* mutex
-)
-{
-    ( *mutex ).internal = CreateMutex ( 0 , 0 , 0 );
-    if ( !( *mutex ).internal )
-    {
-        return PLATFORM_WINDOWS_ERROR_CREATE_MUTEX;
-    }
-    return 0;
-}
-
-i32
-_platform_mutex_destroy
-(   mutex_t* mutex
-)
-{
-    if ( !CloseHandle ( ( *mutex ).internal ) )
-    {
-        return PLATFORM_WINDOWS_ERROR_CLOSE_HANDLE;
-    }
-    ( *mutex ).internal = 0;
-    return 0;
-}
-
-i32
-_platform_mutex_lock
-(   mutex_t* mutex
-)
-{
-    switch ( WaitForSingleObject ( ( *mutex ).internal , INFINITE ) )
-    {
-        case WAIT_OBJECT_0:
-        {
-            return 0;
-        }
-        case WAIT_ABANDONED:
-        {
-            return PLATFORM_WINDOWS_ERROR_ABANDONED_MUTEX;
-        }
-    }
-    return 0;
-}
-
-i32
-_platform_mutex_unlock
-(   mutex_t* mutex
-)
-{
-    if ( !ReleaseMutex ( ( *mutex ).internal ) )
-    {
-        return PLATFORM_WINDOWS_ERROR_RELEASE_MUTEX;
-    }
-    return 0;
-}
-
-u64
-_platform_file_size
-(   platform_file_t* file
-)
-{
-    LARGE_INTEGER size;
-    if ( !GetFileSizeEx ( ( *file ).handle , &size ) )
-    {
-        platform_log_error ( "platform_file_size ("PLATFORM_STRING"): GetFileSizeEx failed on file: %s."
-                           , ( *file ).path
-                           );
-    }
-    return size.QuadPart;
 }
 
 void

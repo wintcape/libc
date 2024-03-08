@@ -309,14 +309,8 @@ platform_mutex_unlock
 #include "platform/filesystem.h"
 
 /**
- * @brief Tests if a file with the provided mode exists at the provided path on
- * the host platform.
- * 
- * FILE_MODE_ACCESS : Test only for file existence.
- * FILE_MODE_READ   : Test for read-only file.
- * FILE_MODE_WRITE  : Test for write-only file.
- * FILE_MODE_READ |
- * FILE_MODE_WRITE  : Test for file with both read and write permission.
+ * @brief Platform-independent 'file exists' function
+ * (see platform/filesystem.h).
  * 
  * @param path The filepath to test.
  * @param mode Mode flag.
@@ -329,7 +323,7 @@ platform_file_exists
 );
 
 /**
- * @brief Attempts to open a file on the host platform.
+ * @brief Platform-independent 'file open' function (see platform/filesystem.h).
  * 
  * @param path The filepath.
  * @param mode Mode flag.
@@ -344,7 +338,8 @@ platform_file_open
 );
 
 /**
- * @brief Attempts to close a file on the host platform.
+ * @brief Platform-independent 'file close' function
+ * (see platform/filesystem.h).
  * 
  * @param file Handle to the file to close.
  */
@@ -354,7 +349,7 @@ platform_file_close
 );
 
 /**
- * @brief Computes the size of a file on the host platform.
+ * @brief Platform-independent 'file size' function (see platform/filesystem.h).
  * 
  * @param file Handle to a file.
  * @return The filesize of file in bytes.
@@ -365,8 +360,33 @@ platform_file_size
 );
 
 /**
- * @brief Reads a specified amount of content from a file on the host platform
- * into an output buffer.
+ * @brief Platform-independent 'file position get' function
+ * (see platform/filesystem.h).
+ * 
+ * @param file Handle to a file.
+ * @return The current read-write position within file.
+ */
+u64
+platform_file_position_get
+(   file_t* file
+);
+
+/**
+ * Platform-independent 'file position set' function
+ * (see platform/filesystem.h).
+ * 
+ * @param file Handle to a file.
+ * @param position The position to set.
+ * @return true on success; false otherwise.
+ */
+bool
+platform_file_position_set
+(   file_t*     file
+,   const u64   position
+);
+
+/**
+ * @brief Platform-independent 'file read' function (see platform/filesystem.h).
  * 
  * @param file Handle to the file to read.
  * @param size Number of bytes to read.
@@ -383,8 +403,8 @@ platform_file_read
 );
 
 /**
- * @brief Reads content from a file from the host platform into a resizable
- * string buffer until EOF or line break encountered (see container/string.h).
+ * @brief Platform-independent 'file read line' function
+ * (see platform/filesystem.h).
  * 
  * Uses dynamic memory allocation. Call string_destroy to free.
  * 
@@ -399,8 +419,8 @@ platform_file_read_line
 );
 
 /**
- * @brief Generates a copy of the entire contents of a file on the host
- * platform.
+ * @brief Platform-independent 'file read all' function
+ * (see platform/filesystem.h).
  * 
  * Uses dynamic memory allocation. Call string_free to free.
  * (see core/string.h)
@@ -419,7 +439,8 @@ platform_file_read_all
 );
 
 /**
- * @brief Writes a specified amount of data to a file on the host platform.
+ * @brief Platform-independent 'file write' function
+ * (see platform/filesystem.h).
  * 
  * @param file Handle to the file to write to.
  * @param size Number of bytes to write.
@@ -437,8 +458,8 @@ platform_file_write
 );
 
 /**
- * @brief Writes a string to file on the host platform and appends the `\n`
- * character.
+ * Platform-independent 'file write line' function
+ * (see platform/filesystem.h).
  * 
  * @param file Handle to the file to write to.
  * @param size Number of bytes to write.
@@ -485,16 +506,7 @@ platform_file_stderr
 
 // End filesystem operations.
 ////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief Platform-independent function to query the system time
- * (see core/clock.h).
- * 
- * @return The system time.
- */
-f64
-platform_absolute_time
-( void );
+// Begin error handling.
 
 /**
  * @brief Queries the most recent platform-specific error code.
@@ -519,6 +531,29 @@ platform_error_message
 (   const i64   error
 ,   char*       dst
 ,   const u64   dst_length
+);
+
+// End error handling.
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Platform-independent function to query the system time
+ * (see core/clock.h).
+ * 
+ * @return The system time.
+ */
+f64
+platform_absolute_time
+( void );
+
+/**
+ * @brief Sleeps on the current thread for the provided amount of time.
+ * 
+ * @param ms The time to sleep (in milliseconds).
+*/
+void
+platform_sleep
+(   const u64 ms
 );
 
 /**

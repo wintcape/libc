@@ -71,7 +71,7 @@ file_close
 );
 
 /**
- * @brief Computes the size of a file on the host platform.
+ * @brief Queries the size (in bytes) of a file on the host platform.
  * 
  * @param file Handle to a file.
  * @return The filesize of file in bytes.
@@ -79,6 +79,32 @@ file_close
 u64
 file_size
 (   file_t* file
+);
+
+/**
+ * @brief Queries the current read-write position within a file on the host
+ * platform.
+ * 
+ * @param file Handle to a file.
+ * @return The current read-write position within file.
+ */
+u64
+file_position_get
+(   file_t* file
+);
+
+/**
+ * @brief Sets the current read-write position within a file on the host
+ * platform.
+ * 
+ * @param file Handle to a file.
+ * @param position The position to set.
+ * @return true on success; false otherwise.
+ */
+bool
+file_position_set
+(   file_t*     file
+,   const u64   position
 );
 
 /**

@@ -42,6 +42,23 @@ file_size
     return platform_file_size ( file );
 }
 
+u64
+file_position_get
+(   file_t* file
+)
+{
+    return platform_file_position_get ( file );
+}
+
+bool
+file_position_set
+(   file_t*     file
+,   const u64   position
+)
+{
+    return platform_file_position_set ( file , position );
+}
+
 bool
 file_read
 (   file_t* file

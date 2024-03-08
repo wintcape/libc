@@ -598,7 +598,7 @@ _string_format_validate_format_modifier_pad
         return;
     }
     *read += 1;
-    if ( *( read + 3 ) >= STRING_FORMAT_READ_LIMIT ( state ) )
+    if ( *read + 3 >= STRING_FORMAT_READ_LIMIT ( state ) )
     {
         ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_INVALID;
         return;

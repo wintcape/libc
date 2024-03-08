@@ -119,6 +119,13 @@ make macos-test
 
 ## Changelog
 
+### 0.3.4
+- Fixed a bug in `string_format` pointer arithmetic that would cause the function to fail at random (depending on operating system factors).
+- Moved preprocessor binding `platform_log_error` for logging platform-specific error messages into the `core/logger.h` header so it is visible across the library.
+- Changes to platform-layer implementation of `platform/filesystem.h` to make the internal platform-dependent file data structures more robust (they now keep track of size and file position). This also fixes a bug where `file_read`, `file_read_line`, `file_read_all`, `file_write`, and `file_write_line` would fail depending on where the host platform file pointer was positioned within the file.
+- Added functions `file_position_get` and `file_position_set` for querying file pointer info.
+- General performance improvements made to the implementation of `platform/filesystem.h`.
+
 ### 0.3.3
 - Added a 'dev' branch so I can: (1) push stuff prior to testing if it works cross-platform, (2) pull it on other platforms and run the tests, (3) update the 'master' branch only if it has been tested on all of them. This should resolve issues like those mentioned in the changelog for versions 0.2.1 and 0.3.1.
 - New function `string_strip_ansi` to strip ANSI formatting codes. +tests for it.
