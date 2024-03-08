@@ -107,6 +107,7 @@ make macos-test
 
 ## Known bugs
 - Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows. macOS platform layer is still untested.
+- Following `string_strip_ansi`, one extra formatting character still ends up at the end of each log message in log file: console.log (see also `logger_log`).
 
 ## To-do
 - Implement `string_f64`, removing dependency `<stdio.h>`.
