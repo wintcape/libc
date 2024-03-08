@@ -37,8 +37,10 @@
 typedef struct
 {
     i32         descriptor;
-    FILE_MODE   mode;
     const char* path;
+    FILE_MODE   mode;
+    u64         size;
+    u64         position;
     bool        initialized;
 }
 platform_file_t;
@@ -47,201 +49,6 @@ platform_file_t;
 static platform_file_t platform_stdin;  /** @brief Standard input stream handle. */
 static platform_file_t platform_stdout; /** @brief Standard output stream handle. */
 static platform_file_t platform_stderr; /** @brief Standard error stream handle. */
-
-#define PLATFORM_MAC_ERROR_PTHREAD_CREATE        1 /** @brief Internal error code. */
-#define PLATFORM_MAC_ERROR_PTHREAD_DETACH        2 /** @brief Internal error code. */
-#define PLATFORM_MAC_ERROR_PTHREAD_CANCEL        3 /** @brief Internal error code. */
-#define PLATFORM_MAC_ERROR_PTHREAD_MUTEX_INIT    4 /** @brief Internal error code. */
-#define PLATFORM_MAC_ERROR_PTHREAD_MUTEX_DESTROY 5 /** @brief Internal error code. */
-#define PLATFORM_MAC_ERROR_PTHREAD_MUTEX_LOCK    6 /** @brief Internal error code. */
-#define PLATFORM_MAC_ERROR_PTHREAD_MUTEX_UNLOCK  7 /** @brief Internal error code. */
-
-/**
- * @brief Logs a platform-specific error message.
- */
-#define platform_log_error(message,...)                      \
-    do                                                       \
-    {                                                        \
-        const i64 error__ = platform_error_code ();          \
-        char message__[ STACK_STRING_MAX_SIZE ];             \
-        platform_error_message ( error__                     \
-                               , message__                   \
-                               , STACK_STRING_MAX_SIZE       \
-                               );                            \
-        LOGERROR ( message "\n\tReason:  %s.\n\tCode:    %i" \
-                 , ##__VA_ARGS__                             \
-                 , message__                                 \
-                 , error__                                   \
-                 );                                          \
-    }                                                        \
-    while ( 0 );
-
-/**
- * @brief Primary implementation of platform_thread_create
- * (see platform_thread_create).
- * 
- * @param function The callback function to run threaded.
- * @param args Internal state arguments.
- * @param auto_detach Thread should immediately release resources when work is
- * complete? Y/N. If true, the output buffer will be unset.
- * @param thread Output buffer (only set if auto_detach is false).
- * @return 0 on success; error code false.
- */
-i32
-_platform_thread_create
-(   thread_start_function_t function
-,   void*                   args
-,   bool                    auto_detach
-,   thread_t*               thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_destroy
- * (see platform_thread_destroy).
- * 
- * @param thread The thread to free.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_destroy
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_detach
- * (see platform_thread_detach).
- * 
- * @param thread The thread to detach.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_detach
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_cancel
- * (see platform_thread_cancel).
- * 
- * @param thread The thread to cancel.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_cancel
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_wait
- * (see platform_thread_wait).
- * 
- * @param thread The thread to wait for.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_wait
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_wait_timeout
- * (see platform_thread_wait_timeout).
- * 
- * @param thread The thread to wait for.
- * @param timeout_ms The number of milliseconds to wait prior to timeout.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_wait_timeout
-(   thread_t*   thread
-,   const u64   timeout_ms
-);
-
-/**
- * @brief Primary implementation of platform_thread_active
- * (see platform_thread_active).
- * 
- * @param thread The thread to query.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_active
-(   thread_t* thread
-);
-
-/**
- * @brief Primary implementation of platform_thread_active
- * (see platform_thread_active).
- * 
- * @param thread The thread to sleep on.
- * @param ms The time to sleep, in milliseconds.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_thread_sleep
-(   thread_t*   thread
-,   const u64   ms
-);
-
-/**
- * @brief Primary implementation of platform_mutex_create
- * (see platform_mutex_create).
- * 
- * @param mutex Output buffer.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_create
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_mutex_destroy
- * (see platform_mutex_destroy).
- * 
- * @param mutex The mutex to free.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_destroy
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_mutex_lock
- * (see platform_mutex_lock).
- * 
- * @param mutex The mutex to lock.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_lock
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_mutex_unlock
- * (see platform_mutex_unlock).
- * 
- * @param mutex The mutex to unlock.
- * @return 0 on success; error code otherwise.
- */
-i32
-_platform_mutex_unlock
-(   mutex_t* mutex
-);
-
-/**
- * @brief Primary implementation of platform_file_size
- * (see platform_file_size).
- * 
- * @param file Handle to a file.
- * @return The filesize of file in bytes.
- */
-u64
-_platform_file_size
-(   platform_file_t* file
-);
 
 void*
 platform_memory_allocate
@@ -347,40 +154,34 @@ platform_thread_create
         }
     }
 
-    const i32 result = _platform_thread_create ( function
-                                               , args
-                                               , auto_detach
-                                               , thread
-                                               );
-
-    if ( result )
+    DISABLE_WARNING ( -Wcast-function-type );
+    const i32 pthread_create_result = pthread_create ( ( pthread_t* ) &( *thread ).id
+                                                     , 0
+                                                     , ( void* (*)( void* ) ) function
+                                                     , args
+                                                     );
+    REENABLE_WARNING ();
+    if ( pthread_create_result )
     {
-        const char* platform_function_name;
-        switch ( result )
-        {
-            case PLATFORM_MAC_ERROR_PTHREAD_CREATE:
-            {
-                platform_function_name = "pthread_create";
-            }
-            break;
-
-            case PLATFORM_MAC_ERROR_PTHREAD_DETACH:
-            {
-                platform_function_name = "pthread_detach";
-            }
-            break;
-
-            default:
-            {
-                platform_function_name = "An unknown GNU/Linux process";
-            }
-            break;
-        }
-        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): %s failed."
-                           , platform_function_name
-                           );
+        platform_log_error ( "platform_thread_create ("PLATFORM_STRING"): pthread_create failed." );
         return false;
     }
+
+    if ( auto_detach )
+    {
+        if ( pthread_detach ( ( *thread ).id ) )
+        {
+            platform_log_error ( "platform_thread_create ("PLATFORM_STRING"): pthread_detach failed on auto-detach thread #%u."
+                               , ( *thread ).id
+                               );
+            return false;
+        }
+    }
+
+    ( *thread ).internal = memory_allocate ( sizeof ( u64 )
+                                           , MEMORY_TAG_THREAD
+                                           );
+    *( ( u64* )( ( *thread ).internal ) ) = ( *thread ).id;
 
     return true;
 }
@@ -395,12 +196,17 @@ platform_thread_destroy
         return;
     }
 
-    if ( _platform_thread_destroy ( thread ) )
+    if ( pthread_cancel ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
     {
-        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u."
+        platform_log_error ( "platform_thread_destroy ("PLATFORM_STRING"): pthread_cancel failed on thread #%u."
                            , ( *thread ).id
                            );
+        return;
     }
+
+    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
+    ( *thread ).internal = 0;
+    ( *thread ).id = 0;
 }
 
 void
@@ -413,12 +219,16 @@ platform_thread_detach
         return;
     }
 
-    if ( _platform_thread_detach ( thread ) )
+    if ( pthread_detach ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
     {
-        platform_log_error ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on mutex #%u."
+        platform_log_error ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on thread #%u."
                            , ( *thread ).id
                            );
+        return;
     }
+
+    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
+    ( *thread ).internal = 0;
 }
 
 void
@@ -431,12 +241,17 @@ platform_thread_cancel
         return;
     }
 
-    if ( _platform_thread_cancel ( thread ) )
+    if ( pthread_cancel ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
     {
-        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on mutex #%u."
+        platform_log_error ( "platform_thread_cancel ("PLATFORM_STRING"): pthread_cancel failed on thread #%u."
                            , ( *thread ).id
                            );
+        return;
     }
+
+    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
+    ( *thread ).internal = 0;
+    ( *thread ).id = 0;
 }
 
 bool
@@ -444,11 +259,12 @@ platform_thread_wait
 (   thread_t* thread
 )
 {
+    // TODO: Implement this.
     if ( !thread || !( *thread ).internal )
     {
         return false;
     }
-    return !_platform_thread_wait ( thread );
+    return true;
 }
 
 bool
@@ -457,11 +273,12 @@ platform_thread_wait_timeout
 ,   const u64   timeout_ms
 )
 {
+    // TODO: Implement this.
     if ( !thread || !( *thread ).internal )
     {
         return false;
     }
-    return !_platform_thread_wait_timeout ( thread , timeout_ms );
+    return true;
 }
 
 bool
@@ -469,11 +286,12 @@ platform_thread_active
 (   thread_t* thread
 )
 {
+    // TODO: Implement this.
     if ( !thread || !( *thread ).internal )
     {
         return false;
     }
-    return !_platform_thread_active ( thread );
+    return thread && ( *thread ).internal;
 }
 
 void
@@ -482,8 +300,8 @@ platform_thread_sleep
 ,   const u64   ms
 )
 {
-    /* if ( */ _platform_thread_sleep ( thread , ms ) /* ) {} */;
-}//            ^^^^^^^^^^^^^^^^^^^^^^ Does not fail.
+    platform_sleep ( ms );
+}
 
 u64
 platform_thread_id
@@ -503,13 +321,23 @@ platform_mutex_create
         return false;
     }
 
-    if ( _platform_mutex_create ( mutex ) )
+    pthread_mutexattr_t pthread_mutex_attr;
+    pthread_mutexattr_init ( &pthread_mutex_attr );
+    pthread_mutexattr_settype ( &pthread_mutex_attr , PTHREAD_MUTEX_RECURSIVE );
+    
+    pthread_mutex_t pthread_mutex;
+    if ( pthread_mutex_init ( &pthread_mutex , &pthread_mutex_attr ) )
     {
         platform_log_error ( "platform_mutex_create ("PLATFORM_STRING"): pthread_mutex_init failed on mutex %@."
                            , mutex
                            );
         return false;
     }
+
+    ( *mutex ).internal = memory_allocate ( sizeof ( pthread_mutex_t )
+                                          , MEMORY_TAG_MUTEX
+                                          );
+    *( ( pthread_mutex_t* )( ( *mutex ).internal ) ) = pthread_mutex;
 
     return true;
 }
@@ -523,13 +351,20 @@ platform_mutex_destroy
     {
         return;
     }
-    
-    if ( _platform_mutex_destroy ( mutex ) )
+
+    if ( pthread_mutex_destroy ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
     {
         platform_log_error ( "platform_mutex_destroy ("PLATFORM_STRING"): pthread_mutex_destroy failed on mutex %@."
                            , mutex
                            );
+        return;
     }
+
+    memory_free ( ( *mutex ).internal
+                , sizeof ( pthread_mutex_t* )
+                , MEMORY_TAG_MUTEX
+                );
+    ( *mutex ).internal = 0;
 }
 
 bool
@@ -552,7 +387,7 @@ platform_mutex_lock
         return false;
     }
 
-    if ( _platform_mutex_lock ( mutex ) )
+    if ( pthread_mutex_lock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
     {
         platform_log_error ( "platform_mutex_lock ("PLATFORM_STRING"): pthread_mutex_lock failed on mutex %@."
                            , mutex
@@ -583,7 +418,7 @@ platform_mutex_unlock
         return false;
     }
 
-    if ( _platform_mutex_unlock ( mutex ) )
+    if ( pthread_mutex_unlock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
     {
         platform_log_error ( "platform_mutex_unlock ("PLATFORM_STRING"): pthread_mutex_unlock failed on mutex %@."
                            , mutex
@@ -676,16 +511,16 @@ platform_file_open
 
     if ( descriptor == -1 )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): open failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): open failed on file: %s."
                            , path
                            );
         return false;
     }
 
-    // Set file pointer to the start of the file.
+    // Set read-write position to the start of the file.
     if ( lseek ( descriptor , 0 , SEEK_SET ) == -1 )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): lseek failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): lseek failed on file: %s."
                            , path
                            );
         return false;
@@ -694,18 +529,24 @@ platform_file_open
     // If in write mode, truncate the file content.
     if ( truncate && ftruncate ( descriptor , 0 ) )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): ftruncate failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): ftruncate failed on file: %s."
                            , path
                            );
         return false;
     }
 
+    // Precompute the file size.
+    struct stat file_info;
+    fstat ( descriptor , &file_info );
+
     platform_file_t* file = memory_allocate ( sizeof ( platform_file_t )
                                             , MEMORY_TAG_FILE
                                             );
     ( *file ).descriptor = descriptor;
-    ( *file ).mode = mode_;
     ( *file ).path = path;
+    ( *file ).mode = mode_;
+    ( *file ).size = file_info.st_size;
+    ( *file ).position = 0;
     ( *file ).initialized = true;
     
     ( *file_ ).handle = file;
@@ -742,19 +583,83 @@ platform_file_close
 
 u64
 platform_file_size
-(   file_t* file
+(   file_t* file_
 )
 {
-    if ( !file )
+    if ( !file_ )
     {
         LOGERROR ( "platform_file_size ("PLATFORM_STRING"): Missing argument: file." );
         return 0;
     }
-    if ( !( *file ).handle || !( *file ).valid )
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
     {
         return 0;
     }
-    return _platform_file_size ( ( *file ).handle );
+
+    platform_file_t* file = ( *file_ ).handle;
+    return ( *file ).size;
+}
+
+u64
+platform_file_position_get
+(   file_t* file_
+)
+{
+    if ( !file_ )
+    {
+        LOGERROR ( "platform_file_position_get ("PLATFORM_STRING"): Missing argument: file." );
+        return 0;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return 0;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+    return ( *file ).position;
+}
+
+bool
+platform_file_position_set
+(   file_t*     file_
+,   const u64   position
+)
+{
+    if ( !file_ )
+    {
+        LOGERROR ( "platform_file_position_set ("PLATFORM_STRING"): Missing argument: file." );
+        return 0;
+    }
+
+    if ( !( *file_ ).handle || !( *file_ ).valid )
+    {
+        return 0;
+    }
+
+    platform_file_t* file = ( *file_ ).handle;
+
+    // Out-of-bounds position? Y/N
+    if ( position > ( *file ).size )
+    {
+        LOGERROR ( "platform_file_position_set ("PLATFORM_STRING"): The provided position is outside of the file boundary." );
+        return 0;
+    }
+
+    // Update host platform file position.
+    if ( lseek ( ( *file ).descriptor , position , SEEK_SET ) == -1 )
+    {
+        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
+                           , ( *file ).path
+                           );
+        return false;
+    }
+
+    // Update host platform file position.
+    ( *file ).position = position;
+    
+    return true;
 }
 
 bool
@@ -804,19 +709,7 @@ platform_file_read
         return false;
     }
 
-    const u64 file_size = _platform_file_size ( file );
-    if ( file_size < size )
-    {
-        size = file_size;
-    }
-
-    // Nothing to copy? Y/N
-    if ( !size )
-    {
-        *read_ = 0;
-        return true;
-    }
-
+    size = MIN ( size , ( *file ).size - ( *file ).position );
     u64 total_bytes_read = 0;
     while ( total_bytes_read < size )
     {
@@ -832,6 +725,10 @@ platform_file_read
             *read_ = total_bytes_read;
             return false;
         }
+
+        // Update internal file position.
+        ( *file ).position += bytes_read;
+
         total_bytes_read += bytes_read;
     }
 
@@ -884,14 +781,13 @@ platform_file_read_line
     char* string = string_create ();
 
     // Nothing to copy? Y/N
-    const u64 file_size = _platform_file_size ( file );
-    if ( !file_size )
+    u64 bytes_remaining = ( *file ).size - ( *file ).position;
+    if ( !bytes_remaining )
     {
         *dst = string;
         return true;
     }
 
-    u64 bytes_remaining = file_size;
     bool end_of_line = false;
     do
     {
@@ -911,6 +807,9 @@ platform_file_read_line
             return false;
         }
 
+        // Update internal file position.
+        ( *file ).position += bytes_read;
+
         // End of line? Y/N
         u64 length = 0;
         while ( length < ( ( u64 ) bytes_read ) )
@@ -919,9 +818,10 @@ platform_file_read_line
             {
                 end_of_line = true;
 
-                // Move the file pointer back to the terminator index (+1).
-                const u64 amount = bytes_read - length - 1;
-                if ( lseek ( ( *file ).descriptor , -amount , SEEK_CUR ) == -1 )
+                // Update host platform file position.
+                u64 amount = bytes_read - length - 1;
+                amount = -amount;
+                if ( lseek ( ( *file ).descriptor , amount , SEEK_CUR ) == -1 )
                 {
                     platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): lseek failed on file: %s."
                                        , ( *file ).path
@@ -931,6 +831,9 @@ platform_file_read_line
                     return false;
                 }
 
+                // Update internal file position.
+                ( *file ).position += amount;
+
                 break;
             }
 
@@ -939,12 +842,12 @@ platform_file_read_line
 
         // Append the line segment to the output buffer.
         string_push ( string , buffer , length );
-        *dst = string;
         
         bytes_remaining -= bytes_read;
     }
     while ( bytes_remaining && !end_of_line );
     
+    *dst = string;
     return true;
 }
 
@@ -1000,28 +903,41 @@ platform_file_read_all
         return false;
     }
 
-    const u64 file_size = _platform_file_size ( file );
-
-    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * ( file_size + 1 ) );
+    u8* string = ( u8* ) string_allocate ( sizeof ( u8 ) * ( ( *file ).size + 1 ) );
 
     // Nothing to copy? Y/N
-    if ( !file_size )
+    if ( !( *file ).size )
     {
         *dst = string;
         *read_ = 0;
         return true;
     }
 
+    // Set host-platform read-write position to the start of the file.
+    if ( lseek ( ( *file ).descriptor , 0 , SEEK_SET ) == -1 )
+    {
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): lseek failed on file: %s"
+                           , ( *file ).path
+                           );
+        string_free ( string );
+        *dst = 0;
+        *read_ = 0;
+        return false;
+    }
+
+    // Update internal file position.
+    ( *file ).position = 0;
+
     u64 total_bytes_read = 0;
-    while ( total_bytes_read < file_size )
+    do
     {
         const ssize_t bytes_read = read ( ( *file ).descriptor
                                         , string + total_bytes_read
-                                        , file_size - total_bytes_read
+                                        , ( *file ).size - total_bytes_read
                                         );
         if ( bytes_read == -1 )
         {
-            platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): read failed on file: %s."
+            platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): read failed on file: %s"
                                , ( *file ).path
                                );
             string_free ( string );
@@ -1029,12 +945,32 @@ platform_file_read_all
             *read_ = total_bytes_read;
             return false;
         }
+
+        // Update internal file position.
+        ( *file ).position += bytes_read;
+
         total_bytes_read += bytes_read;
     }
+    while ( total_bytes_read < ( *file ).size );
+
+    // Rewind host platform file position.
+    if ( lseek ( ( *file ).descriptor , 0 , SEEK_SET ) == -1 )
+    {
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): lseek failed on file: %s"
+                           , ( *file ).path
+                           );
+        string_free ( string );
+        *dst = 0;
+        *read_ = total_bytes_read;
+        return false;
+    }
+
+    // Update internal file position.
+    ( *file ).position = 0;
 
     *dst = string;
     *read_ = total_bytes_read;
-    return total_bytes_read == file_size;
+    return total_bytes_read == ( *file ).size;
 }
 
 bool
@@ -1077,18 +1013,11 @@ platform_file_write
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
+        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
         *written = 0;
         return false;
-    }
-
-    // Nothing to copy? Y/N
-    if ( !size )
-    {
-        *written = 0;
-        return true;
     }
 
     u64 total_bytes_written = 0;
@@ -1100,12 +1029,17 @@ platform_file_write
                                             );
         if ( bytes_written == -1 )
         {
-            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s"
                                , ( *file ).path
                                );
             *written = bytes_written;
             return false;
         }
+
+        // Update internal file position and size.
+        ( *file ).position += bytes_written;
+        ( *file ).size += bytes_written;
+
         total_bytes_written += bytes_written;
     }
 
@@ -1143,7 +1077,7 @@ platform_file_write_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
+        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
         return false;
@@ -1158,11 +1092,15 @@ platform_file_write_line
                                             );
         if ( bytes_written == -1 )
         {
-            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s"
                                , ( *file ).path
                                );
             return false;
         }
+
+        // Update internal file position and size.
+        ( *file ).position += bytes_written;
+        ( *file ).size += bytes_written;
 
         total_bytes_written += bytes_written;
     }
@@ -1175,11 +1113,15 @@ platform_file_write_line
                                         );
     if ( bytes_written == -1 )
     {
-        platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+        platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s"
                             , ( *file ).path
                             );
         return false;
     }
+
+    // Update internal file position and size.
+    ( *file ).position += bytes_written;
+    ( *file ).size += bytes_written;
 
     total_bytes_written += bytes_written;
 
@@ -1196,6 +1138,8 @@ platform_file_stdin
         platform_stdin.descriptor = 0;
         platform_stdin.mode = FILE_MODE_READ;
         platform_stdin.path = "stdin";
+        platform_stdin.size = 0;
+        platform_stdin.position = 0;
         platform_stdin.initialized = true;
     }
     ( *file ).handle = &platform_stdin;
@@ -1212,6 +1156,8 @@ platform_file_stdout
         platform_stdout.descriptor = 1;
         platform_stdout.mode = FILE_MODE_WRITE;
         platform_stdout.path = "stdout";
+        platform_stdout.size = 0;
+        platform_stdout.position = 0;
         platform_stdout.initialized = true;
     }
     ( *file ).handle = &platform_stdout;
@@ -1228,40 +1174,12 @@ platform_file_stderr
         platform_stderr.descriptor = 2;
         platform_stderr.mode = FILE_MODE_WRITE;
         platform_stderr.path = "stderr";
+        platform_stderr.size = 0;
+        platform_stderr.position = 0;
         platform_stderr.initialized = true;
     }
     ( *file ).handle = &platform_stderr;
     ( *file ).valid = true;
-}
-
-f64
-platform_absolute_time
-( void )
-{
-    mach_timebase_info_data_t mach_timebase_info;
-    mach_timebase_info ( &mach_timebase_info );
-    const u64 time = mach_absolute_time ();
-    const u64 ns = ( f64 )( time * ( ( u64 ) mach_timebase_info.numer ) / ( ( f64 ) clock_timebase.denom ) );
-    return ns / 1.0E9;
-}
-
-void
-platform_sleep
-(   u64 ms
-)
-{
-    #if _POSIX_C_SOURCE >= 199309L
-        struct timespec time;
-        time.tv_sec = ms / 1000;
-        time.tv_nsec = ( ms % 1000 ) * 1000 * 1000;
-        nanosleep ( &time , 0 );
-    #else
-        if ( ms >= 1000 )
-        {
-            sleep ( ms / 1000 );
-        }
-        usleep ( ( ms % 1000 ) * 1000 );
-    #endif
 }
 
 i64
@@ -1298,211 +1216,44 @@ platform_error_message
     return _string_length_clamped ( dst , dst_length );
 }
 
+f64
+platform_absolute_time
+( void )
+{
+    mach_timebase_info_data_t mach_timebase_info;
+    mach_timebase_info ( &mach_timebase_info );
+    const u64 time = mach_absolute_time ();
+    const u64 ns = ( f64 )( time * ( ( u64 ) mach_timebase_info.numer ) / ( ( f64 ) clock_timebase.denom ) );
+    return ns / 1.0E9;
+}
+
+void
+platform_sleep
+(   u64 ms
+)
+{
+    #if _POSIX_C_SOURCE >= 199309L
+        struct timespec time;
+        time.tv_sec = ms / 1000;
+        time.tv_nsec = ( ms % 1000 ) * 1000 * 1000;
+        nanosleep ( &time , 0 );
+    #else
+        if ( ms >= 1000 )
+        {
+            sleep ( ms / 1000 );
+        }
+        usleep ( ( ms % 1000 ) * 1000 );
+    #endif
+}
+
 i32
 platform_processor_core_count
 ( void )
 {
-    i32 total_processor_count = get_nprocs_conf ();
-    i32 available_processor_count = get_nprocs ();
-    LOGINFO ( "platform_processor_core_count ("PLATFORM_STRING"): %i cores available (%i offline)."
-            , available_processor_count
-            , total_processor_count - available_processor_count
+    LOGINFO ( "platform_processor_core_count ("PLATFORM_STRING"): %i cores available."
+            , [ [ NSProcessInfo processInfo ] processorCount ]
             );
-    return available_processor_count;
-}
-
-i32
-_platform_thread_create
-(   thread_start_function_t function
-,   void*                   args
-,   bool                    auto_detach
-,   thread_t*               thread
-)
-{
-    DISABLE_WARNING ( -Wcast-function-type );
-    const i32 result = pthread_create ( ( pthread_t* ) &( *thread ).id
-                                      , 0
-                                      , ( void* (*)( void* ) ) function
-                                      , args
-                                      );
-    REENABLE_WARNING ();
-
-    if ( result )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_CREATE;
-    }
-
-    if ( auto_detach )
-    {
-        if ( pthread_detach ( ( *thread ).id ) )
-        {
-            return PLATFORM_MAC_ERROR_PTHREAD_DETACH;
-        }
-    }
-
-    ( *thread ).internal = memory_allocate ( sizeof ( u64 )
-                                           , MEMORY_TAG_THREAD
-                                           );
-    *( ( u64* )( ( *thread ).internal ) ) = ( *thread ).id;
-
-    return 0;
-}
-
-i32
-_platform_thread_destroy
-(   thread_t* thread
-)
-{
-    return _platform_thread_cancel ( thread );
-}
-
-i32
-_platform_thread_detach
-(   thread_t* thread
-)
-{
-    if ( !thread || !( *thread ).internal )
-    {
-        return 0;
-    }
-
-    if ( pthread_detach ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_DETACH;
-    }
-
-    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
-    ( *thread ).internal = 0;
-
-    return 0;
-}
-
-i32
-_platform_thread_cancel
-(   thread_t* thread
-)
-{
-    if ( pthread_cancel ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_CANCEL;
-    }
-
-    memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
-    ( *thread ).internal = 0;
-    ( *thread ).id = 0;
-
-    return 0;
-}
-
-i32
-_platform_thread_wait
-(   thread_t* thread
-)
-{   // TODO: Implement this.
-    return 0;
-}
-
-i32
-_platform_thread_wait_timeout
-(   thread_t*   thread
-,   const u64   timeout_ms
-)
-{   // TODO: Implement this.
-    return 0;
-}
-
-i32
-_platform_thread_active
-(   thread_t* thread
-)
-{   // TODO: Implement this.
-    return !( *thread ).internal;
-}
-
-i32
-_platform_thread_sleep
-(   thread_t*   thread
-,   const u64   ms
-)
-{
-    platform_sleep ( ms );
-    return 0;
-}
-
-i32
-_platform_mutex_create
-(   mutex_t* mutex
-)
-{
-    pthread_mutexattr_t pthread_mutex_attr;
-    pthread_mutexattr_init ( &pthread_mutex_attr );
-    pthread_mutexattr_settype ( &pthread_mutex_attr , PTHREAD_MUTEX_RECURSIVE );
-    
-    pthread_mutex_t pthread_mutex;
-    if ( pthread_mutex_init ( &pthread_mutex , &pthread_mutex_attr ) )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_MUTEX_INIT;
-    }
-
-    ( *mutex ).internal = memory_allocate ( sizeof ( pthread_mutex_t )
-                                          , MEMORY_TAG_MUTEX
-                                          );
-    *( ( pthread_mutex_t* )( ( *mutex ).internal ) ) = pthread_mutex;
-
-    return 0;
-}
-
-i32
-_platform_mutex_destroy
-(   mutex_t* mutex
-)
-{
-    if ( pthread_mutex_destroy ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_MUTEX_DESTROY;
-    }
-
-    memory_free ( ( *mutex ).internal
-                , sizeof ( pthread_mutex_t* )
-                , MEMORY_TAG_MUTEX
-                );
-    ( *mutex ).internal = 0;
-
-    return 0;
-}
-
-i32
-_platform_mutex_lock
-(   mutex_t* mutex
-)
-{
-    if ( pthread_mutex_lock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_MUTEX_LOCK;
-    }
-    return 0;
-}
-
-i32
-_platform_mutex_unlock
-(   mutex_t* mutex
-)
-{
-    if ( pthread_mutex_unlock ( ( pthread_mutex_t* )( ( *mutex ).internal ) ) )
-    {
-        return PLATFORM_MAC_ERROR_PTHREAD_MUTEX_UNLOCK;
-    }
-    return 0;
-}
-
-u64
-_platform_file_size
-(   platform_file_t* file
-)
-{
-    struct stat file_info;
-    fstat ( ( *file ).descriptor , &file_info );
-    return file_info.st_size;
+    return [ [ NSProcessInfo processInfo ] processorCount ];
 }
 
 #endif  // End platform layer.

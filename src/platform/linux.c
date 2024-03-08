@@ -221,10 +221,10 @@ platform_thread_detach
 
     if ( pthread_detach ( *( ( pthread_t* )( ( *thread ).internal ) ) ) )
     {
-        platform_log_error ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on mutex #%u."
+        platform_log_error ( "platform_thread_detach ("PLATFORM_STRING"): pthread_detach failed on thread #%u."
                            , ( *thread ).id
                            );
-        return false;
+        return;
     }
 
     memory_free ( ( *thread ).internal , sizeof ( u64 ) , MEMORY_TAG_THREAD );
@@ -511,7 +511,7 @@ platform_file_open
 
     if ( descriptor == -1 )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): open failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): open failed on file: %s."
                            , path
                            );
         return false;
@@ -520,7 +520,7 @@ platform_file_open
     // Set read-write position to the start of the file.
     if ( lseek ( descriptor , 0 , SEEK_SET ) == -1 )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): lseek failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): lseek failed on file: %s."
                            , path
                            );
         return false;
@@ -529,7 +529,7 @@ platform_file_open
     // If in write mode, truncate the file content.
     if ( truncate && ftruncate ( descriptor , 0 ) )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): ftruncate failed for file: %s."
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): ftruncate failed on file: %s."
                            , path
                            );
         return false;
@@ -650,7 +650,7 @@ platform_file_position_set
     // Update host platform file position.
     if ( lseek ( ( *file ).descriptor , position , SEEK_SET ) == -1 )
     {
-        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
                            , ( *file ).path
                            );
         return false;
@@ -916,7 +916,7 @@ platform_file_read_all
     // Set host-platform read-write position to the start of the file.
     if ( lseek ( ( *file ).descriptor , 0 , SEEK_SET ) == -1 )
     {
-        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): lseek failed for file: %s"
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): lseek failed on file: %s"
                            , ( *file ).path
                            );
         string_free ( string );
@@ -937,7 +937,7 @@ platform_file_read_all
                                         );
         if ( bytes_read == -1 )
         {
-            platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): read failed on file: %s."
+            platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): read failed on file: %s"
                                , ( *file ).path
                                );
             string_free ( string );
@@ -956,7 +956,7 @@ platform_file_read_all
     // Rewind host platform file position.
     if ( lseek ( ( *file ).descriptor , 0 , SEEK_SET ) == -1 )
     {
-        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): lseek failed for file: %s"
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): lseek failed on file: %s"
                            , ( *file ).path
                            );
         string_free ( string );
@@ -1013,7 +1013,7 @@ platform_file_write
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
+        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
         *written = 0;
@@ -1029,7 +1029,7 @@ platform_file_write
                                             );
         if ( bytes_written == -1 )
         {
-            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s"
                                , ( *file ).path
                                );
             *written = bytes_written;
@@ -1077,7 +1077,7 @@ platform_file_write_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
+        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
         return false;
@@ -1092,7 +1092,7 @@ platform_file_write_line
                                             );
         if ( bytes_written == -1 )
         {
-            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s"
                                , ( *file ).path
                                );
             return false;
@@ -1113,7 +1113,7 @@ platform_file_write_line
                                         );
     if ( bytes_written == -1 )
     {
-        platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s."
+        platform_log_error ( "platform_file_write ("PLATFORM_STRING"): write failed on file: %s"
                             , ( *file ).path
                             );
         return false;

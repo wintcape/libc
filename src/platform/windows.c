@@ -488,7 +488,7 @@ platform_file_open
     
     if ( handle == INVALID_HANDLE_VALUE )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): CreateFile failed for file: %s"
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): CreateFile failed on file: %s"
                            , path
                            );
         return false;
@@ -497,7 +497,7 @@ platform_file_open
     // Set read-write position to the start of the file.
     if ( SetFilePointer ( handle , 0 , 0 , FILE_BEGIN ) == INVALID_SET_FILE_POINTER )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
                            , path
                            );
         return false;
@@ -506,7 +506,7 @@ platform_file_open
     // If in write mode, truncate the file content.
     if ( truncate && !SetEndOfFile ( handle ) )
     {
-        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetEndOfFile failed for file: %s"
+        platform_log_error ( "platform_file_open ("PLATFORM_STRING"): SetEndOfFile failed on file: %s"
                            , path
                            );
         return false;
@@ -516,7 +516,7 @@ platform_file_open
     LARGE_INTEGER size;
     if ( !GetFileSizeEx ( handle , &size ) )
     {
-        platform_log_error ( "platform_file_size ("PLATFORM_STRING"): GetFileSizeEx failed on file: %s."
+        platform_log_error ( "platform_file_size ("PLATFORM_STRING"): GetFileSizeEx failed on file: %s"
                            , path
                            );
         return false;
@@ -551,7 +551,7 @@ platform_file_close
     platform_file_t* file = ( *file_ ).handle;
     if ( !CloseHandle ( ( *file ).handle ) )
     {
-        platform_log_error ( "platform_file_close ("PLATFORM_STRING"): CloseHandle failed on file: %s."
+        platform_log_error ( "platform_file_close ("PLATFORM_STRING"): CloseHandle failed on file: %s"
                            , ( *file ).path
                            );
     }
@@ -638,7 +638,7 @@ platform_file_position_set
                            , FILE_BEGIN
                            ))
     {
-        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
                            , ( *file ).path
                            );
         return false;
@@ -712,7 +712,7 @@ platform_file_read
                         , 0
                         ))
         {
-            platform_log_error ( "platform_file_read ("PLATFORM_STRING"): ReadFile failed on file: %s."
+            platform_log_error ( "platform_file_read ("PLATFORM_STRING"): ReadFile failed on file: %s"
                                 , ( *file ).path
                                 );
             *read = total_bytes_read;
@@ -763,7 +763,7 @@ platform_file_read_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
-        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
+        LOGERROR ( "platform_file_read_line ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
                  , ( *file ).path
                  );
         *dst = 0;
@@ -793,7 +793,7 @@ platform_file_read_line
                        , 0
                        ))
         {
-            platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): ReadFile failed on file: %s."
+            platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): ReadFile failed on file: %s"
                                , ( *file ).path
                                );
             string_destroy ( string );
@@ -822,7 +822,7 @@ platform_file_read_line
                                        , FILE_CURRENT
                                        ))
                 {
-                    platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): SetFilePointerEx failed on file: %s."
+                    platform_log_error ( "platform_file_read_line ("PLATFORM_STRING"): SetFilePointerEx failed on file: %s"
                                        , ( *file ).path
                                        );
                     string_destroy ( string );
@@ -894,7 +894,7 @@ platform_file_read_all
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_READ ) )
     {
-        LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): The provided file is not opened for reading: %s."
+        LOGERROR ( "platform_file_read_all ("PLATFORM_STRING"): The provided file is not opened for reading: %s"
                  , ( *file ).path
                  );
         *dst = 0;
@@ -915,7 +915,7 @@ platform_file_read_all
     // Set host platform read-write position to the start of the file.
     if ( SetFilePointer ( ( *file ).handle , 0 , 0 , FILE_BEGIN ) == INVALID_SET_FILE_POINTER )
     {
-        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
                            , ( *file ).path
                            );
         string_free ( string );
@@ -943,7 +943,7 @@ platform_file_read_all
                        , 0
                        ))
         {
-            platform_log_error ( "platform_file_read ("PLATFORM_STRING"): ReadFile failed on file: %s."
+            platform_log_error ( "platform_file_read ("PLATFORM_STRING"): ReadFile failed on file: %s"
                                , ( *file ).path
                                );
             string_free ( string );
@@ -962,7 +962,7 @@ platform_file_read_all
     // Rewind host platform file position.
     if ( SetFilePointer ( ( *file ).handle , 0 , 0 , FILE_BEGIN ) == INVALID_SET_FILE_POINTER )
     {
-        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): SetFilePointer failed for file: %s"
+        platform_log_error ( "platform_file_read_all ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
                            , ( *file ).path
                            );
         string_free ( string );
@@ -1019,7 +1019,7 @@ platform_file_write
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
+        LOGERROR ( "platform_file_write ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
         *written = 0;
@@ -1041,7 +1041,7 @@ platform_file_write
                         , 0
                         ))
         {
-            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): WriteFile failed on file: %s."
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): WriteFile failed on file: %s"
                                 , ( *file ).path
                                 );
             *written = total_bytes_written;
@@ -1089,7 +1089,7 @@ platform_file_write_line
     // Illegal mode? Y/N
     if ( !( ( *file ).mode & FILE_MODE_WRITE ) )
     {
-        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s."
+        LOGERROR ( "platform_file_write_line ("PLATFORM_STRING"): The provided file is not opened for writing: %s"
                  , ( *file ).path
                  );
         return false;
@@ -1110,7 +1110,7 @@ platform_file_write_line
                         , 0
                         ))
         {
-            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): WriteFile failed on file: %s."
+            platform_log_error ( "platform_file_write ("PLATFORM_STRING"): WriteFile failed on file: %s"
                                 , ( *file ).path
                                 );
             return false;
@@ -1133,7 +1133,7 @@ platform_file_write_line
                     , 0
                     ))
     {
-        platform_log_error ( "platform_file_write_line ("PLATFORM_STRING"): WriteFile failed on file: %s."
+        platform_log_error ( "platform_file_write_line ("PLATFORM_STRING"): WriteFile failed on file: %s"
                             , ( *file ).path
                             );
         return false;
