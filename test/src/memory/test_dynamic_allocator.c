@@ -202,7 +202,6 @@ test_dynamic_allocator_single_allocation_all_space
     u64 memory_requirement = 0;
     void* memory;
     void* blk;
-    u64 free;
 
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , 0 , 0 ) );
     memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
