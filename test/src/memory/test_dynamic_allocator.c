@@ -38,7 +38,6 @@ test_dynamic_allocator_init_and_clear
     EXPECT_NOT ( dynamic_allocator_init ( 0 , &memory_requirement , 0 , 0 ) );
 
     // TEST: dynamic_allocator_init logs an error and fails if no output buffer is provided for the allocator.
-    memory = 0;
     memory = memory_allocate ( 1 , MEMORY_TAG_STRING );
     EXPECT_NEQ ( 0 , memory ); // Verify there was no memory error prior to testing.
     EXPECT_NOT ( dynamic_allocator_init ( 1024 , &memory_requirement , memory , 0 ) );
@@ -46,7 +45,6 @@ test_dynamic_allocator_init_and_clear
 
     // TEST: dynamic_allocator_init succeeds with valid arguments.
     EXPECT ( dynamic_allocator_init ( 1024 , &memory_requirement , 0 , 0 ) );
-    memory = 0;
     memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
     EXPECT_NEQ ( 0 , memory ); // Verify there was no memory error prior to testing.
     EXPECT ( dynamic_allocator_init ( 1024 , &memory_requirement , memory , &allocator ) );
@@ -55,8 +53,7 @@ test_dynamic_allocator_init_and_clear
     EXPECT_NEQ ( 0 , allocator.memory );
 
     // TEST: Linear allocator created via linear_allocator_create is initialized with all of its memory free.
-    u64 free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 1024 , free );
+    EXPECT_EQ ( 1024 , dynamic_allocator_query_free ( &allocator ) );
 
     // TEST: linear_allocator_destroy clears all linear allocator data structure fields.
     dynamic_allocator_clear ( &allocator );
@@ -76,64 +73,121 @@ test_dynamic_allocator_allocate_and_free
     const u64 total_allocator_size = allocator_size + dynamic_allocator_header_size () + alignment;
     dynamic_allocator_t allocator;
     u64 memory_requirement = 0;
+    void* memory;
     void* blk;
 
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , 0 , 0 ) );
-    void* memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+    memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , memory , &allocator ) );
     
     // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , allocator.memory );
 
-    // Verify that all the allocator memory is currently free prior to testing.
-    u64 free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
     
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    blk = ( void* ) -1;
-    blk = dynamic_allocator_allocate ( &allocator , 0 );
-    EXPECT_EQ ( 0 , blk );
-    
-    blk = dynamic_allocator_allocate ( &allocator , 10 );
-    EXPECT_NEQ ( 0 , blk );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( allocator_size - 10 , free );
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( dynamic_allocator_free ( &allocator , 0 ) );
-    EXPECT ( dynamic_allocator_free ( &allocator , blk ) );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
-    blk = dynamic_allocator_allocate_aligned ( &allocator , 0 , alignment );
-    EXPECT_EQ ( 0 , blk );
-    blk = dynamic_allocator_allocate_aligned ( &allocator , 10 , 0 );
-    EXPECT_EQ ( 0 , blk );
-    blk = dynamic_allocator_allocate_aligned ( &allocator , 10 , alignment );
-    EXPECT_NEQ ( 0 , blk );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( allocator_size - 10 , free );
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( dynamic_allocator_free_aligned ( &allocator , 0 ) );
-    EXPECT ( dynamic_allocator_free_aligned ( &allocator , blk ) );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
-    dynamic_allocator_clear ( &allocator );
-    EXPECT_EQ ( 0 , allocator.memory );
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: dynamic_allocator_allocate logs an error and returns 0 if no allocator is provided.
     blk = dynamic_allocator_allocate ( 0 , 10 );
     EXPECT_EQ ( 0 , blk );
-    blk = dynamic_allocator_allocate ( &allocator , 10 );
+
+    // TEST: dynamic_allocator_allocate logs an error and returns 0 if size is invalid.
+    blk = dynamic_allocator_allocate ( &allocator , 0 );
     EXPECT_EQ ( 0 , blk );
+
+    // TEST: dynamic_allocator_allocate does not allocate if size is invalid.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+    
+    // TEST: dynamic_allocator_allocate returns a handle to a valid memory buffer when given valid arguments.
+    blk = dynamic_allocator_allocate ( &allocator , 10 );
+    EXPECT_NEQ ( 0 , blk );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( allocator_size - 10 , dynamic_allocator_query_free ( &allocator ) );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: dynamic_allocator_free logs an error and fails if no allocator is provided.
+    EXPECT_NOT ( dynamic_allocator_free ( 0 , blk ) );
+
+    // TEST: dynamic_allocator_free logs an error and fail if no memory block is provided.
+    EXPECT_NOT ( dynamic_allocator_free ( &allocator , 0 ) );
+
+    // TEST: dynamic_allocator_free does not allocate if no memory block is provided.
+    EXPECT_EQ ( allocator_size - 10 , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_free succeeds given valid arguments.
+    EXPECT ( dynamic_allocator_free ( &allocator , blk ) );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_free.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: dynamic_allocator_allocate_aligned logs an error and returns 0 if no allocator is provided.
     blk = dynamic_allocator_allocate_aligned ( 0 , 10 , alignment );
     EXPECT_EQ ( 0 , blk );
+
+    // TEST: dynamic_allocator_allocate_aligned logs an error and returns 0 if size is invalid.
+    blk = dynamic_allocator_allocate_aligned ( &allocator , 0 , alignment );
+    EXPECT_EQ ( 0 , blk );
+
+    // TEST: dynamic_allocator_allocate_aligned does not allocate if size is invalid.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate_aligned logs an error and returns 0 if alignment is invalid.
+    blk = dynamic_allocator_allocate_aligned ( &allocator , 10 , 0 );
+    EXPECT_EQ ( 0 , blk );
+
+    // TEST: dynamic_allocator_allocate_aligned does not allocate if alignment is invalid.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate_aligned returns a handle to a valid memory buffer when given valid arguments.
+    blk = dynamic_allocator_allocate_aligned ( &allocator , 10 , alignment );
+    EXPECT_NEQ ( 0 , blk );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate_aligned.
+    EXPECT_EQ ( allocator_size - 10 , dynamic_allocator_query_free ( &allocator ) );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: dynamic_allocator_free logs an error and fails if no allocator is provided.
+    EXPECT_NOT ( dynamic_allocator_free_aligned ( 0 , blk ) );
+
+    // TEST: dynamic_allocator_free logs an error and fail if no memory block is provided.
+    EXPECT_NOT ( dynamic_allocator_free_aligned ( &allocator , 0 ) );
+
+    // TEST: dynamic_allocator_free does not allocate if no memory block is provided.
+    EXPECT_EQ ( allocator_size - 10 , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_free succeeds given valid arguments.
+    EXPECT ( dynamic_allocator_free_aligned ( &allocator , blk ) );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_free_aligned.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    dynamic_allocator_clear ( &allocator );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: dynamic_allocator_allocate logs an error and returns 0 if the provided allocator is uninitialized.
+    blk = dynamic_allocator_allocate ( &allocator , 10 );
+    EXPECT_EQ ( 0 , blk );
+
+    // TEST: dynamic_allocator_free logs an error and fails if the provided allocator is uninitialized.
+    blk = ( ( void* ) -1 );
+    EXPECT_NOT ( dynamic_allocator_free ( &allocator , blk ) );
+
+    // TEST: dynamic_allocator_allocate_aligned logs an error and returns 0 if the provided allocator is uninitialized.
     blk = dynamic_allocator_allocate_aligned ( &allocator , 10 , alignment );
     EXPECT_EQ ( 0 , blk );
-    blk = ( void* ) 99; // Not a real address, but the following function calls should fail before dereferencing blk anyways.
-    EXPECT_NOT ( dynamic_allocator_free ( 0 , blk ) );
-    EXPECT_NOT ( dynamic_allocator_free ( &allocator , blk ) );
-    EXPECT_NOT ( dynamic_allocator_free_aligned ( 0 , blk ) );
+
+    // TEST: dynamic_allocator_free_aligned logs an error and fails if the provided allocator is uninitialized.
+    blk = ( ( void* ) -1 );
     EXPECT_NOT ( dynamic_allocator_free_aligned ( &allocator , blk ) );
+
     memory_free ( memory , memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+
     return true;
 }
 
@@ -141,27 +195,41 @@ u8
 test_dynamic_allocator_single_allocation_all_space
 ( void )
 {
-    dynamic_allocator_t allocator;
-    u64 memory_requirement = 0;
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
     const u64 total_allocator_size = allocator_size + dynamic_allocator_header_size () + alignment;
+    dynamic_allocator_t allocator;
+    u64 memory_requirement = 0;
+    void* memory;
+    void* blk;
+    u64 free;
+
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , 0 , 0 ) );
-    void* memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+    memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , memory , &allocator ) );
+    
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , allocator.memory );
-    u64 free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
-    void* blk = dynamic_allocator_allocate ( &allocator , 1024 );
+
+    // Verify that all the allocator memory is currently free prior to testing.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
+    blk = dynamic_allocator_allocate ( &allocator , 1024 );
     EXPECT_NEQ ( 0 , blk );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 0 , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 0 , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_free succeeds given valid arguments.
     dynamic_allocator_free ( &allocator , blk );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_free.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
     dynamic_allocator_clear ( &allocator );
-    EXPECT_EQ ( 0 , allocator.memory );
     memory_free ( memory , memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+
     return true;
 }
 
@@ -169,80 +237,122 @@ u8
 test_dynamic_allocator_multiple_allocation_all_space
 ( void )
 {
-    dynamic_allocator_t allocator;
-    u64 memory_requirement = 0;
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
-    u64 header_size = dynamic_allocator_header_size () + alignment;
+    const u64 header_size = dynamic_allocator_header_size () + alignment;
     const u64 total_allocator_size = allocator_size + 3 * header_size;
+    dynamic_allocator_t allocator;
+    u64 memory_requirement = 0;
+    void* memory;
+
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , 0 , 0 ) );
-    void* memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+    memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , memory , &allocator ) );
+    
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , allocator.memory );
-    u64 free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
+
+    // Verify that all the allocator memory is currently free prior to testing.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
     void* blk0 = dynamic_allocator_allocate ( &allocator , 256 );
     EXPECT_NEQ ( 0 , blk0 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 768 + 2 * header_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 768 + 2 * header_size , dynamic_allocator_query_free ( &allocator ) );
+    
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
     void* blk1 = dynamic_allocator_allocate ( &allocator , 512 );
     EXPECT_NEQ ( 0 , blk1 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 256 + header_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 256 + header_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
     void* blk2 = dynamic_allocator_allocate ( &allocator , 256 );
     EXPECT_NEQ ( 0 , blk2 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 0 , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 0 , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_free succeeds given valid arguments.
     dynamic_allocator_free ( &allocator , blk2 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 256 + header_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_free.
+    EXPECT_EQ ( 256 + header_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_free succeeds given valid arguments.
     dynamic_allocator_free ( &allocator , blk0 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 512 + 2 * header_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_free.
+    EXPECT_EQ ( 512 + 2 * header_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_free succeeds given valid arguments.
     dynamic_allocator_free ( &allocator , blk1 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_free.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
     dynamic_allocator_clear ( &allocator );
-    EXPECT_EQ ( 0 , allocator.memory );
     memory_free ( memory , memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+
     return true;
 }
 u8
 test_dynamic_allocator_multiple_allocation_over_allocate
 ( void )
 {
-    dynamic_allocator_t allocator;
-    u64 memory_requirement = 0;
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
-    u64 header_size = dynamic_allocator_header_size () + alignment;
+    const u64 header_size = dynamic_allocator_header_size () + alignment;
     const u64 total_allocator_size = allocator_size + 3 * header_size;
+    dynamic_allocator_t allocator;
+    u64 memory_requirement = 0;
+    void* memory;
+
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , 0 , 0 ) );
-    void* memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+    memory = memory_allocate ( memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
     EXPECT ( dynamic_allocator_init ( total_allocator_size , &memory_requirement , memory , &allocator ) );
+    
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , allocator.memory );
-    u64 free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( total_allocator_size , free );
+
+    // Verify that all the allocator memory is currently free prior to testing.
+    EXPECT_EQ ( total_allocator_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
     void* blk0 = dynamic_allocator_allocate ( &allocator , 256 );
     EXPECT_NEQ ( 0 , blk0 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 768 + 2 * header_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 768 + 2 * header_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
     void* blk1 = dynamic_allocator_allocate ( &allocator , 512 );
     EXPECT_NEQ ( 0 , blk1 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 256 + header_size , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 256 + header_size , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate returns a handle to a valid output buffer given valid arguments.
     void* blk2 = dynamic_allocator_allocate ( &allocator , 256 );
     EXPECT_NEQ ( 0 , blk2 );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 0 , free );
+
+    // TEST: Allocator has correct amount of free space following dynamic_allocator_allocate.
+    EXPECT_EQ ( 0 , dynamic_allocator_query_free ( &allocator ) );
+
+    // TEST: dynamic_allocator_allocate logs an error and fails when inadequate free space remains within the backing freelist data structure.
     LOGWARN ( "The following warning and error are intentionally triggered by a test:" );
     void* blk_fail = dynamic_allocator_allocate ( &allocator , 256 );
     EXPECT_EQ ( 0 , blk_fail );
-    free = dynamic_allocator_query_free ( &allocator );
-    EXPECT_EQ ( 0 , free );
+
+    // TEST: dynamic_allocator_allocate has the same amount of free space remaining after failing when inadequate free space remains within the backing freelist data structure.
+    EXPECT_EQ ( 0 , dynamic_allocator_query_free ( &allocator ) );
+
     dynamic_allocator_clear ( &allocator );
-    EXPECT_EQ ( 0 , allocator.memory );
     memory_free ( memory , memory_requirement , MEMORY_TAG_DYNAMIC_ALLOCATOR );
+
     return true; 
 }
 

@@ -28,10 +28,14 @@ u8
 test_file_exists
 ( void )
 {
+    // TEST: file_exists fails on a filepath at which a file does not exist.
     EXPECT_NOT ( file_exists ( FILE_NAME_TEST_DNE , FILE_MODE_ACCESS ) );
+
+    // TEST: file_exists succeeds, verifying the existence of all input files that will be used for subsequent tests.
     EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE , FILE_MODE_ACCESS ) );
     EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_ACCESS ) );
     EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_ACCESS ) );
+
     return true;
 }
 
@@ -40,58 +44,148 @@ test_file_open_and_close
 ( void )
 {
     file_t file;
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: file_open logs an error and fails if no path is provided.
     EXPECT_NOT ( file_open ( 0 , FILE_MODE_READ , &file ) );
+
+    // TEST: file_open logs an error and fails if no output buffer is provided for the file.
     EXPECT_NOT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , 0 ) );
+
+    // TEST: file_open logs an error and fails if the provided file mode is invalid.
     EXPECT_NOT ( file_open ( FILE_NAME_TEST_IN_FILE , 0 , &file ) );
+
+    // TEST: file_open succeeds in read mode on the first input file (null-terminated text file).
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , &file ) );
+
+    // TEST: File contains a valid file handle following successful file_open.
     EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
+
+    // Verify input file is not empty prior to additional testing.
     EXPECT_NEQ ( 0 , file_size ( &file ) );
+
     file_close ( &file );
+
+    // TEST: File handle is null following file_close.
     EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
     EXPECT_NOT ( file.valid );
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ | FILE_MODE_WRITE , &file ) );
-    EXPECT_NEQ ( 0 , file.handle );
-    EXPECT ( file.valid );
-    EXPECT_NEQ ( 0 , file_size ( &file ) );
-    file_close ( &file );
-    EXPECT_EQ ( 0 , file.handle );
-    EXPECT_NOT ( file.valid );
+
+    // TEST: file_open succeeds in read mode on the second input file (binary file).
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ , &file ) );
+
+    // TEST: File contains a valid file handle following successful file_open.
     EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
+
+    // Verify input file is not empty prior to additional testing.
     EXPECT_NEQ ( 0 , file_size ( &file ) );
+
     file_close ( &file );
+
+    // TEST: File handle is null following file_close.
     EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
     EXPECT_NOT ( file.valid );
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ | FILE_MODE_WRITE , &file ) );
+    
+    // TEST: file_open succeeds in read mode on the third input file (empty file).
+    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
+
+    // TEST: File contains a valid file handle following successful file_open.
     EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
-    EXPECT_NEQ ( 0 , file_size ( &file ) );
+
+    // Verify (empty) input file **is** empty prior to additional testing.
+    EXPECT_EQ ( 0 , file_size ( &file ) );
+
     file_close ( &file );
+
+    // TEST: File handle is null following file_close.
     EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
     EXPECT_NOT ( file.valid );
-    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
-    EXPECT_NEQ ( 0 , file.handle );
-    EXPECT ( file.valid );
-    file_close ( &file );
-    EXPECT_EQ ( 0 , file.handle );
-    EXPECT_NOT ( file.valid );
+
+    // TEST: file_open succeeds in write mode on the output file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // TEST: File contains a valid file handle following successful file_open.
     EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
+
+    // Verify output file has been truncated by opening in write mode.
     EXPECT_EQ ( 0 , file_size ( &file ) );
+
     file_close ( &file );
+
+    // TEST: File handle is null following file_close.
     EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
     EXPECT_NOT ( file.valid );
+
+    // TEST: file_open succeeds in read mode on the output file.
+    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
+
+    // TEST: File contains a valid file handle following successful file_open.
+    EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
+    EXPECT ( file.valid );
+
+    file_close ( &file );
+
+    // TEST: File handle is null following file_close.
+    EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
+    EXPECT_NOT ( file.valid );
+
+    // TEST: file_open succeeds in read+write mode on the output file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ | FILE_MODE_WRITE , &file ) );
+
+    // TEST: File contains a valid file handle following successful file_open.
     EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
-    EXPECT_EQ ( 0 , file_size ( &file ) );
+
     file_close ( &file );
+
+    // TEST: File handle is null following file_close.
+    EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
+    EXPECT_NOT ( file.valid );
+
+    // Open one of the non-empty input files in read+write mode for testing.
+    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ | FILE_MODE_WRITE , &file ) );
+    
+    // Verify success of file_open prior to testing.
+    EXPECT_NEQ ( 0 , file.handle ); 
+    EXPECT ( file.valid );
+
+    // TEST: file_open does not truncate a non-empty file opened in read+write mode.
+    EXPECT_NEQ ( 0 , file_size ( &file ) );
+
+    file_close ( &file );
+
+    // Verify success of file_close.
     EXPECT_EQ ( 0 , file.handle );
     EXPECT_NOT ( file.valid );
+
     return true;
 }
 
@@ -102,41 +196,78 @@ test_file_read
     char buffer[ 100 ];
     file_t file;
     u64 read;
-    memory_clear ( buffer , 100 );
+
+    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: file_read fails if no file is provided.
+    EXPECT_NOT ( file_read ( 0 , 100 , buffer , &read ) );
+
+    // TEST: file_read fails if invalid file is provided.
     file_t invalid_file;
     invalid_file.valid = false;
     invalid_file.handle = 0;
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
-    EXPECT_NOT ( file_read ( 0 , 100 , buffer , &read ) );
     EXPECT_NOT ( file_read ( &invalid_file , 100 , buffer , &read ) );
+
+    // TEST: file_read fails if no output buffer for file content is provided.
     EXPECT_NOT ( file_read ( &file , 100 , 0 , &read ) );
+
+    // TEST: file_read fails if no output buffer for number of bytes read is provided.
     EXPECT_NOT ( file_read ( &file , 100 , buffer , 0 ) );
+
     file_close ( &file );
+
+    // TEST: file_read fails if file is not open for read.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     EXPECT_NOT ( file_read ( &file , 100 , buffer , &read ) );
     file_close ( &file );
+
+    // Empty file.
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
+
+    // TEST: file_read if file is empty.
     read = 1;
-    EXPECT ( file_read ( &file , 100 , buffer , &read ) );
-    EXPECT_EQ ( 0 , read );
-    file_close ( &file );
     memory_clear ( buffer , 100 );
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , &file ) );
-    read = 1;
-    EXPECT ( file_read ( &file , 0 , buffer , &read ) );
+    EXPECT ( file_read ( &file , 100 , buffer , &read ) );
+
+    // TEST: file_read reads 0 bytes if file is empty.
     EXPECT_EQ ( 0 , read );
+
+    file_close ( &file );
+
+    // Text-file.
+    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , &file ) );
+
+    // TEST: file_read succeeds if buffer size is 0.
+    read = 1;
+    memory_clear ( buffer , 100 );
+    EXPECT ( file_read ( &file , 0 , buffer , &read ) );
+
+    // TEST: file_read reads 0 bytes if buffer size is 0.
+    EXPECT_EQ ( 0 , read );
+
+    // TEST: Given an adequately-sized buffer, file_read reads the entire file contents at once (assuming file position is at the beginning of the file).
+    read = 1;
+    memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , read );
     EXPECT ( memory_equal ( buffer , file_content_test_in_file , _string_length ( file_content_test_in_file ) + 1 ) );
+    
     file_close ( &file );
-    memory_clear ( buffer , 100 );
+
+    // Binary-file.
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ , &file ) );
+    
+    // TEST: Given an adequately-sized buffer, file_read reads the entire file contents at once (assuming file position is at the beginning of the file).
     read = 0;
+    memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , read );
     EXPECT ( memory_equal ( buffer , file_content_test_in_file_binary , read ) );
+
     file_close ( &file );
+
     return true;
 }
 
