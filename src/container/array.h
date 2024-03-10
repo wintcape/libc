@@ -116,14 +116,29 @@ _array_field_set
 );
 
 /**
+ * @brief Computes the size (in bytes) of an array data structure. O(1).
+ * 
+ * @param array The array to query. Must be non-zero.
+ */
+u64
+_array_size
+(   const void* array
+);
+
+#define array_size(array) \
+    _array_size ( array )
+
+/**
  * @brief Resizes an existing array. O(n).
  * 
  * @param array The array to resize. Must be non-zero.
+ * @param minimum_capacity The minimum capacity of the new array.
  * @return The new array.
  */
 void*
 _array_resize
-(   void* array
+(   void*   array
+,   u64     minimum_capacity
 );
 
 /**

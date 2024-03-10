@@ -46,15 +46,16 @@ dynamic_allocator_init
 ,   dynamic_allocator_t*    allocator
 )
 {
-    if ( capacity < 1 )
+    if ( !capacity || !memory_requirement )
     {
-        LOGERROR ( "dynamic_allocator_init: Attempted to initialize allocator with size 0." );
-        return false;
-    }
-
-    if ( !memory_requirement )
-    {
-        LOGERROR ( "dynamic_allocator_init: Missing argument: memory_requirement." );
+        if ( !capacity )
+        {
+            LOGERROR ( "dynamic_allocator_init: Value of capacity argument must be non-zero." );
+        }
+        if ( !memory_requirement )
+        {
+            LOGERROR ( "dynamic_allocator_init: Missing argument: memory_requirement." );
+        }
         return false;
     }
 
@@ -78,6 +79,7 @@ dynamic_allocator_init
     }
 
     ( *allocator ).memory = memory;
+    
     state_t* state = ( *allocator ).memory;
     ( *state ).capacity = capacity;
     ( *state ).freelist_start = ( *allocator ).memory + sizeof ( state_t );

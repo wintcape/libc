@@ -16,9 +16,15 @@ test_string_allocate_and_free
 {
     const char* hello = "Hello world!";
     char* string = string_allocate_from ( hello );
+
+    // TEST: String created via string_allocate_from has identical length to the string it was created from.
     EXPECT_EQ ( _string_length ( hello ) , _string_length ( string ) );
+
+    // TEST: String created via string_allocate_from has identical characters to the string it was created from.
     EXPECT ( memory_equal ( string , hello , _string_length ( string ) ) );
+
     string_free ( string );
+
     return true;
 }
 
@@ -26,18 +32,46 @@ u8
 test_string_create_and_destroy
 ( void )
 {
-    char* string = string_create ();
-    EXPECT_EQ ( 0 , string_length ( string ) );
-    string_destroy ( string );
     const char* hello = "Hello world!";
+
+    char* string = string_create ();
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string );
+
+    // TEST: String created via string_create has 0 length.
+    EXPECT_EQ ( 0 , string_length ( string ) );
+
+    // TEST: String created via string_create has a null terminator.
+    EXPECT_EQ ( 0 , *string );
+
+    string_destroy ( string );
+
     string = string_create_from ( hello );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string );
+
+    // TEST: String created via string_create_from has identical length to the string it was created from.
     EXPECT_EQ ( _string_length ( hello ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , hello , string_length ( string ) ) );
+    
+    // TEST: String created via string_create_from has identical characters to the string it was created from.
+    EXPECT ( memory_equal ( string , hello , string_length ( string ) + 1 ) );
+
     char* copy = string_copy ( string );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , copy );
+    
+    // TEST: String created via string_copy has identical length to the string it was created from.
     EXPECT_EQ ( string_length ( copy ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , copy , string_length ( string ) ) );
+    
+    // TEST: String created via string_copy has identical characters to the string it was created from.
+    EXPECT ( memory_equal ( string , copy , string_length ( string ) + 1 ) );
+
     string_destroy ( copy );
     string_destroy ( string );
+
     return true;
 }
 
@@ -46,22 +80,43 @@ test_string_push
 ( void )
 {
     const char* to_push = "push";
-    const u64 max_op = 100000;
+    const u64 op_count = 100000;
+
+    LOGDEBUG ( "Appending %i bytes to an empty string. . ." , op_count * _string_length ( to_push ) );
+
     char* string = string_create ();
-    LOGDEBUG ( "Appending %i bytes to an empty string. . ." , max_op * _string_length ( to_push ) );
-    char* old_string = string_allocate ( max_op * _string_length ( to_push ) + 1 );
-    for ( u64 i = 0; i < max_op; ++i )
+    char* old_string = string_allocate ( op_count * _string_length ( to_push ) + 1 );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , old_string );
+
+    for ( u64 i = 0; i < op_count; ++i )
     {
+        // Copy string state prior to performing the operation being tested.
         const u64 old_length = string_length ( string );
         memory_copy ( old_string , string , old_length );
+
         _string_push ( string , to_push );
+
+        // Verify there was no memory error prior to testing.
         EXPECT_NEQ ( 0 , string );
+
+        // TEST: string_push increases the length of the string by the length of the string being appended.
         EXPECT_EQ ( old_length , string_length ( string ) - _string_length ( to_push ) );
+        
+        // TEST: string_push appends the correct characters to the end of the string.
         EXPECT ( memory_equal ( to_push , &string[ old_length ] , _string_length ( to_push ) ) );
+
+        // TEST: string_push leaves the remainder of the string unmodified.
+        EXPECT ( memory_equal ( string , old_string , old_length ) );
     }
+
     LOGDEBUG ( "  Done." );
+
     string_free ( old_string );
     string_destroy ( string );
+
     return true;
 }
 
@@ -70,71 +125,193 @@ test_string_insert_and_remove
 ( void )
 {
     const char* to_insert[] = { "He" , "llo " , "world" , "!" };
-    const char* remove0     =   "He"   "llo "   "world"   "!"  ;
+    const char* insert1     =          "llo "                  ;
+    const char* insert2     =   "He"   "llo "                  ;
+    const char* insert3     =   "He"   "llo "             "!"  ;
+    const char* full        =   "He"   "llo "   "world"   "!"  ;
     const char* remove1     =   "He"   "llo "             "!"  ;
     const char* remove2     =   "He"                      "!"  ;
-    const char* remove3     =       "!"  ;
+    const char* remove3     =                             "!"  ;
     char* string1 = string_create ();
     char* string2 = string_create ();
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+    char* string;
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string1 );
+    EXPECT_NEQ ( 0 , string2 );
+
+    // TEST: string_insert logs an error if the index is invalid.
+    LOGWARN ( "The following error is intentionally triggered by a test:" );
+    string = string1;
     _string_insert ( string1 , string_length ( string1 ) + 1 , to_insert[ 0 ] );
-    EXPECT_NEQ ( 0 , string1 );
+
+    // TEST: string_insert does not perform memory allocation if the index is invalid.
+    EXPECT_EQ ( string , string1 );
+
+    // TEST: string_insert does not modify string length if the index is invalid.
     EXPECT_EQ ( 0 , string_length ( string1 ) );
-    _string_insert ( string1 , string_length ( string1 ) , to_insert[ 0 ] );
+
+    // TEST: string_insert succeeds given valid arguments.
+    _string_insert ( string1 , 0 , to_insert[ 1 ] );
+
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) , string_length ( string1 ) );
-    EXPECT ( memory_equal ( to_insert[ 0 ] , string1 , _string_length ( to_insert[ 0 ] ) ) );
-    _string_insert ( string1 , string_length ( string1 ) , to_insert[ 2 ] );
+
+    // TEST: string_insert increases the length of the string by the length of the string being inserted.
+    EXPECT_EQ ( _string_length ( insert1 ) , string_length ( string1 ) );
+
+    // TEST: string_insert inserts the correct number of characters to the string at the correct index, leaving the remainder of the string unmodified.
+    EXPECT ( memory_equal ( string1 , insert1 , string_length ( string1 ) ) );
+    
+    // TEST: string_insert succeeds given valid arguments.
+    _string_insert ( string1 , 0 , to_insert[ 0 ] );
+
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 2 ] ) , string_length ( string1 ) );
-    EXPECT ( memory_equal ( to_insert[ 2 ] , string1 + _string_length ( to_insert[ 0 ] ) , _string_length ( to_insert[ 2 ] ) ) );
+
+    // TEST: string_insert increases the length of the string by the length of the string being inserted.
+    EXPECT_EQ ( _string_length ( insert2 ) , string_length ( string1 ) );
+
+    // TEST: string_insert inserts the correct number of characters to the string at the correct index, leaving the remainder of the string unmodified.
+    EXPECT ( memory_equal ( string1 , insert2 , string_length ( string1 ) ) );
+
+    // TEST: string_insert succeeds given valid arguments.
     _string_insert ( string1 , string_length ( string1 ) , to_insert[ 3 ] );
+
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 2 ] ) + _string_length ( to_insert[ 3 ] ) , string_length ( string1 ) );
-    EXPECT ( memory_equal ( to_insert[ 3 ] , string1 + _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 2 ] ) , _string_length ( to_insert[ 3 ] ) ) );
-    _string_insert ( string1 , _string_length ( to_insert[ 0 ] ) , to_insert[ 1 ] );
+
+    // TEST: string_insert increases the length of the string by the length of the string being inserted.
+    EXPECT_EQ ( _string_length ( insert3 ) , string_length ( string1 ) );
+
+    // TEST: string_insert inserts the correct number of characters to the string at the correct index, leaving the remainder of the string unmodified.
+    EXPECT ( memory_equal ( string1 , insert3 , string_length ( string1 ) ) );
+
+    // TEST: string_insert succeeds given valid arguments.
+    _string_insert ( string1 , _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) , to_insert[ 2 ] );
+
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) + _string_length ( to_insert[ 2 ] ) + _string_length ( to_insert[ 3 ] ) , string_length ( string1 ) );
-    EXPECT ( memory_equal ( remove0 , string1 , string_length ( string1 ) ) );
+
+   // TEST: string_insert increases the length of the string by the length of the string being inserted.
+    EXPECT_EQ ( _string_length ( full ) , string_length ( string1 ) );
+
+    // TEST: string_insert inserts the correct number of characters to the string at the correct index, leaving the remainder of the string unmodified.
+    EXPECT ( memory_equal ( string1 , full , string_length ( string1 ) ) );
+
+    // TEST: string_insert yields the same results as string_push when inserting at the end of the array.
     _string_push ( string2 , to_insert[ 0 ] );
     _string_push ( string2 , to_insert[ 1 ] );
     _string_push ( string2 , to_insert[ 2 ] );
     _string_push ( string2 , to_insert[ 3 ] );
-    EXPECT_EQ ( string_length ( string1 ) , string_length ( string2 ) );
+    EXPECT_EQ ( string_length ( string2 ) , string_length ( string1 ) );
     EXPECT ( memory_equal ( string1 , string2 , string_length ( string1 ) + 1 ) );
-    string_remove ( string1 , string_length ( string1 ) , 0 );
-    EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) + _string_length ( to_insert[ 2 ] ) + _string_length ( to_insert[ 3 ] ) , string_length ( string1 ) );
-    EXPECT_EQ ( string_length ( string1 ) , string_length ( string2 ) );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: string_remove logs an error if the index is invalid.
+    string = string1;
+    string_remove ( string1 , string_length ( string1 ) , 1 );
+
+    // TEST: string_remove does not perform memory allocation if the index is invalid* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    EXPECT_EQ ( string , string1 );
+
+    // TEST: string_remove does not modify string length if the index is invalid.
+    EXPECT_EQ ( string_length ( string2 ) , string_length ( string1 ) );
+
+    // TEST: string_remove does not modify string characters if the index is invalid.
     EXPECT ( memory_equal ( string1 , string2 , string_length ( string1 ) ) );
-    string_remove ( string1 , string_length ( string1 ) - 5 , 30 );
-    EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ (   _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) + _string_length ( to_insert[ 2 ] ) + _string_length ( to_insert[ 3 ] )  , string_length ( string1 ) );
-    EXPECT_EQ ( string_length ( string1 ) , string_length ( string2 ) );
+
+    // TEST: string_remove logs an error if the index is invalid.
+    string = string1;
+    string_remove ( string1 , string_length ( string1 ) + 1 , 0 );
+
+    // TEST: string_remove does not perform memory allocation if the index is invalid* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    EXPECT_EQ ( string , string1 );
+
+    // TEST: string_remove does not modify string length if the index is invalid.
+    EXPECT_EQ ( string_length ( string2 ) , string_length ( string1 ) );
+
+    // TEST: string_remove does not modify string characters if the index is invalid.
     EXPECT ( memory_equal ( string1 , string2 , string_length ( string1 ) ) );
-    string_remove ( string1 , _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) , _string_length ( to_insert[ 2 ] ) );
-    EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) + _string_length ( to_insert[ 3 ] )  , string_length ( string1 ) );
-    EXPECT ( memory_equal ( string1 , remove1 , string_length ( string1 ) ) );
-    string_remove ( string1 , _string_length ( to_insert[ 0 ] ) , _string_length ( to_insert[ 1 ] ) );
-    EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 3 ] ) , string_length ( string1 ) );
-    EXPECT ( memory_equal ( string1 , remove2 , string_length ( string1 ) ) );
-    string_remove ( string1 , 0 , _string_length ( to_insert[ 0 ] ) );
-    EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( _string_length ( to_insert[ 3 ] )  , string_length ( string1 )  );
-    EXPECT ( memory_equal ( string1 , remove3 , string_length ( string1 ) ) );
-    string_remove ( string1 , 0 , string_length ( string1 ) );
-    EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( 0 , string_length ( string1 ) );
+
+    // TEST: string_remove logs an error if the index is invalid.
+    string = string1;
+    string_remove ( string1 , string_length ( string1 ) - 5 , 6 );
+
+    // TEST: string_remove does not perform memory allocation if the index is invalid* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    EXPECT_EQ ( string , string1 );
+
+    // TEST: string_remove does not modify string length if the index is invalid.
+    EXPECT_EQ ( string_length ( string2 ) , string_length ( string1 ) );
+
+    // TEST: string_remove does not modify string characters if the index is invalid.
+    EXPECT ( memory_equal ( string1 , string2 , string_length ( string1 ) ) );
+
+    // TEST: string_remove succeeds if count is 0.
+    string = string1;
     string_remove ( string1 , 0 , 0 );
+
+    // TEST: string_remove does not perform memory allocation if the count is 0* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    EXPECT_EQ ( string , string1 );
+
+    // TEST: string_remove does not modify string length if the count is 0.
+    EXPECT_EQ ( string_length ( string2 ) , string_length ( string1 ) );
+
+    // TEST: string_remove does not modify string characters if the count is 0.
+    EXPECT ( memory_equal ( string1 , string2 , string_length ( string1 ) ) );
+
+    // TEST: string_remove succeeds with valid arguments.
+    string_remove ( string1 , _string_length ( to_insert[ 0 ] ) + _string_length ( to_insert[ 1 ] ) , _string_length ( to_insert[ 2 ] ) );
+    
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string1 );
-    EXPECT_EQ ( 0 , string_length ( string1 ) );
-    string_remove ( string1 , 0 , 1 );
+
+    // TEST: string_remove decreases the length of the string by the number of characters being removed.
+    EXPECT_EQ ( _string_length ( remove1 )  , string_length ( string1 ) );
+    
+    // TEST: string_remove removes the correct number of characters from the string at the correct index, leaving the rest of the string unmodified.
+    EXPECT ( memory_equal ( string1 , remove1 , string_length ( string1 ) ) );
+
+    // TEST: string_remove succeeds with valid arguments.
+    string_remove ( string1 , _string_length ( to_insert[ 0 ] ) , _string_length ( to_insert[ 1 ] ) );
+    
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string1 );
+
+    // TEST: string_remove decreases the length of the string by the number of characters being removed.
+    EXPECT_EQ ( _string_length ( remove2 ) , string_length ( string1 ) );
+    
+    // TEST: string_remove removes the correct number of characters from the string at the correct index, leaving the rest of the string unmodified.
+    EXPECT ( memory_equal ( string1 , remove2 , string_length ( string1 ) ) );
+    
+    // TEST: string_remove succeeds with valid arguments.
+    string_remove ( string1 , 0 , _string_length ( to_insert[ 0 ] ) );
+    
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string1 );
+
+    // TEST: string_remove decreases the length of the string by the number of characters being removed.
+    EXPECT_EQ ( _string_length ( remove3 )  , string_length ( string1 )  );
+    
+    // TEST: string_remove removes the correct number of characters from the string at the correct index, leaving the rest of the string unmodified.
+    EXPECT ( memory_equal ( string1 , remove3 , string_length ( string1 ) ) );
+    
+    // TEST: string_remove succeeds with valid arguments.
+    string_remove ( string1 , 0 , string_length ( string1 ) );
+    
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string1 );
+
+    // TEST: string_remove decreases the length of the string by the number of characters being removed.
     EXPECT_EQ ( 0 , string_length ( string1 ) );
+
+    // TEST: string_remove removes the correct number of characters from the string at the correct index, leaving the rest of the string unmodified.
+    EXPECT_EQ ( 0 , *string1 );
+
     string_destroy ( string1 );
     string_destroy ( string2 );
+
     return true;
 }
 
@@ -142,19 +319,38 @@ u8
 test_string_insert_and_remove_random
 ( void )
 {
-    const u64 max_op = 100000;
+    const u64 op_count = 100000;
+
+    LOGDEBUG ( "Inserting %i random-length strings into an array at random indices. . ." , op_count );
+    
     char* string = string_create ();
-    LOGDEBUG ( "Inserting %i random-length strings into an array at random indices. . ." , max_op );
-    char* old_string = string_allocate ( max_op + 1 );
-    for ( u64 i = 0; i < max_op; ++i )
+    char* old_string = string_allocate ( op_count + 1 );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , old_string );
+
+    for ( u64 i = 0; i < op_count; ++i )
     {
+        // Copy the string state prior to performing the operation being tested.
         const u64 old_length = string_length ( string );
         memory_copy ( old_string , string , old_length );
+
+        // Insert a random non-zero character at a random index within the string.
         const char to_insert[] = { random2 ( 1 , 255 ) , 0 };
         const u64 insert_index = random2 ( 0 , old_length );
         _string_insert ( string , insert_index , to_insert );
+
+        // Verify there was no memory error prior to testing.
         EXPECT_NEQ ( 0 , string );
-        EXPECT_EQ ( old_length , string_length ( string ) - 1 );
+
+        // TEST: string_insert increases the length of the string by the length of the string being inserted.
+        EXPECT_EQ ( old_length + 1 , string_length ( string ) );
+
+        // TEST: string_insert inserts the correct character into the string at the correct index.
+        EXPECT_EQ ( *to_insert , string[ insert_index ] );
+
+        // TEST: string_insert leaves the remainder of the string unmodified.
         if ( !insert_index )
         {
             EXPECT ( memory_equal ( &string[ 1 ] , &old_string[ 0 ] , old_length ) );
@@ -168,20 +364,31 @@ test_string_insert_and_remove_random
             EXPECT ( memory_equal ( &string[ 0 ] , &old_string[ 0 ] , ( insert_index - 1 ) ) );
             EXPECT ( memory_equal ( &string[ insert_index + 1 ] , &old_string[ insert_index ] , ( old_length - insert_index ) ) );
         }
-        EXPECT_EQ ( *to_insert , string[ insert_index ] );
     }
+
     LOGDEBUG ( "  Done." );
+
     LOGDEBUG ( "Removing a random number of characters in random order. . ." );
+
     while ( string_length ( string ) )
     {
+        // Copy the string state prior to performing the operation being tested.
         const u64 old_length = string_length ( string );
         memory_copy ( old_string , string , old_length );
+
+        // Remove a random number of characters from a random index within the string.
         const u64 remove_cap = ( old_length > 1000 ) ? old_length / 100 : old_length;
         const u64 remove_count = random2 ( 1 , remove_cap );
         const u64 remove_index = random2 ( 0 , old_length - remove_cap );
         string_remove ( string , remove_index , remove_count );
+
+        // Verify there was no memory error prior to testing.
         EXPECT_NEQ ( 0 , string );
-        EXPECT_EQ ( old_length , string_length ( string ) + remove_count );
+
+        // TEST: string_insert decreases the length of the string by the number of characters being removed.
+        EXPECT_EQ ( old_length - remove_count , string_length ( string ) );
+
+        // TEST: string_remove removes the correct number of characters from the string at the correct index, leaving the rest of the string unmodified.
         if ( !remove_index )
         {
             EXPECT ( memory_equal ( &string[ 0 ] , &old_string[ remove_count ] , string_length ( string ) ) );
@@ -196,9 +403,12 @@ test_string_insert_and_remove_random
             EXPECT ( memory_equal ( &string[ remove_index ] , &old_string[ remove_index + remove_count ] , string_length ( string ) - remove_index ) );
         }
     }
+
     LOGDEBUG ( "  Done." );
+
     string_free ( old_string );
     string_destroy ( string );
+
     return true;
 }
 
@@ -213,26 +423,46 @@ test_string_trim
     const char* trailing_whitespace = "<-- Trim this off -->  \t\t\t\n";
     const char* leading_and_trailing_whitespace = "\n\t\t\t  <-- Trim this off -->  \t\t\t\n";
     const char* trimmed = "<-- Trim this off -->";
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string );
+
+    // TEST: string_trim does not fail on empty string.
     _string_push ( string , empty );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_trim ( string );
     EXPECT ( memory_equal ( string , empty , _string_length ( empty ) ) );
-    string_remove ( string , 0 , string_length ( string ) );
+    string_clear ( string );
+
+    // TEST: string_trim reduces a string of only whitespace to empty.
     _string_push ( string , only_whitespace );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_trim ( string );
     EXPECT ( memory_equal ( string , empty , _string_length ( empty ) ) );
-    string_remove ( string , 0 , string_length ( string ) );
+    string_clear ( string );
+
+    // TEST: string_trim trims a string with leading whitespace.
     _string_push ( string , leading_whitespace );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_trim ( string );
     EXPECT ( memory_equal ( string , trimmed , _string_length ( trimmed ) ) );
-    string_remove ( string , 0 , string_length ( string ) );
+    string_clear ( string );
+
+    // TEST: string_trim trims a string with trailing whitespace.
     _string_push ( string , trailing_whitespace );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_trim ( string );
     EXPECT ( memory_equal ( string , trimmed , _string_length ( trimmed ) ) );
-    string_remove ( string , 0 , string_length ( string ) );
+    string_clear ( string );
+
+    // TEST: string_trim trims a string with both leading and trailing whitespace.
     _string_push ( string , leading_and_trailing_whitespace );
     string_trim ( string );
     EXPECT ( memory_equal ( string , trimmed , _string_length ( trimmed ) ) );
+    string_clear ( string );
+
     string_destroy ( string );
+
     return true;
 }
 
@@ -253,68 +483,128 @@ test_string_contains
     const char* find15 = "s";
     const char* find21 = "H";
     const char* find22 = "d";
-    const char* find23 = "world";
-    const char* find24 = "l";
-    const char find25[] = { 'o' , 0 , 'w' };
+    const char find23[] = { 'r' , 'l' , 'd' , 0 };
+    const char* find24 = "wor";
+    const char* find25 = "l";
+    const char find26[] = { 'o' , 0 , 'w' };
     u64 index;
+
+    // TEST: string_contains succeeds on first index when length of substring to find is 0.
     EXPECT ( string_contains ( search1 , search1_length , find_empty , _string_length ( find_empty ) , false , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains (reverse) succeeds on final index when length of substring to find is 0.
     EXPECT ( string_contains ( search1 , search1_length , find_empty , _string_length ( find_empty ) , true , &index ) );
-    EXPECT_EQ ( search1_length , index );
+    EXPECT_EQ ( search1_length - 1 , index );
+
+    // TEST: string_contains succeeds on first index when length of substring to find is 0 and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , find_empty , _string_length ( find_empty ) , false , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains (reverse) succeeds on final index when length of substring to find is 0 and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , find_empty , _string_length ( find_empty ) , true , &index ) );
-    EXPECT_EQ ( search2_length , index );
+    EXPECT_EQ ( search2_length - 1 , index );
+
+    // TEST: string_contains succeeds on first index when substring to find is the string to search itself.
     EXPECT ( string_contains ( search1 , search1_length , search1 , search1_length , false , &index ) );
     EXPECT_EQ ( 0 , index );
+    
+    // TEST: string_contains (reverse) succeeds on first index when substring to find is the string to search itself.
     EXPECT ( string_contains ( search1 , search1_length , search1 , search1_length , true , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains succeeds on first index when substring to find is the string to search itself and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , search2 , search2_length , false , &index ) );
     EXPECT_EQ ( 0 , index );
+    
+    // TEST: string_contains (reverse) succeeds on first index when substring to find is the string to search itself and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , search2 , search2_length , true , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains fails if length of substring to find exceeds length of string to search.
     EXPECT_NOT ( string_contains ( search1 , search1_length , find_too_long , _string_length ( find_too_long ) , false , &index ) );
     EXPECT_NOT ( string_contains ( search1 , search1_length , find_too_long , _string_length ( find_too_long ) , true , &index ) );
     EXPECT_NOT ( string_contains ( search2 , search2_length , find_too_long , _string_length ( find_too_long ) , false , &index ) );
     EXPECT_NOT ( string_contains ( search2 , search2_length , find_too_long , _string_length ( find_too_long ) , true , &index ) );
+    
+    // TEST: string_contains succeeds in locating the first character in the string to search.
     EXPECT ( string_contains ( search1 , search1_length , find11 , _string_length ( find11 ) , false , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains (reverse) succeeds in locating the first character in the string to search.
     EXPECT ( string_contains ( search1 , search1_length , find11 , _string_length ( find11 ) , true , &index ) );
     EXPECT_EQ ( 0 , index );
-    EXPECT ( string_contains ( search1 , search1_length , find12 , _string_length ( find12 ) , false , &index ) );
-    EXPECT_EQ ( search1_length - 1 , index );
-    EXPECT ( string_contains ( search1 , search1_length , find12 , _string_length ( find12 ) , true , &index ) );
-    EXPECT_EQ ( search1_length - 1 , index );
-    EXPECT_NOT ( string_contains ( search1 , search1_length , find13 , _string_length ( find13 ) , false , &index ) );
-    EXPECT_NOT ( string_contains ( search1 , search1_length , find13 , _string_length ( find13 ) , true , &index ) );
-    EXPECT ( string_contains ( search1 , search1_length , find14 , _string_length ( find14 ) , false , &index ) );
-    EXPECT_EQ ( 12 , index );
-    EXPECT ( string_contains ( search1 , search1_length , find14 , _string_length ( find14 ) , false , &index ) );
-    EXPECT_EQ ( 12 , index );
-    EXPECT ( string_contains ( search1 , search1_length , find15 , _string_length ( find15 ) , false , &index ) );
-    EXPECT_EQ ( 3 , index );
-    EXPECT ( string_contains ( search1 , search1_length , find15 , _string_length ( find15 ) , true , &index ) );
-    EXPECT_EQ ( 22 , index );
+
+    // TEST: string_contains succeeds in locating the first character in the string to search and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , find21 , _string_length ( find21 ) , false , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains (reverse) succeeds in locating the first character in the string to search and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , find21 , _string_length ( find21 ) , true , &index ) );
     EXPECT_EQ ( 0 , index );
+
+    // TEST: string_contains succeeds in locating the final character in the string to search.
+    EXPECT ( string_contains ( search1 , search1_length , find12 , _string_length ( find12 ) , false , &index ) );
+    EXPECT_EQ ( search1_length - 1 , index );
+
+    // TEST: string_contains (reverse) succeeds in locating the final character in the string to search.
+    EXPECT ( string_contains ( search1 , search1_length , find12 , _string_length ( find12 ) , true , &index ) );
+    EXPECT_EQ ( search1_length - 1 , index );
+
+    // TEST: string_contains succeeds in locating the final character in the string to search and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , find22 , _string_length ( find22 ) , false , &index ) );
     EXPECT_EQ ( search2_length - 1 , index );
+
+    // TEST: string_contains (reverse) succeeds in locating the final character in the string to search and strings are not null-terminated.
     EXPECT ( string_contains ( search2 , search2_length , find22 , _string_length ( find22 ) , true , &index ) );
     EXPECT_EQ ( search2_length - 1 , index );
-    EXPECT ( string_contains ( search2 , search2_length , find23 , _string_length ( find23 ) , false , &index ) );
+
+    // TEST: string_contains fails if the substring to find does not occur within the string to search.
+    EXPECT_NOT ( string_contains ( search1 , search1_length , find13 , _string_length ( find13 ) , false , &index ) );
+    EXPECT_NOT ( string_contains ( search1 , search1_length , find13 , _string_length ( find13 ) , true , &index ) );
+    EXPECT_NOT ( string_contains ( search2 , search2_length , find23 , sizeof ( find23 ) , false , &index ) );
+    EXPECT_NOT ( string_contains ( search2 , search2_length , find23 , sizeof ( find23 ) , true , &index ) );
+    
+    // TEST: string_contains succeeds in locating a substring which occurs once in the string to search.
+    EXPECT ( string_contains ( search1 , search1_length , find14 , _string_length ( find14 ) , false , &index ) );
+    EXPECT_EQ ( 12 , index );
+
+    // TEST: string_contains (reverse) succeeds in locating a substring which occurs once in the string to search.
+    EXPECT ( string_contains ( search1 , search1_length , find14 , _string_length ( find14 ) , false , &index ) );
+    EXPECT_EQ ( 12 , index );
+
+    // TEST: string_contains succeeds in locating a substring which occurs once in the string to search and strings are not null-terminated.
+    EXPECT ( string_contains ( search2 , search2_length , find24 , _string_length ( find23 ) , false , &index ) );
     EXPECT_EQ ( 6 , index );
-    EXPECT ( string_contains ( search2 , search2_length , find23 , _string_length ( find23 ) , true , &index ) );
+
+    // TEST: string_contains (reverse) succeeds in locating a substring which occurs once in the string to search and strings are not null-terminated.
+    EXPECT ( string_contains ( search2 , search2_length , find24 , _string_length ( find23 ) , true , &index ) );
     EXPECT_EQ ( 6 , index );
-    EXPECT ( string_contains ( search2 , search2_length , find24 , _string_length ( find24 ) , false , &index ) );
+
+    // TEST: string_contains succeeds in locating the first occurrence of a substring which occurs more than once in the string to search.
+    EXPECT ( string_contains ( search1 , search1_length , find15 , _string_length ( find15 ) , false , &index ) );
+    EXPECT_EQ ( 3 , index );
+
+    // TEST: string_contains (reverse) succeeds in locating the final occurrence of a substring which occurs more than once in the string to search.
+    EXPECT ( string_contains ( search1 , search1_length , find15 , _string_length ( find15 ) , true , &index ) );
+    EXPECT_EQ ( 22 , index );
+
+    // TEST: string_contains succeeds in locating the first occurrence of a substring which occurs more than once in the string to search and strings are not null-terminated.
+    EXPECT ( string_contains ( search2 , search2_length , find25 , _string_length ( find25 ) , false , &index ) );
     EXPECT_EQ ( 2 , index );
-    EXPECT ( string_contains ( search2 , search2_length , find24 , _string_length ( find24 ) , true , &index ) );
+
+    // TEST: string_contains (reverse) succeeds in locating the final occurrence of a substring which occurs more than once in the string to search and strings are not null-terminated.
+    EXPECT ( string_contains ( search2 , search2_length , find25 , _string_length ( find25 ) , true , &index ) );
     EXPECT_EQ ( 9 , index );
-    EXPECT ( string_contains ( search2 , search2_length , find25 , sizeof ( find25 ) , false , &index ) );
+
+    // TEST: string_contains correctly handles zero-bytes when dealing with strings that are not null-terminated.
+    EXPECT ( string_contains ( search2 , search2_length , find26 , sizeof ( find26 ) , false , &index ) );
     EXPECT_EQ ( 4 , index );
-    EXPECT ( string_contains ( search2 , search2_length , find25 , sizeof ( find25 ) , true , &index ) );
+
+    // TEST: string_contains (reverse) correctly handles zero-bytes when dealing with strings that are not null-terminated.
+    EXPECT ( string_contains ( search2 , search2_length , find26 , sizeof ( find26 ) , true , &index ) );
     EXPECT_EQ ( 4 , index );
+
     return true;
 }
 
@@ -327,21 +617,29 @@ test_string_reverse
     const char* string_in = "0123456789";
     const char* string_out = "9876543210";
     char string[ 11 ];
+
+    // TEST: string_reverse does not fail on an empty string.
     memory_copy ( string , string_empty , _string_length ( string_empty ) + 1 );
     _string_reverse ( string );
     EXPECT_EQ ( _string_length ( string_empty ) , _string_length ( string ) );
     EXPECT ( memory_equal ( string , string_empty , _string_length ( string ) ) );
+
+    // TEST: string_reverse does not fail on a single-character string.
     memory_copy ( string , string_single_character , _string_length ( string_single_character ) + 1 );
     _string_reverse ( string );
     EXPECT_EQ ( _string_length ( string_single_character ) , _string_length ( string ) );
     EXPECT ( memory_equal ( string , string_single_character , _string_length ( string ) ) );
+
+    // TEST: string_reverse correctly reverses an input string with more than one character.
     memory_copy ( string , string_in , _string_length ( string_in ) + 1 );
     _string_reverse ( string );
     EXPECT_EQ ( _string_length ( string_out ) , _string_length ( string ) );
     EXPECT ( memory_equal ( string , string_out , _string_length ( string ) ) );
+    // (reverse it again)
     _string_reverse ( string );
     EXPECT_EQ ( _string_length ( string_in ) , _string_length ( string ) );
     EXPECT ( memory_equal ( string , string_in , _string_length ( string ) ) );
+
     return true;
 }
 
@@ -356,41 +654,64 @@ test_string_replace
     const char* empty = "";
     const char* to_replace = "\r\n";
     const char* replace_with = "    ";
-    char* string = string_create_from ( original );
-    _string_replace ( string , to_replace , to_replace );
+    char* string = string_create ();
+
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
-    _string_replace ( string , to_replace , "\r\n" );
-    EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
-    _string_replace ( string , "Not found." , replace_with );
-    EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
-    _string_replace ( string , to_replace , replace_with );
-    EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( replaced ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , replaced , string_length ( string ) + 1 ) );
-    _string_replace ( string , replace_with , to_replace );
-    EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
-    _string_replace ( string , to_replace , empty );
-    EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( removed ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , removed , string_length ( string ) + 1 ) );
-    _string_replace ( string , empty , replace_with );
-    EXPECT_NEQ ( 0 , string );
-    EXPECT_EQ ( _string_length ( removed_replaced ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , removed_replaced , string_length ( string ) + 1 ) );
-    string_clear ( string );
-    _string_replace ( string , to_replace , replace_with );
-    EXPECT_NEQ ( 0 , string );
+
+    // TEST: string_replace does not fail on an empty string.
     EXPECT_EQ ( _string_length ( empty ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , empty , string_length ( string ) + 1 ) );
+    _string_replace ( string , to_replace , replace_with );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( empty ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , empty , string_length ( string ) + 1 ) );
+    string_clear ( string );
+
+    // TEST: string_replace does not modify the string if the substring to remove and replacement substring are identical.
+    _string_push ( string , original );
+    _string_replace ( string , to_replace , to_replace );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+
+    // TEST: string_replace does not modify the string if the substring to remove and replacement substring have identical size and characters.
+    _string_replace ( string , to_replace , "\r\n" );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+
+    // TEST: string_replace does not modify the string if the substring to remove does not occur within it.
+    _string_replace ( string , "Not found." , replace_with );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+
+    // TEST: string_replace replaces all instances of the substring to remove within the string with the replacement substring.
+    _string_replace ( string , to_replace , replace_with );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( replaced ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , replaced , string_length ( string ) + 1 ) );
+    // (undo the replacement by performing it backwards)
+    _string_replace ( string , replace_with , to_replace );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( original ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , original , string_length ( string ) + 1 ) );
+
+    // TEST: string_replace removes all instances of the substring to remove within the string if the length of the replacement substring is 0.
+    _string_replace ( string , to_replace , empty );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( removed ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , removed , string_length ( string ) + 1 ) );
+
+    // TEST: string_replace replaces every character of the string with the replacement substring if the length of the subtring to remove is 0.
+    _string_replace ( string , empty , replace_with );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( removed_replaced ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , removed_replaced , string_length ( string ) + 1 ) );
+
     string_destroy ( string );
+
     return true;
 }
 
@@ -400,55 +721,78 @@ test_string_strip_ansi
 {
     const char* in1 = ANSI_CC ( ANSI_CC_BG_DARK_RED ) "Strip me." ANSI_CC_RESET;
     const char* in2 = "Strip \033[0;1;2;43;44;45;46m" ANSI_CC ( ANSI_CC_BG_DARK_RED ) "me." ANSI_CC_RESET;
-    const char* in3 = ANSI_CC_RESET;
+    const char* in3 = ANSI_CC_RESET "\033[0;1;2;43;44;45;46;101m" ANSI_CC2 ( ANSI_CC_BG_CYAN , ANSI_CC_BOLD );
     const char* empty = "";
     const char* in_illegal1 = "This should not\033[;;;;;]m be stripped.";
     const char* in_illegal2 = "This should not\033[890345298430958349058;324234234243324234234;23423423423423;234234234234234;234234234234234322342342342342342343\033m be stripped.";
     const char* in_illegal3 = "This should not\033[47;106 be stripped.";
     const char* out = "Strip me.";
-    char* string;
-    string = string_create_from ( empty );
-    string_strip_ansi ( string );
+    char* string = string_create ();
+
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string );
+
+    // TEST: string_strip_ansi does not fail on an empty string.
+    _string_push ( string , empty );
+    string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( 0 , string_length ( string ) );
     EXPECT ( memory_equal ( string , empty , string_length ( string ) + 1 ) );
-    string_destroy ( string );
-    string = string_create_from ( in1 );
+    string_clear ( string );
+
+    // TEST: string_strip_ansi removes a (short) single valid ANSI formatting code from the front and back of a string.
+    _string_push ( string , in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_strip_ansi ( string );
-    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out , string_length ( string ) + 1 ) );
-    string_destroy ( string );
-    string = string_create_from ( in2 );
+    string_clear ( string );
+
+    // TEST: string_strip_ansi removes a (short) single valid ANSI formatting code from the front and back of a string.
+    _string_push ( string , in2 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_strip_ansi ( string );
-    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out , string_length ( string ) + 1 ) );
-    string_destroy ( string );
-    string = string_create_from ( in3 );
+    string_clear ( string );
+
+    // TEST: string_strip_ansi truncates a string entirely if it is made up solely of ANSI formatting codes.
+    _string_push ( string , in3 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_strip_ansi ( string );
-    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( 0 , string_length ( string ) );
     EXPECT ( memory_equal ( string , empty , 1 ) );
-    string_destroy ( string );
-    string = string_create_from ( in_illegal1 );
+    string_clear ( string );
+
+    // TEST: string_strip_ansi ignores substrings which **almost** look like ANSI formatting codes.
+    _string_push ( string , in_illegal1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_strip_ansi ( string );
-    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( in_illegal1 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , in_illegal1 , string_length ( string ) + 1 ) );
-    string_destroy ( string );
-    string = string_create_from ( in_illegal2 );
+    string_clear ( string );
+    _string_push ( string , in_illegal2 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_strip_ansi ( string );
-    EXPECT_NEQ ( 0 , string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( in_illegal2 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , in_illegal2 , string_length ( string ) + 1 ) );
-    string_destroy ( string );
-    string = string_create_from ( in_illegal3 );
+    string_clear ( string );
+    _string_push ( string , in_illegal3 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     string_strip_ansi ( string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , string );
     EXPECT_EQ ( _string_length ( in_illegal3 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , in_illegal3 , string_length ( string ) + 1 ) );
+    string_clear ( string );
+
     string_destroy ( string );
+
     return true;
 }
 
@@ -459,7 +803,7 @@ test_string_u64_and_i64
     const i64 in1 = -9223372036854775807;
     const u64 in2 = 18446744073709551615ULL;
     const i64 in3 = -23428476892;
-    const i64 in4 = 23428476892;
+    const u64 in4 = 23428476892;
     const u64 in5 = 0;
     const char* out1_i64_radix16 = "8000000000000001";
     const char* out1_i64_radix10 = "-9223372036854775807";
@@ -484,50 +828,95 @@ test_string_u64_and_i64
     const char* out5_u64_radix2 = "0";
     const char* out5_i64_radix2 = "0";
     char string[ 65 ];
+
+    // TEST: string_i64, longest signed value, radix 16.
     EXPECT_EQ ( _string_length ( out1_i64_radix16 ) , string_i64 ( in1 , 16 , string ) );
     EXPECT ( memory_equal ( string , out1_i64_radix16 , _string_length ( out1_i64_radix16 ) ) );
+    
+    // TEST: string_i64, longest signed value, radix 10.
     EXPECT_EQ ( _string_length ( out1_i64_radix10 ) , string_i64 ( in1 , 10 , string ) );
     EXPECT ( memory_equal ( string , out1_i64_radix10 , _string_length ( out1_i64_radix10 ) ) );
+    
+    // TEST: string_i64, longest signed value, radix 2.
     EXPECT_EQ ( _string_length ( out1_i64_radix2 ) , string_i64 ( in1 , 2 , string ) );
     EXPECT ( memory_equal ( string , out1_i64_radix2 , _string_length ( out1_i64_radix2 ) ) );
+    
+    // TEST: string_u64, longest unsigned value, radix 16.
     EXPECT_EQ ( _string_length ( out2_u64_radix16 ) , string_u64 ( in2 , 16 , string ) );
     EXPECT ( memory_equal ( string , out2_u64_radix16 , _string_length ( out2_u64_radix16 ) ) );
+    
+    // TEST: string_u64, longest unsigned value, radix 10.
     EXPECT_EQ ( _string_length ( out2_u64_radix10 ) , string_u64 ( in2 , 10 , string ) );
     EXPECT ( memory_equal ( string , out2_u64_radix10 , _string_length ( out2_u64_radix10 ) ) );
-    EXPECT_EQ ( _string_length ( out2_u64_radix8 ) , string_i64 ( in2 , 8 , string ) );
+    
+    // TEST: string_u64, longest unsigned value, radix 8.
+    EXPECT_EQ ( _string_length ( out2_u64_radix8 ) , string_u64 ( in2 , 8 , string ) );
     EXPECT ( memory_equal ( string , out2_u64_radix8 , _string_length ( out2_u64_radix8 ) ) );
-    EXPECT_EQ ( _string_length ( out2_u64_radix2 ) , string_i64 ( in2 , 2 , string ) );
+    
+    // TEST: string_u64, longest unsigned value, radix 2.
+    EXPECT_EQ ( _string_length ( out2_u64_radix2 ) , string_u64 ( in2 , 2 , string ) );
     EXPECT ( memory_equal ( string , out2_u64_radix2 , _string_length ( out2_u64_radix2 ) ) );
+    
+    // TEST: string_i64, negative value, radix 16.
     EXPECT_EQ ( _string_length ( out3_i64_radix16 ) , string_i64 ( in3 , 16 , string ) );
     EXPECT ( memory_equal ( string , out3_i64_radix16 , _string_length ( out3_i64_radix16 ) ) );
+    
+    // TEST: string_i64, negative value, radix 10.
     EXPECT_EQ ( _string_length ( out3_i64_radix10 ) , string_i64 ( in3 , 10 , string ) );
     EXPECT ( memory_equal ( string , out3_i64_radix10 , _string_length ( out3_i64_radix10 ) ) );
+    
+    // TEST: string_i64, negative value, radix 2.
     EXPECT_EQ ( _string_length ( out3_i64_radix2 ) , string_i64 ( in3 , 2 , string ) );
     EXPECT ( memory_equal ( string , out3_i64_radix2 , _string_length ( out3_i64_radix2 ) ) );
+    
+    // TEST: string_u64, radix 16.
     EXPECT_EQ ( _string_length ( out4_u64_radix16 ) , string_u64 ( in4 , 16 , string ) );
     EXPECT ( memory_equal ( string , out4_u64_radix16 , _string_length ( out4_u64_radix16 ) ) );
+    
+    // TEST: string_u64, radix 10.
     EXPECT_EQ ( _string_length ( out4_u64_radix10 ) , string_u64 ( in4 , 10 , string ) );
     EXPECT ( memory_equal ( string , out4_u64_radix10 , _string_length ( out4_u64_radix10 ) ) );
+    
+    // TEST: string_u64, radix 8.
     EXPECT_EQ ( _string_length ( out4_u64_radix8 ) , string_u64 ( in4 , 8 , string ) );
     EXPECT ( memory_equal ( string , out4_u64_radix8 , _string_length ( out4_u64_radix8 ) ) );
+    
+    // TEST: string_u64, radix 2.
     EXPECT_EQ ( _string_length ( out4_u64_radix2 ) , string_u64 ( in4 , 2 , string ) );
     EXPECT ( memory_equal ( string , out4_u64_radix2 , _string_length ( out4_u64_radix2 ) ) );
+    
+    // TEST: string_u64, value == 0, radix 16.
     EXPECT_EQ ( _string_length ( out5_u64_radix16 ) , string_u64 ( in5 , 16 , string ) );
     EXPECT ( memory_equal ( string , out5_u64_radix16 , _string_length ( out5_u64_radix16 ) ) );
+    
+    // TEST: string_u64, value == 0, radix 10.
     EXPECT_EQ ( _string_length ( out5_u64_radix10 ) , string_u64 ( in5 , 10 , string ) );
     EXPECT ( memory_equal ( string , out5_u64_radix10 , _string_length ( out5_u64_radix10 ) ) );
+    
+    // TEST: string_u64, value == 0, radix 8.
     EXPECT_EQ ( _string_length ( out5_u64_radix8 ) , string_u64 ( in5 , 8 , string ) );
     EXPECT ( memory_equal ( string , out5_u64_radix8 , _string_length ( out5_u64_radix8 ) ) );
+    
+    // TEST: string_u64, value == 0, radix 2.
     EXPECT_EQ ( _string_length ( out5_u64_radix2 ) , string_u64 ( in5 , 2 , string ) );
     EXPECT ( memory_equal ( string , out5_u64_radix2 , _string_length ( out5_u64_radix2 ) ) );
+    
+    // TEST: string_i64, value == 0, radix 16.
     EXPECT_EQ ( _string_length ( out5_i64_radix16 ) , string_i64 ( in5 , 16 , string ) );
     EXPECT ( memory_equal ( string , out5_i64_radix16 , _string_length ( out5_i64_radix16 ) ) );
+    
+    // TEST: string_i64, value == 0, radix 10.
     EXPECT_EQ ( _string_length ( out5_i64_radix10 ) , string_i64 ( in5 , 10 , string ) );
     EXPECT ( memory_equal ( string , out5_i64_radix10 , _string_length ( out5_i64_radix10 ) ) );
+    
+    // TEST: string_i64, value == 0, radix 8.
     EXPECT_EQ ( _string_length ( out5_i64_radix8 ) , string_i64 ( in5 , 8 , string ) );
     EXPECT ( memory_equal ( string , out5_i64_radix8 , _string_length ( out5_i64_radix8 ) ) );
+    
+    // TEST: string_i64, value == 0, radix 2.
     EXPECT_EQ ( _string_length ( out5_i64_radix2 ) , string_i64 ( in5 , 2 , string ) );
     EXPECT ( memory_equal ( string , out5_i64_radix2 , _string_length ( out5_i64_radix2 ) ) );
+    
     return true;
 }
 
@@ -552,202 +941,353 @@ test_string_format
     const u64 address_in = 45763;
     const char* const_string_in = "Hello world!";
     char* string_in = string_create_from ( const_string_in );
-    char* string;
-    const char* in1 = "%";
-    string = string_format ( in1 );
-    EXPECT_EQ ( _string_length ( in1 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , in1 , string_length ( string ) ) );
-    string_destroy ( string );
-    LOGWARN ( "The following warnings are intentionally triggered by a test:" );
-    const char* in4 = "%;";
-    string = string_format ( in4 , 25 );
-    EXPECT_EQ ( _string_length ( in4 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , in4 , string_length ( string ) ) );
-    string_destroy ( string );
-    const char* illegal_fix_precision_string_in = "`%.10f`";
-    string = string_format ( illegal_fix_precision_string_in , &float_in1 );
-    EXPECT_EQ ( _string_length ( illegal_fix_precision_string_in ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , illegal_fix_precision_string_in , string_length ( string ) ) );
-    string_destroy ( string );
+    char* really_long_string_in = _string_create ( 1000 * STACK_STRING_MAX_SIZE );
+    const char* format_specifier_token_string = "%";
+    const char* unterminated_format_specifier_string = "%;";
+    const char* illegal_fix_precision_string = "`%.10f`";
+    const char* illegal_padding_string1 = "`%p .3f`";
+    const char* illegal_padding_string2 = "`%pr 0.3f`";
     const char* out1 = "23428476892";
-    string = string_format ( "%u" , raw_in );
-    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%-i" , integer_in4 );
-    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%-i" , integer_in1 );
-    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
-    string_destroy ( string );
-    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
     const char* out2 = "-23428476892";
-    string = string_format ( "%i" , integer_in1 );
-    EXPECT_EQ ( _string_length ( out2 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out2 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%+i" , integer_in1 );
-    EXPECT_EQ ( _string_length ( out2 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out2 , string_length ( string ) ) );
-    string_destroy ( string );
     const char* out3 = "-100098.789357300";
-    string = string_format ( "%.9f" , &float_in1 );
-    EXPECT_EQ ( _string_length ( out3 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out3 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%+.9f" , &float_in1 );
-    EXPECT_EQ ( _string_length ( out3 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out3 , string_length ( string ) ) );
-    string_destroy ( string );
     const char* out4 = "100098.789357300";
-    string = string_format ( "%.9f" , &float_in4 );
-    EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%-.9f" , &float_in1 );
-    EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%-.9f" , &float_in4 );
-    EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
-    string_destroy ( string );
     const char* out5 = "+100098.789357300";
-    string = string_format ( "%+.9f" , &float_in4 );
-    EXPECT_EQ ( _string_length ( out5 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out5 , string_length ( string ) ) );
-    string_destroy ( string );
     const char* out6 = "+8723941230947.678711";
     const char* out6_abbreviated = "+8.723941231E+12";
-    string = string_format ( "%+f" , &float_in3 );
-    EXPECT_EQ ( _string_length ( out6 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out6 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%+.9e" , &float_in3 );
-    EXPECT_EQ ( _string_length ( out6_abbreviated ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out6_abbreviated , string_length ( string ) ) );
-    string_destroy ( string );
     const char* out7 = "0xB2C3";
+    const char* out8 = "`000000000000000000000000000000000000000000000000000000000000000000000-100098.789`";
+    const char* out9 = "`-100098.789000000000000000000000000000000000000000000000000000000000000000000000`";
+    const char* out10 = "`\n\n\n-100098.789`";
+    const char* out11 = "0xB2C3ljldkb]l-045[pwrsg439p80tu[]";
+    const char* out12 = "+23428476892";
+    const char* out13 = "0x0";
+    const char* out14 = "%.2.8f";
+    const char* out15 = "%+-iSsfa\\n\nm``lpmr2kl\r\t";
+    const char* out16 = "%plr0i";
+    const char* out17 = "%pl 190234.6+pr190234i";
+    const char* out18 = "789357300";
+    const char* out19 = "-1.000988E+05";
+    char* string;
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , string_in );
+    EXPECT_NEQ ( 0 , really_long_string_in );
+
+    // TEST: If given a single-character string in which the only character is the format specifier token, string_format returns a copy of the format string.
+    string = string_format ( format_specifier_token_string );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( format_specifier_token_string ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , format_specifier_token_string , string_length ( string ) ) );
+    string_destroy ( string );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: string_format logs an error and returns an empty string if no format string is supplied.
+    string = string_format ( 0 , 0 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( 0 , string_length ( string ) );
+    EXPECT_EQ ( 0 , *string );
+    string_destroy ( string );
+
+    // TEST: string_format logs an error and returns an empty string if the supplied variadic argument list is invalid.
+    args_t args;
+    args.arg_count = 1;
+    args.args = 0;
+    string = _string_format ( "" , args );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( 0 , string_length ( string ) );
+    EXPECT_EQ ( 0 , *string );
+    string_destroy ( string );
+
+    // TEST: Raw (unsigned) format specifier.
+    string = string_format ( "%u" , raw_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Memory address format specifier.
     string = string_format ( "%@" , address_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out7 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out7 , string_length ( string ) ) );
     string_destroy ( string );
+
+    // TEST: Memory address format specifier prints null pointer correctly.
+    string = string_format ( "%@" , 0 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out13 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out13 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Null-terminated string format specifier.
     string = string_format ( "%s" , const_string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( const_string_in ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , const_string_in , string_length ( string ) ) );
     string_destroy ( string );
+
+    // TEST: Resizable string format specifier (see container/string.h).
     string = string_format ( "%s%S" , string_in , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( 2 * string_length ( string_in ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , string_in , string_length ( string_in ) ) );
     EXPECT ( memory_equal ( string + string_length ( string_in ) , string_in , string_length ( string_in ) ) );
     string_destroy ( string );
-    char* really_long_string_in = _string_create ( 1000 * STACK_STRING_MAX_SIZE );
+    
+    // Populate a relatively long string with random characters.
     for ( u64 i = 0; i < string_length ( really_long_string_in ); ++i )
     {
         really_long_string_in[ i ] = random2 ( 0 , 255 );
     }
+
+    // TEST: string_format can handle relatively long strings without crashing.
     string = string_format ( "%S%S%S%S%S%S%S%S%S%S" , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in , really_long_string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( 10 * string_length ( really_long_string_in ) , string_length ( string ) );
     for ( u64 i = 0; i < 10; ++i )
     {
         EXPECT ( memory_equal ( string + i * string_length ( really_long_string_in ) , really_long_string_in , string_length ( really_long_string_in ) ) );
     }
     string_destroy ( string );
-    string_destroy ( really_long_string_in );
-    const char* illegal_padding_string_in1 = "`%p .3f`";
-    string = string_format ( illegal_padding_string_in1 , &float_in1 );
-    EXPECT_EQ ( _string_length ( illegal_padding_string_in1 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , illegal_padding_string_in1 , string_length ( string ) ) );
+
+    // TEST: Signed integer format specifier. Positive number.
+    string = string_format ( "%i" , integer_in4 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* illegal_padding_string_in4 = "`%pr 0.3f`";
-    string = string_format ( illegal_padding_string_in4 , &float_in1 );
-    EXPECT_EQ ( _string_length ( illegal_padding_string_in4 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , illegal_padding_string_in4 , string_length ( string ) ) );
+
+    // TEST: Signed integer format specifier. Negative number.
+    string = string_format ( "%i" , integer_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out2 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out2 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out8 = "`000000000000000000000000000000000000000000000000000000000000000000000-100098.789`";
+
+    // TEST: Signed integer format specifier, with hide-sign modifier. Positive number.
+    string = string_format ( "%-i" , integer_in4 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Signed integer format specifier, with hide-sign modifier. Negative number.
+    string = string_format ( "%-i" , integer_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out1 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Signed integer format specifier, with show-sign modifier. Positive number.
+    string = string_format ( "%+i" , integer_in4 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out12 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out12 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Signed integer format specifier, with show-sign modifier. Negative number.
+    string = string_format ( "%+i" , integer_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out2 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out2 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point format specifier, with fix-precision modifier. Negative number.
+    string = string_format ( "%.9f" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out3 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out3 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point format specifier, with fix-precision and show-sign modifiers. Negative number.
+    string = string_format ( "%+.9f" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out3 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out3 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point format specifier, with fix-precision and hide-sign modifiers. Negative number.
+    string = string_format ( "%-.9f" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
+    string_destroy ( string );
+    
+    // TEST: Floating point format specifier, with fix-precision modifier. Positive number.
+    string = string_format ( "%.9f" , &float_in4 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point format specifier, with fix-precision and show-sign modifiers. Positive number.
+    string = string_format ( "%+.9f" , &float_in4 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out5 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out5 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point format specifier, with fix-precision and hide-sign modifiers. Positive number.
+    string = string_format ( "%-.9f" , &float_in4 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out4 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out4 , string_length ( string ) ) );
+    string_destroy ( string );
+    
+    // TEST: Floating point format specifier, with show-sign modifier. Positive number.
+    string = string_format ( "%+f" , &float_in3 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out6 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out6 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point (abbreviated-notation) format specifier, with fix-precision and show-sign modifiers. Positive number.
+    string = string_format ( "%+.9e" , &float_in3 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out6_abbreviated ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out6_abbreviated , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Floating point (fractional only) format specifier.
+    string = string_format ( "%.9d" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out18 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out18 , string_length ( string ) ) );
+    string_destroy ( string );
+    
+    // TEST: Floating point (abbreviated-notation) format specifier.
+    string = string_format ( "%e" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( out19 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out19 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Fixed-column-width format modifier, width == 80, pad left with '0'.
     string = string_format ( "`%pl080.3f`" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out8 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out8 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out9 = "`-100098.789000000000000000000000000000000000000000000000000000000000000000000000`";
+
+    // TEST: Fixed-column-width format modifier, width == 80, pad right with '0'.
     string = string_format ( "`%pr080.3f`" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out9 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out9 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out10 = "`\n\n\n-100098.789`";
+    
+    // TEST: Fixed-column-width format modifier, width == 14, pad left with newline.
     string = string_format ( "`%pl\n14.3f`" , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out10 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out10 , string_length ( string ) ) );
     string_destroy ( string );
+
+    // TEST: Min-width format modifier, width >= 5, pad left with tab.
+    string = string_format ( "%Pl\t5S" , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
+    string_destroy ( string );
+
+    LOGWARN ( "The following warnings are intentionally triggered by a test:" );
+
+    // TEST: If the format string contains an unterminated format specifier, string_format logs a warning and ignores it.
+    string = string_format ( unterminated_format_specifier_string , 25 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( unterminated_format_specifier_string ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , unterminated_format_specifier_string , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
+    // NOTE: Fix-precision floating point format modifier only supports a single digit for precision selection, i.e. 0-9).
+    string = string_format ( illegal_fix_precision_string , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( illegal_fix_precision_string ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_fix_precision_string , string_length ( string ) ) );
+    string_destroy ( string );
+    
+    // TEST: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
+    // NOTE: Fix-width format modifier only supports a single character for the padding character, followed by any number of digits for the width.
+    string = string_format ( illegal_padding_string1 , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( illegal_padding_string1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_padding_string1 , string_length ( string ) ) );
+    string_destroy ( string );
+    
+    // TEST: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
+    // NOTE: Fix-width format modifier only supports a single character for the padding character, followed by any number of digits for the width.
+    string = string_format ( illegal_padding_string2 , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
+    EXPECT_EQ ( _string_length ( illegal_padding_string2 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_padding_string2 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST: Show-sign and hide-sign format modifiers do not affect inapplicable types.
     string = string_format ( "%+s" , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
     string_destroy ( string );
     string = string_format ( "%-s" , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out11 = "0xB2C3ljldkb]l-045[pwrsg439p80tu[]";
+    
+    // TEST: Fix-precision format modifier does not affect inapplicable types.
     string = string_format ( "%-.7@ljldkb]l-045[pwrsg439p80tu[]" , address_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out11 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out11 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out12 = "+23428476892";
-    string = string_format ( "%+i" , integer_in4 );
-    EXPECT_EQ ( _string_length ( out12 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out12 , string_length ( string ) ) );
-    string_destroy ( string );
-    const char* out13 = "0x0";
-    string = string_format ( "%@" , 0 );
-    EXPECT_EQ ( _string_length ( out13 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out13 , string_length ( string ) ) );
-    string_destroy ( string );
-    const char* out14 = "%.2.8f";
+    
+    // TEST: A format modifier which overwrites a previous format modifier of the same type on the same format specifier will be considered invalid.
     string = string_format ( out14 , &float_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out14 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out14 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out15 = "%+-iSsfa\\n\nm``lpmr2kl\r\t";
+    // ( x2 )
     string = string_format ( out15 , &integer_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out15 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out15 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out16 = "%plr0i";
+    // ( x3 )
     string = string_format ( out16 , &integer_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out16 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out16 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out17 = "%pl 190234.6+pr190234i";
+    // ( x4 )
     string = string_format ( out17 , &integer_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to testing.
     EXPECT_EQ ( _string_length ( out17 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out17 , string_length ( string ) ) );
     string_destroy ( string );
-    const char* out18 = "789357300";
-    string = string_format ( "%.9d" , &float_in1 );
-    EXPECT_EQ ( _string_length ( out18 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out18 , string_length ( string ) ) );
-    string_destroy ( string );
-    const char* out19 = "-1.000988E+05";
-    string = string_format ( "%e" , &float_in1 );
-    EXPECT_EQ ( _string_length ( out19 ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , out19 , string_length ( string ) ) );
-    string_destroy ( string );
-    string = string_format ( "%Pl\t5S" , string_in );
-    EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
-    EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
-    string_destroy ( string );
+
+    // TEST: string_format can handle null pointers for the following format specifiers: %s, %S, %f, %e, %d.
     string = string_format ( "%s" , 0 );
+    EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
     string = string_format ( "%S" , 0 );
+    EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
     string = string_format ( "%f" , 0 );
+    EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
     string = string_format ( "%e" , 0 );
+    EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
     string = string_format ( "%d" , 0 );
+    EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
+
     string_destroy ( string_in );
+    string_destroy ( really_long_string_in );
+
     return true;
 }
 

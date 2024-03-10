@@ -69,7 +69,7 @@ memory_allocate
  * @brief Allocates a block of memory.
  * 
  * @param size The number of bytes to allocate.
- * @param alignment .
+ * @param alignment Memory alignment.
  * @param tag The block tag.
  * @return The allocated block.
  */
@@ -99,7 +99,7 @@ memory_free
  * 
  * @param memory The block to free. Must be non-zero.
  * @param size The block size in bytes.
- * @param alignment Block alignment.
+ * @param alignment Memory alignment.
  * @param tag The block tag.
  */
 void

@@ -110,6 +110,7 @@ freelist_init
     memory_clear ( ( *state ).freelist
                  , sizeof ( node_t ) * ( *state ).max_entries
                  );
+    
     ( *state ).head = &( *state ).freelist[ 0 ];
     ( *( ( *state ).head ) ).offset = 0;
     ( *( ( *state ).head ) ).size = capacity;
@@ -148,13 +149,13 @@ freelist_allocate
         {
             LOGERROR ( "freelist_allocate: Missing argument: freelist." );
         }
+        else if ( !( *freelist ).memory )
+        {
+            LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
+        }
         if ( !offset )
         {
             LOGERROR ( "freelist_allocate: Missing argument: offset." );
-        }
-        if ( freelist && ( *freelist ).memory )
-        {
-            LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
         }
         return false;
     }
@@ -225,7 +226,7 @@ freelist_free
         {
             LOGERROR ( "freelist_allocate: Value of size argument must be non-zero." );
         }
-        if ( freelist && ( *freelist ).memory )
+        if ( freelist && !( *freelist ).memory )
         {
             LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
         }

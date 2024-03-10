@@ -107,15 +107,15 @@ hashtable_set
         {
             LOGERROR ( "hashtable_set: Missing argument: hashtable." );
         }
-        if ( !key )
-        {
-            LOGERROR ( "hashtable_set: Missing argument: key." );
-        }
-        if ( hashtable && !( *hashtable ).memory )
+        else if ( !( *hashtable ).memory )
         {
             LOGERROR ( "hashtable_set: The provided hashtable is uninitialized (%@)."
                      , hashtable
                      );
+        }
+        if ( !key )
+        {
+            LOGERROR ( "hashtable_set: Missing argument: key." );
         }
         if ( !value && hashtable && !( *hashtable ).pointer )
         {
@@ -155,6 +155,12 @@ hashtable_get
         {
             LOGERROR ( "hashtable_get: Missing argument: hashtable." );
         }
+        else if ( !( *hashtable ).memory )
+        {
+            LOGERROR ( "hashtable_get: The provided hashtable is uninitialized (%@)."
+                     , hashtable
+                     );
+        }
         if ( !key )
         {
             LOGERROR ( "hashtable_get: Missing argument: key." );
@@ -162,12 +168,6 @@ hashtable_get
         if ( !value )
         {
             LOGERROR ( "hashtable_get: Missing argument: value (output buffer)." );
-        }
-        if ( hashtable && !( *hashtable ).memory )
-        {
-            LOGERROR ( "hashtable_get: The provided hashtable is uninitialized (%@)."
-                     , hashtable
-                     );
         }
         return false;
     }
@@ -192,18 +192,19 @@ hashtable_fill
         {
             LOGERROR ( "hashtable_fill: Missing argument: hashtable." );
         }
-        if ( !value )
-        {
-            LOGERROR ( "hashtable_fill: Missing argument: value." );
-        }
-        if ( hashtable && !( *hashtable ).memory )
+        else if ( !( *hashtable ).memory )
         {
             LOGERROR ( "hashtable_fill: The provided hashtable is uninitialized (%@)."
                      , hashtable
                      );
         }
+        if ( !value )
+        {
+            LOGERROR ( "hashtable_fill: Missing argument: value." );
+        }
         return false;
     }
+
     if ( ( *hashtable ).pointer )
     {
         LOGERROR ( "hashtable_fill: May not be used on a pointer-valued hashtable." );

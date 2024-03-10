@@ -16,18 +16,22 @@
 #include "platform/platform.h"
 
 /** @brief Memory tag strings. */
-static const char* memory_tags[ MEMORY_TAG_COUNT ] = { "UNKNOWN           "
-                                                     , "ARRAY             "
-                                                     , "STRING            "
-                                                     , "HASHTABLE         "
-                                                     , "QUEUE             "
-                                                     , "LINEAR_ALLOCATOR  "
-                                                     , "DYNAMIC_ALLOCATOR "
-                                                     , "THREAD            "
-                                                     , "MUTEX             "
-                                                     , "FILE              "
-                                                     , "APPLICATION       "
+static const char* memory_tags[ MEMORY_TAG_COUNT ] = { "UNKNOWN"
+                                                     , "ARRAY"
+                                                     , "STRING"
+                                                     , "HASHTABLE"
+                                                     , "QUEUE"
+                                                     , "LINEAR_ALLOCATOR"
+                                                     , "DYNAMIC_ALLOCATOR"
+                                                     , "THREAD"
+                                                     , "MUTEX"
+                                                     , "FILE"
+                                                     , "APPLICATION"
                                                      };
+
+/** @brief Used for display padding (see memory_stat). */
+#define MEMORY_TAG_MAX_STRING_LENGTH_STRING "18"
+// _string_length ( memory_tags[ MEMORY_TAG_DYNAMIC_ALLOCATOR ] ) + 1
 
 /** @brief Type definition for a container to hold global statistics. */
 typedef struct
@@ -105,7 +109,7 @@ memory_startup
         LOGFATAL ( "memory_startup: Failed to initialize internal allocator." );
         return false;
     }
-
+    
     if ( !mutex_create ( &( *state ).allocation_mutex ) )
     {
         LOGFATAL ( "memory_startup: Failed to initialize the mutex data structure employed by thread-safe memory operations." );
@@ -113,7 +117,7 @@ memory_startup
     }
 
     ( *state ).initialized = true;
-
+    
     LOGDEBUG ( "  Success." );
 
     return true;
@@ -136,10 +140,13 @@ memory_shutdown
 
     if ( ( *state ).stat.allocation_count != ( *state ).stat.free_count )
     {
-        LOGDEBUG ( "memory_shutdown: Noticed allocation count (%i) != free count (%i) when shutting down memory subsystem."
+        char* stat = memory_stat ();
+        LOGDEBUG ( "memory_shutdown: Noticed allocation count (%i) != free count (%i) when shutting down memory subsystem.\n\n\t%s\n"
                  , ( *state ).stat.allocation_count
                  , ( *state ).stat.free_count
+                 , stat
                  );
+        string_destroy ( stat );
     }
     
     platform_memory_free ( state );
@@ -241,6 +248,21 @@ memory_free_aligned
                                                       );
         if ( success )
         {
+            if ( size > ( *state ).stat.tagged_allocations[ tag ] )
+            {
+                f64 req_amount;
+                f64 rem_amount;
+                const char* req_unit = string_bytesize ( size , &req_amount );
+                const char* rem_unit = string_bytesize ( ( *state ).stat.tagged_allocations[ tag ]
+                                                       , &req_amount
+                                                       );
+                LOGERROR ( "memory_free: Freed a %.2f %s %s, but only %.2f %s is allocated."
+                         , &req_amount , req_unit
+                         , memory_tags[ tag ]
+                         , &rem_amount , rem_unit
+                         );
+                size = ( *state ).stat.tagged_allocations[ tag ];
+            }
             ( *state ).stat.allocated -= size;
             ( *state ).stat.tagged_allocations[ tag ] -= size;
             ( *state ).stat.free_count += 1;
@@ -318,7 +340,7 @@ char*
 memory_stat
 ( void )
 {
-    if ( !state || !( *state ).initialized )
+    if ( !state )
     {
         LOGERROR ( "memory_stat: Called before the memory subsystem was initialized." );
         return 0;
@@ -334,7 +356,7 @@ memory_stat
         unit = string_bytesize ( ( *state ).stat.tagged_allocations[ i ]
                                , &amount
                                );
-        lines[ i ] = string_format ( "\t  %s: %.2f %s\n"
+        lines[ i ] = string_format ( "\t  %pr "MEMORY_TAG_MAX_STRING_LENGTH_STRING"s: %.2f %s\n"
                                    , memory_tags[ i ] , &amount , unit
                                    );
         string_push ( string
@@ -348,7 +370,7 @@ memory_stat
                            , &amount
                            );
     lines[ i ] = string_format ( "\t  ------------------------------\n"
-                                 "\t  TOTAL            : %.2f %s\n"
+                                 "\t  TOTAL             : %.2f %s\n"
                                , &amount , unit
                                );
     string_push ( string
@@ -360,7 +382,7 @@ memory_stat
     unit = string_bytesize ( ( *state ).capacity
                            , &amount
                            );
-    lines[ i ] = string_format ( "\t                    (%.2f %s reserved)"
+    lines[ i ] = string_format ( "\t                      (%.2f %s reserved)"
                                , &amount , unit
                                );
     string_push ( string

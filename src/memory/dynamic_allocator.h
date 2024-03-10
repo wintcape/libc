@@ -65,6 +65,7 @@ dynamic_allocator_allocate
  * 
  * @param allocator The allocator.
  * @param size The number of bytes to allocate.
+ * @param alignment Memory alignment.
  * @return The address of the allocated memory, on success.
  *         0, on error.
  */

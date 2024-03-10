@@ -253,14 +253,14 @@ string_bytesize
 
 char*
 string_allocate
-(   const u64 size
+(   const u64 content_size
 )
 {
     const u64 header_size = sizeof ( u64 );
-    char* string = memory_allocate ( header_size + size , MEMORY_TAG_STRING );
+    const u64 size = header_size + content_size;
+    char* string = memory_allocate ( size , MEMORY_TAG_STRING );
     *( ( u64* ) string ) = size;
-    string += header_size;
-    return string;
+    return ( char* )( ( ( u64 ) string ) + header_size );
 }
 
 char*
@@ -271,7 +271,6 @@ string_allocate_from
     const u64 length = _string_length ( string );
     char* copy = string_allocate ( length + 1 );
     memory_copy ( copy , string , length );
-    copy[ length ] = 0; // Append terminator.
     return copy;
 }
 
@@ -285,7 +284,7 @@ string_free
         return;
     }
     const u64 header_size = sizeof ( u64 );
-    string -= header_size;
+    string = ( void* )( ( ( u64 ) string ) - header_size );
     memory_free ( string
                 , *( ( u64* ) string )
                 , MEMORY_TAG_STRING
@@ -333,10 +332,10 @@ __string_contains_reverse
 {
     if ( !find_length )
     {
-        *index = search_length;
+        *index = search_length - 1;
         return true;
     }
-    for ( u64 i = search_length - find_length + 2; i; --i )
+    for ( u64 i = search_length - find_length + 1; i; --i )
     {
         if ( search[ i - 1 ] != *find )
         {

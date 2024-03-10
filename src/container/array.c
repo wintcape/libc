@@ -38,12 +38,9 @@ _array_destroy
     {
         return;
     }
-    const u64 header_size = ARRAY_FIELD_COUNT * sizeof ( u64 );
-    u64* header = ( u64* ) array - ARRAY_FIELD_COUNT;
-    memory_free ( header
-                ,   header_size
-                  + header[ ARRAY_FIELD_CAPACITY ]
-                  * header[ ARRAY_FIELD_STRIDE ]
+    
+    memory_free ( ( ( u64* ) array ) - ARRAY_FIELD_COUNT
+                , array_size ( array )
                 , MEMORY_TAG_ARRAY
                 );
 }
@@ -67,7 +64,7 @@ _array_field_get
 ,   const ARRAY_FIELD   field
 )
 {
-    const u64* header = ( u64* ) array - ARRAY_FIELD_COUNT;
+    const u64* header = ( ( u64* ) array ) - ARRAY_FIELD_COUNT;
     return header[ field ];
 }
 
@@ -82,15 +79,29 @@ _array_field_set
     header[ field ] = value;
 }
 
+u64
+_array_size
+(   const void* array
+)
+{
+    u64* header = ( ( u64* ) array ) - ARRAY_FIELD_COUNT;
+    const u64 header_size = ARRAY_FIELD_COUNT * sizeof ( u64 );
+    const u64 content_size = header[ ARRAY_FIELD_STRIDE ]
+                           * header[ ARRAY_FIELD_CAPACITY ]
+                           ;
+    return header_size + content_size;
+}
+
 void*
 _array_resize
-(   void* old_array
+(   void*   old_array
+,   u64     minimum_capacity
 )
 {
     const u64 length = array_length ( old_array );
     const u64 stride = array_stride ( old_array );
 
-    void* new_array = _array_create ( ARRAY_SCALE_FACTOR ( array_capacity ( old_array ) )
+    void* new_array = _array_create ( ARRAY_SCALE_FACTOR ( minimum_capacity )
                                     , stride
                                     );
     memory_copy ( new_array , old_array , length * stride );
@@ -112,12 +123,11 @@ _array_push
 
     if ( length >= array_capacity ( array ) )
     {
-        array = _array_resize ( array );
+        array = _array_resize ( array , length );
     }
 
-    const u64 dst = ( u64 ) array + length * stride;
+    const u64 dst = ( ( u64 ) array ) + length * stride;
     memory_copy ( ( void* ) dst , src , stride );
-
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length + 1 );
 
     return array;
@@ -138,13 +148,11 @@ _array_pop
     const u64 length = array_length ( array ) - 1;
     const u64 stride = array_stride ( array );
 
-    const u64 src = ( u64 ) array + length * stride;
-
+    const u64 src = ( ( u64 ) array ) + length * stride;
     if ( dst )
     {
         memory_copy ( dst , ( void* ) src , stride );
     }
-
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
 }
 
@@ -168,16 +176,15 @@ _array_insert
     
     if ( length >= array_capacity ( array ) )
     {
-        array = _array_resize ( array );
+        array = _array_resize ( array , length );
     }
     
-    const u64 dst = ( u64 ) array;
+    const u64 dst = ( ( u64 ) array );
     memory_move ( ( void* )( dst + ( index + 1 ) * stride )
                 , ( void* )( dst + index * stride )
                 , ( length - index ) * stride
                 );
     memory_copy ( ( void* )( dst + index * stride ) , src , stride );
-
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length + 1 );
 
     return array;
@@ -207,18 +214,15 @@ _array_remove
         return array;
     }
 
-    const u64 src = ( u64 ) array;
-
+    const u64 src = ( ( u64 ) array );
     if ( dst )
     {
         memory_copy ( dst , ( void* )( src + index * stride ) , stride );
     }
-
     memory_move ( ( void* )( src + index * stride )
                 , ( void* )( src + ( index + 1 ) * stride )
                 , ( length - index ) * stride
                 );
-
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
 
     return array;

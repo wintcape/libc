@@ -75,15 +75,15 @@ linear_allocator_allocate
         {
             LOGERROR ( "linear_allocator_allocate: Missing argument: allocator." );
         }
-        if ( !size )
-        {
-            LOGERROR ( "linear_allocator_allocate: Cannot allocate block of size 0." );
-        }
-        if ( allocator && !( *allocator ).memory )
+        else if ( !( *allocator ).memory )
         {
             LOGERROR ( "linear_allocator_allocate: The provided allocator is uninitialized (%@)."
                      , allocator
                      );
+        }
+        if ( !size )
+        {
+            LOGERROR ( "linear_allocator_allocate: Cannot allocate block of size 0." );
         }
         return 0;
     }

@@ -76,11 +76,17 @@ queue_push
 ,   const void* src
 )
 {
-    if ( !queue || !src )
+    if ( !queue || !src || !( *queue ).memory )
     {
         if ( !queue )
         {
             LOGERROR ( "queue_push: Missing argument: queue." );
+        }
+        else if ( !( *queue ).memory )
+        {
+            LOGERROR ( "queue_push: The provided queue is uninitialized (%@)."
+                     , queue
+                     );
         }
         if ( !src )
         {
@@ -90,9 +96,7 @@ queue_push
     }
 
     queue_resize_if_needed ( queue , ( *queue ).length + 1 );
-    memory_copy ( ( void* )(  ( ( u64 )( ( *queue ).memory ) )
-                            + ( *queue ).stride * ( *queue ).length
-                           )
+    memory_copy ( ( void* )( ( ( u64 )( ( *queue ).memory ) ) + ( *queue ).length * ( *queue ).stride )
                 , src
                 , ( *queue ).stride
                 );
@@ -107,11 +111,17 @@ queue_peek
 ,   void*           dst
 )
 {
-    if ( !queue || !dst )
+    if ( !queue || !dst || !( *queue ).memory )
     {
         if ( !queue )
         {
             LOGERROR ( "queue_peek: Missing argument: queue." );
+        }
+        else if ( !( *queue ).memory )
+        {
+            LOGERROR ( "queue_peek: The provided queue is uninitialized (%@)."
+                     , queue
+                     );
         }
         if ( !dst )
         {
@@ -137,15 +147,17 @@ queue_pop
 ,   void*       dst
 )
 {
-    if ( !queue || !dst )
+    if ( !queue || !( *queue ).memory )
     {
         if ( !queue )
         {
             LOGERROR ( "queue_pop: Missing argument: queue." );
         }
-        if ( !dst )
+        else
         {
-            LOGERROR ( "queue_pop: Missing argument: dst." );
+            LOGERROR ( "queue_pop: The provided queue is uninitialized (%@)."
+                     , queue
+                     );
         }
         return false;
     }
@@ -156,11 +168,15 @@ queue_pop
         return false;
     }
 
-    memory_copy ( dst , ( *queue ).memory , ( *queue ).stride );
+    if ( dst )
+    {
+        memory_copy ( dst
+                    , ( void* )( ( u64 )( ( *queue ).memory ) )
+                    , ( *queue ).stride
+                    );
+    }
     memory_copy ( ( *queue ).memory
-                , ( void* )(  ( ( u64 )( ( *queue ).memory ) )
-                            + ( *queue ).stride
-                           )
+                , ( void* )( ( ( u64 )( ( *queue ).memory ) ) + ( *queue ).stride )
                 , ( *queue ).stride * ( *queue ).length
                 );
     ( *queue ).length -= 1;

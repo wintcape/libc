@@ -199,8 +199,9 @@ _string_format
         }
         if ( args.arg_count && !args.args )
         {
-            LOGERROR ( "_string_format: Invalid argument: args. List is null, but count indicates it should contain %u elements."
+            LOGERROR ( "_string_format: Invalid argument: args. List is null, but count indicates it should contain %u element%s."
                      , args.arg_count
+                     , ( args.arg_count > 1 ) ? "s" : ""
                      );
         }
         return string_create_from ( "" );
@@ -212,7 +213,7 @@ _string_format
     state.args = args;
     state.next_arg = state.args.args;
     state.args_remaining = state.args.arg_count;
-    state.string = _string_create ( state.format_length );
+    state.string = _string_create ( state.format_length + 1 );
 
     const char* read = state.format;
     state.copy_start = read;
@@ -276,6 +277,7 @@ _string_format
                 , state.copy_start
                 , STRING_FORMAT_COPY_SIZE ( &state )
                 );
+                
     return state.string;
 }
 

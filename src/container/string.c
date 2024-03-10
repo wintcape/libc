@@ -30,7 +30,7 @@ __string_copy
     const u64 size = src_length + 1;
     char* string = array_create ( char , size );
     _array_field_set ( string , ARRAY_FIELD_LENGTH , size );
-    memory_move ( string , src , size );
+    memory_copy ( string , src , src_length );
     return string;
 }
 
@@ -43,6 +43,7 @@ string_destroy
     {
         return;
     }
+
     array_destroy ( string );
 }
 
@@ -68,11 +69,7 @@ __string_push
 
     if ( new_size >= array_capacity ( string ) )
     {
-        // Artificially grow the capacity to force resize to respect the
-        // number of characters being appended.
-        _array_field_set ( string , ARRAY_FIELD_CAPACITY , new_size );
-
-        string = _array_resize ( string );
+        string = _array_resize ( string , new_size );
     }
 
     memory_copy ( string + string_length ( string ) * stride
@@ -80,7 +77,6 @@ __string_push
                 , src_length * stride
                 );
     memory_clear ( string + new_length , stride ); // Append terminator.
-
     _array_field_set ( string , ARRAY_FIELD_LENGTH , new_size );
 
     return string;
@@ -109,11 +105,7 @@ __string_insert
 
     if ( new_size >= array_capacity ( string ) )
     {
-        // Artificially grow the capacity to force resize to respect the
-        // number of characters being inserted.
-        _array_field_set ( string , ARRAY_FIELD_CAPACITY , new_size );
-
-        string = _array_resize ( string );
+        string = _array_resize ( string , new_size );
     }
 
     memory_move ( string + index + src_length
@@ -122,7 +114,6 @@ __string_insert
                 );
     memory_copy ( string + index , src , src_length * stride );
     memory_clear ( string + old_length + src_length , stride ); // Append terminator.
-    
     _array_field_set ( string , ARRAY_FIELD_LENGTH , new_size );
 
     return string;
@@ -153,7 +144,6 @@ __string_remove
                 , ( old_length - index - count ) * stride
                 );
     memory_clear ( string + ( new_size - 1 ) * stride , stride ); // Append terminator.
-    
     _array_field_set ( string , ARRAY_FIELD_LENGTH , new_size );
 
     return string;
@@ -267,7 +257,6 @@ __string_replace
     return string;
 }
 
-#include <stdio.h>
 char*
 __string_strip_ansi
 (   char* string

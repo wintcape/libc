@@ -114,13 +114,22 @@ make macos-test
 - Implement unbuffered file I/O for Windows platform layer; currently lets Windows handle alignment and buffering.
 - Implement `platform_thread_wait`, `platform_thread_wait_timeout`, and `platform_thread_active` for macOS/Linux platform layers.
 - Change implementation of `platform/test_filesystem.c` such that one failed test doesn't result in all of the other filesystem I/O tests failing due to broken pipe (Currently, when a test fails, the test function exits early, meaning the file handle never gets closed before the next test tries to open the same handle again).
+- Improve robustness of tests in `platform/filesystem.c`.
 - Implement `FILE_MODE_APPEND`.
 - Verify thread safety for `platform/filesystem.h`.
 - Tests for `platform/thread.h` and `platform/mutex.h`.
 - Make general improvements to the API design; provide more options for choosing between use of API-provided data structures versus `void*` handles the user chooses how to allocate, etc.
-- Comment all the code in the `test/` library so it is easy to scan through which tests I do and do not already have.
 
 ## Changelog
+
+### 0.3.5 (work-in-progress)
+- Commented all the code in the `test/` library, so it is now easy to scan through which tests I do and do not already have. This helped me realize that I was missing some tests. I added a few and fixed a few minor bugs related to this.
+- `memory_free` logs an error if an illegal size is provided for a given memory tag.
+- Added function `array_size` to calculate size in bytes of an array.
+- As a result of the change above, `memory_stat` now works as intended.
+- BUG FIXING TIME!! Fixed several nasty memory allocator bugs related to string allocation (see below).
+- Fixed a bug where the wrong amount of memory would be freed by `_array_resize` when resizing strings; this has led to a function signature change for `_array_resize`.
+- Fixed a bug with pointer arithmetic when freeing strings via `string_free`.
 
 ### 0.3.4
 - Fixed a bug in `string_format` pointer arithmetic that would cause the function to fail at random (depending on operating system factors).

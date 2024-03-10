@@ -13,16 +13,29 @@ test_linear_allocator_create_and_destroy
 ( void )
 {
     linear_allocator_t allocator;
+
+    // TEST: linear_allocator_create fails if no output buffer is provided for the linear allocator.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( linear_allocator_create ( sizeof ( u64 ) , 0 , 0 ) );
+
+    // TEST: linear_allocator_create succeeds with valid arguments.
     EXPECT ( linear_allocator_create ( sizeof ( u64 ) , 0 , &allocator ) );
+
+    // TEST: Linear allocator created via linear_allocator_create has access to a valid memory buffer.
     EXPECT_NEQ ( 0 , allocator.memory );
+
+    // TEST: Linear allocator created via linear_allocator_create has the correct capacity.
     EXPECT_EQ ( sizeof ( u64 ) , allocator.capacity );
+
+    // TEST: Linear allocator created via linear_allocator_create is initialized with all of its memory free.
     EXPECT_EQ ( 0 , allocator.allocated );
+
+    // TEST: linear_allocator_destroy clears all linear allocator data structure fields.
     linear_allocator_destroy ( &allocator );
     EXPECT_EQ ( 0 , allocator.memory );
     EXPECT_EQ ( 0 , allocator.capacity );
     EXPECT_EQ ( 0 , allocator.allocated );
+
     return true;
 }
 
@@ -31,18 +44,45 @@ test_linear_allocator_allocate
 ( void )
 {
     linear_allocator_t allocator;
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) , 0 , &allocator ) );
     void* blk;
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
+
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) , 0 , &allocator ) );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , allocator.memory );
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: linear_allocator_allocate logs an error and does not perform memory allocation if no allocator is provided.
+    blk = 0;
+    blk = linear_allocator_allocate ( 0 , 1 );
+    EXPECT_EQ ( 0 , blk );
+    EXPECT_EQ ( 0 , allocator.allocated );
+
+    // TEST: linear_allocator_allocate logs an error and does not perform memory allocation if the provided size is invalid.
+    blk = 0;
     blk = linear_allocator_allocate ( &allocator , 0 );
     EXPECT_EQ ( 0 , blk );
+    EXPECT_EQ ( 0 , allocator.allocated );
+
+    blk = 0;
     blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+
+    // TEST: If passed valid arguments, linear_allocator_allocate returns a handle to an allocated block of memory. 
+    EXPECT_NEQ ( 0 , blk );
+
+    // TEST: After linear_allocator_allocate is completed, the allocator has allocated the correct amount of its total memory. 
+    EXPECT_EQ ( sizeof ( u64 ) , allocator.allocated );
+
     linear_allocator_destroy ( &allocator );
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
-    blk = linear_allocator_allocate ( 0 , sizeof ( u64 ) );
-    EXPECT_EQ ( 0 , blk );
+
+    // TEST: linear_allocator_allocate logs an error and does not perform memory allocation if the provided allocator is uninitialized.
+    LOGWARN ( "The following error is intentionally triggered by a test:" );
+    blk = 0;
     blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
     EXPECT_EQ ( 0 , blk );
+    EXPECT_EQ ( 0 , allocator.allocated );
+
     return true;
 }
 
@@ -50,17 +90,29 @@ u8
 test_linear_allocator_max_allocation_count
 ( void )
 {
-    const u64 max_allocations = 1024;
+    const u64 op_count = 1024;
     linear_allocator_t allocator;
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * max_allocations , 0 , &allocator ) );
     void* blk;
-    for ( u64 i = 0; i < max_allocations; ++i )
+
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * op_count , 0 , &allocator ) );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , allocator.memory );
+
+    for ( u64 i = 0; i < op_count; ++i )
     {
+        blk = 0;
         blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+
+        // TEST: If passed valid arguments, linear_allocator_allocate returns a handle to an allocated block of memory. 
         EXPECT_NEQ ( 0 , blk );
+
+        // TEST: After linear_allocator_allocate is completed, the allocator has allocated the correct amount of its total memory. 
         EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , allocator.allocated );
     }
+
     linear_allocator_destroy ( &allocator );
+
     return true;
 }
 
@@ -69,11 +121,24 @@ test_linear_allocator_max_allocation_size
 ( void )
 {
     linear_allocator_t allocator;
+    void* blk;
+
     EXPECT ( linear_allocator_create ( sizeof ( u64 ) , 0 , &allocator ) );
-    void* blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , allocator.memory );
+
+    blk = 0;
+    blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+
+    // TEST: If passed valid arguments, linear_allocator_allocate returns a handle to an allocated block of memory.
     EXPECT_NEQ ( 0 , blk );
+
+    // TEST: After linear_allocator_allocate is completed, the allocator has allocated the correct amount of its total memory (all of it).
     EXPECT_EQ ( sizeof ( u64 ) , allocator.allocated );
+
     linear_allocator_destroy ( &allocator );
+
     return true;
 }
 
@@ -81,21 +146,35 @@ u8
 test_linear_allocator_overflow
 ( void )
 {
-    const u64 max_allocations = 1024;
+    const u64 op_count = 1024;
     linear_allocator_t allocator;
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * max_allocations , 0 , &allocator ) );
     void* blk;
-    for ( u64 i = 0; i < max_allocations; ++i )
+
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * op_count , 0 , &allocator ) );
+
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , allocator.memory );
+    
+    for ( u64 i = 0; i < op_count; ++i )
     {
+        blk = 0;
         blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+
+        // TEST: If passed valid arguments, linear_allocator_allocate returns a handle to an allocated block of memory. 
         EXPECT_NEQ ( 0 , blk );
+
+        // TEST: After linear_allocator_allocate is completed, the allocator has allocated the correct amount of its total memory. 
         EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , allocator.allocated );
     }
+
+    // TEST: linear_allocator_allocate logs an error and does not perform memory allocation if the provided allocator is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
+    blk = 0;
     blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
     EXPECT_EQ ( 0 , blk );
-    EXPECT_EQ ( sizeof ( u64 ) * max_allocations , allocator.allocated );
+    EXPECT_EQ ( sizeof ( u64 ) * op_count , allocator.allocated );
     linear_allocator_destroy ( &allocator );
+
     return true;
 }
 
@@ -105,21 +184,41 @@ test_linear_allocator_free
 {
     const u64 max_allocations = 1024;
     linear_allocator_t allocator;
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * max_allocations , 0 , &allocator ) );
     void* blk;
+
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * max_allocations , 0 , &allocator ) );
+    
+    // Verify there was no memory error prior to testing.
+    EXPECT_NEQ ( 0 , allocator.memory );
+
     for ( u64 i = 0; i < max_allocations; ++i )
     {
+        blk = 0;
         blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+
+        // TEST: If passed valid arguments, linear_allocator_allocate returns a handle to an allocated block of memory. 
         EXPECT_NEQ ( 0 , blk );
+
+        // TEST: After linear_allocator_allocate is completed, the allocator has allocated the correct amount of its total memory. 
         EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , allocator.allocated );
     }
+
+    // TEST: linear_allocator_free succeeds with valid argument.
     EXPECT ( linear_allocator_free ( &allocator ) );
+
+    // TEST: linear_allocator_free frees all memory currently allocated by the allocator.
     EXPECT_EQ ( 0 , allocator.allocated );
+    
     linear_allocator_destroy ( &allocator );
-    linear_allocator_destroy ( &allocator );
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: linear_allocator_free fails if no allocator is provided.
     EXPECT_NOT ( linear_allocator_free ( 0 ) );
+
+    // TEST: linear_allocator_free fails if the provided allocator is uninitialized.
     EXPECT_NOT ( linear_allocator_free ( &allocator ) );
+
     return true;
 }
 
