@@ -25,7 +25,7 @@ queue_resize_if_needed
 
 bool
 queue_create
-(   const u64   stride
+(   u64         stride
 ,   queue_t*    queue
 )
 {

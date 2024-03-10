@@ -67,7 +67,7 @@ static state_t* state = 0;
 
 bool
 memory_startup
-(   const u64 capacity
+(   u64 capacity
 )
 {
     if ( state )

@@ -65,6 +65,9 @@ test_file_open_and_close
     // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
 
+    // TEST: file_open positions the file pointer at the start of the file.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     // Verify input file is not empty prior to additional testing.
     EXPECT_NEQ ( 0 , file_size ( &file ) );
 
@@ -84,6 +87,9 @@ test_file_open_and_close
 
     // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
+
+    // TEST: file_open positions the file pointer at the start of the file.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
 
     // Verify input file is not empty prior to additional testing.
     EXPECT_NEQ ( 0 , file_size ( &file ) );
@@ -105,6 +111,9 @@ test_file_open_and_close
     // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
 
+    // TEST: file_open positions the file pointer at the start of the file.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     // Verify (empty) input file **is** empty prior to additional testing.
     EXPECT_EQ ( 0 , file_size ( &file ) );
 
@@ -125,7 +134,11 @@ test_file_open_and_close
     // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
 
-    // Verify output file has been truncated by opening in write mode.
+    // TEST: file_open positions the file pointer at the start of the file.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    // TEST: Opening in write mode truncates a file.
+    // TODO: Implement a way of ensuring the file **does** contain content prior to opening, to ensure it was really truncated and is not just empty.
     EXPECT_EQ ( 0 , file_size ( &file ) );
 
     file_close ( &file );
@@ -173,17 +186,24 @@ test_file_open_and_close
     // Open one of the non-empty input files in read+write mode for testing.
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ | FILE_MODE_WRITE , &file ) );
     
-    // Verify success of file_open prior to testing.
-    EXPECT_NEQ ( 0 , file.handle ); 
+    // TEST: File contains a valid file handle following successful file_open.
+    EXPECT_NEQ ( 0 , file.handle );
+
+    // TEST: File is valid following successful file_open.
     EXPECT ( file.valid );
+
+    // TEST: file_open positions the file pointer at the start of the file.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
 
     // TEST: file_open does not truncate a non-empty file opened in read+write mode.
     EXPECT_NEQ ( 0 , file_size ( &file ) );
 
     file_close ( &file );
 
-    // Verify success of file_close.
+    // TEST: File handle is null following file_close.
     EXPECT_EQ ( 0 , file.handle );
+
+    // TEST: File handle is invalidated following file_close.
     EXPECT_NOT ( file.valid );
 
     return true;
@@ -197,8 +217,6 @@ test_file_read
     file_t file;
     u64 read;
 
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
-
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
     // TEST: file_read fails if no file is provided.
@@ -210,23 +228,41 @@ test_file_read
     invalid_file.handle = 0;
     EXPECT_NOT ( file_read ( &invalid_file , 100 , buffer , &read ) );
 
+    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
+
+    // Verify the file position is at the beginning of the file prior to testing.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    // TEST: file_read fails if no file is provided.
+    EXPECT_NOT ( file_read ( 0 , 100 , buffer , &read ) );
+
     // TEST: file_read fails if no output buffer for file content is provided.
     EXPECT_NOT ( file_read ( &file , 100 , 0 , &read ) );
 
+    // TEST: file_read does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     // TEST: file_read fails if no output buffer for number of bytes read is provided.
     EXPECT_NOT ( file_read ( &file , 100 , buffer , 0 ) );
+
+    // TEST: file_read does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
 
     file_close ( &file );
 
     // TEST: file_read fails if file is not open for read.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     EXPECT_NOT ( file_read ( &file , 100 , buffer , &read ) );
+
+    // TEST: file_read does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+    
     file_close ( &file );
 
     // Empty file.
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
 
-    // TEST: file_read if file is empty.
+    // TEST: file_read succeeds if file is empty.
     read = 1;
     memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
@@ -234,9 +270,12 @@ test_file_read
     // TEST: file_read reads 0 bytes if file is empty.
     EXPECT_EQ ( 0 , read );
 
+    // TEST: file_read does not modify the file position if file is empty.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     file_close ( &file );
 
-    // Text-file.
+    // Read entire text file.
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , &file ) );
 
     // TEST: file_read succeeds if buffer size is 0.
@@ -247,24 +286,35 @@ test_file_read
     // TEST: file_read reads 0 bytes if buffer size is 0.
     EXPECT_EQ ( 0 , read );
 
+    // TEST: file_read does not modify the file position if buffer size is 0.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     // TEST: Given an adequately-sized buffer, file_read reads the entire file contents at once (assuming file position is at the beginning of the file).
     read = 1;
     memory_clear ( buffer , 100 );
+    EXPECT ( file_position_set ( &file , 0 ) );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , read );
     EXPECT ( memory_equal ( buffer , file_content_test_in_file , _string_length ( file_content_test_in_file ) + 1 ) );
     
+    // TEST: When buffer size exceeds amount remaining in the file to read, the file position is set to the end of the file following file_read.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
+
     file_close ( &file );
 
-    // Binary-file.
+    // Read entire binary file.
     EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ , &file ) );
     
     // TEST: Given an adequately-sized buffer, file_read reads the entire file contents at once (assuming file position is at the beginning of the file).
     read = 0;
     memory_clear ( buffer , 100 );
+    EXPECT ( file_position_set ( &file , 0 ) );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , read );
     EXPECT ( memory_equal ( buffer , file_content_test_in_file_binary , read ) );
+
+    // TEST: When buffer size exceeds amount remaining in the file to read, the file position is set to the end of the file following file_read.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
 
     file_close ( &file );
 
@@ -279,48 +329,127 @@ test_file_write
     file_t file;
     u64 written;
     u64 read;
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: file_write fails when no file is provided.
+    EXPECT_NOT ( _file_write ( 0 , file_content_test_in_file , &written ) );
+
+    // TEST: file_write fails when the provided file is invalid.
     file_t invalid_file;
     invalid_file.valid = false;
     invalid_file.handle = 0;
-    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
-    EXPECT_NOT ( _file_write ( 0 , file_content_test_in_file , &written ) );
     EXPECT_NOT ( _file_write ( &invalid_file , file_content_test_in_file , &written ) );
-    EXPECT_NOT ( file_write ( &file , 100 , 0 , &written ) );
-    EXPECT_NOT ( _file_write ( &file , file_content_test_in_file , 0 ) );
-    file_close ( &file );
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ , &file ) );
-    EXPECT_NOT ( file_write ( &file , 100 , buffer , &written ) );
-    file_close ( &file );
+
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // Verify the file position is at the beginning of the file prior to testing.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    // TEST: file_write fails when no handle to the data to write is provided.
+    EXPECT_NOT ( file_write ( &file , 100 , 0 , &written ) );
+
+    // TEST: file_write does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    // TEST: file_write fails when no output buffer for number of bytes written is provided.
+    EXPECT_NOT ( _file_write ( &file , file_content_test_in_file , 0 ) );
+
+    // TEST: file_write does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    file_close ( &file );
+
+    // TEST: file_write fails if file is not open for write.
+    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
+    EXPECT_NOT ( file_write ( &file , 100 , buffer , &written ) );
+
+    // TEST: file_write does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    file_close ( &file );
+
+    // Write null-terminated string to text file.
+    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // TEST: file_write succeeds with valid arguments.
     written = 0;
     EXPECT ( _file_write ( &file , file_content_test_in_file , &written ) );
+
+    // TEST: Following file_write, the size of the input buffer is equal to the number of bytes written to the output buffer.
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , written );
+
+    // TEST: Following file_write, the size of the file is equal to the size of the input buffer.
+    EXPECT_EQ ( _string_length ( file_content_test_in_file ) , file_size ( &file ) );
+
+    // TEST: Following file_write on a file opened in write-only mode, the file position is at the end of the file.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
+
+    // TEST: file_write succeeds if input buffer size is 0.
     written = 0;
     EXPECT ( file_write ( &file , 0 , file_content_test_in_file , &written ) );
+    
+    // TEST: file_write writes 0 bytes to the output buffer if input buffer size is 0.
     EXPECT_EQ ( 0 , written );
+
+    // TEST: file_write does not modify the size of the file if input buffer size is 0.
+    EXPECT_EQ ( _string_length ( file_content_test_in_file ) , file_size ( &file ) );
+
+    // TEST: file_write does not modify the file position if input buffer size is 0.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
+
     file_close ( &file );
-    memory_clear ( buffer , 100 );
+
+    // Open file in read mode for post-write validation.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
+
+    memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
+
+    // TEST: Following file_write, the size of the input buffer is equal to the number of bytes written to the file.
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , read );
+
+    // TEST: Following file_write, the bytes of the input buffer identical to the bytes written to the file.
     EXPECT ( memory_equal ( buffer , file_content_test_in_file , _string_length ( file_content_test_in_file ) + 1 ) );
+    
     file_close ( &file );
+
     memory_clear ( buffer , 100 );
     memory_copy ( buffer , file_content_test_in_file_binary , sizeof ( file_content_test_in_file_binary ) );
+    
+    // Write binary string to binary file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // TEST: file_write succeeds with valid arguments.
     written = 0;
     EXPECT ( file_write ( &file , sizeof ( file_content_test_in_file_binary ) , buffer , &written ) );
+    
+    // TEST: Following file_write, the size of the input buffer is equal to the number of bytes written to the output buffer.
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , written );
+
+    // TEST: Following file_write on a file opened in write-only mode, the file position is at the end of the file.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
+
     file_close ( &file );
-    memory_clear ( buffer , 100 );
+
+    // Open file in read mode for post-write validation.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
+
+    memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
+
+    // TEST: Following file_write, the size of the input buffer is equal to the number of bytes written to the file.
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , read );
+
+    // TEST: Following file_write, the bytes of the input buffer identical to the bytes written to the file.
     EXPECT ( memory_equal ( buffer , file_content_test_in_file_binary , read ) );
+
     file_close ( &file );
+
+    // Truncate the test file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     file_close ( &file );
+
     return true;
 }
 
@@ -328,10 +457,11 @@ u8
 test_file_read_line
 ( void )
 {
-    file_t file;
-    u64 written;
     const u64 max_line_length = MEGABYTES ( 1 );
     const u64 line_count = 100;
+    file_t file;
+    u64 written;
+
     char* in_lines[ 100 ];
     char* out_lines[ 101 ];
     for ( u64 i = 0; i < line_count; ++i )
@@ -340,19 +470,40 @@ test_file_read_line
         EXPECT_NEQ ( 0 , in_lines[ i ] );
     }
     memory_clear ( out_lines , sizeof ( char* ) * 100 );
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: file_read_line fails when no file is provided.
+    EXPECT_NOT ( file_read_line ( 0 , &out_lines[ 0 ] ) );
+
+    // TEST: file_read_line fails when the provided file is invalid.
     file_t invalid_file;
     invalid_file.valid = false;
     invalid_file.handle = 0;
-    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , &file ) );
-    EXPECT_NOT ( file_read_line ( 0 , &out_lines[ 0 ] ) );
     EXPECT_NOT ( file_read_line ( &invalid_file , &out_lines[ 0 ] ) );
+
+    EXPECT ( file_open ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ , &file ) );
+
+    // TEST: file_read_line fails when no output buffer for line content is provided.
     EXPECT_NOT ( file_read_line ( &file , 0 ) );
+
+    // TEST: file_read_line does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     file_close ( &file );
+
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // TEST: file_read_line fails if file is not open for read.
     EXPECT_NOT ( file_read_line ( &file , &out_lines[ 0 ] ) );
+
+    // TEST: file_read_line does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
+    // Populate the file with random-length lines of (non-zero) random characters.
     for ( u64 i = 0; i < line_count; ++i )
     {
+        // Generate a random-length string of random characters.
         const u64 length = random2 ( STACK_STRING_MAX_SIZE + 1
                                    , max_line_length
                                    );
@@ -360,31 +511,68 @@ test_file_read_line
         {
             _string_push ( in_lines[ i ] , string_char ( random2 ( 33 , 126 ) ) );
         }
+
+        // Append a newline to the string.
         _string_push ( in_lines[ i ] , string_char ( '\n' ) );
+
+        const u64 old_file_position = file_position_get ( &file );
+
+        // Write the string to the file.
         EXPECT ( file_write ( &file , string_length ( in_lines[ i ] ) , in_lines[ i ] , &written ) );
+        
+        // Attempt to verify that the correct number of characters were written to the file by checking the output buffer, file position, and size.
         EXPECT_EQ ( string_length ( in_lines[ i ] ) , written );
+        EXPECT_EQ ( old_file_position + string_length ( in_lines[ i ] ) , file_position_get ( &file ) );
+        EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
     }
+
     file_close ( &file );
+
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
+
     for ( u64 i = 0; i < line_count; ++i )
     {
+        const u64 old_file_position = file_position_get ( &file );
+
+        // TEST: file_read_line succeeds given valid input.
         EXPECT ( file_read_line ( &file , &out_lines[ i ] ) );
+
+        // Verify there was no memory error prior to testing.
         EXPECT_NEQ ( 0 , out_lines[ i ] );
+
+        // TEST: file_read_line advances the file position by the length of the line that was read.
+        EXPECT_EQ ( old_file_position + string_length ( in_lines[ i ] ) , file_position_get ( &file ) );
+
+        // TEST: file_read_line outputs a string containing the correct number of characters from the file (excludes the newline).
         EXPECT_EQ ( string_length ( in_lines[ i ] ) - 1 , string_length ( out_lines[ i ] ) );
-        EXPECT ( memory_equal ( in_lines[ i ] , out_lines[ i ]  , string_length ( out_lines[ i ] ) ) );
+
+        // TEST: file_read_line outputs a string containing the correct line from the file.
+        EXPECT ( memory_equal ( in_lines[ i ] , out_lines[ i ] , string_length ( out_lines[ i ] ) ) );
     }
+    
+    // Verify the file position is at the end of the file.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
+
+    // TEST: file_read_line succeeds when file position is at the end of the file.
     EXPECT ( file_read_line ( &file , &out_lines[ line_count ] ) );
+
+    // TEST: file_read_line outputs an empty string when file position is at the end of the file.
     EXPECT_EQ ( 0 , string_length ( out_lines[ line_count ] ) );
     EXPECT_EQ ( 0 , *( out_lines[ line_count ] ) );
+
     file_close ( &file );
+
     for ( u64 i = 0; i < line_count; ++i )
     {
         string_destroy ( in_lines[ i ] );
         string_destroy ( out_lines[ i ] );
     }
     string_destroy ( out_lines[ line_count ] );
+
+    // Truncate the test file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     file_close ( &file );
+    
     return true;
 }
 
@@ -392,27 +580,72 @@ u8
 test_file_write_line
 ( void )
 {
-    char buffer[ 100 ];
     const char* in_line = "This is the line to be written to the file.";
     char* out_line;
+    char buffer[ 100 ];
     file_t file;
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // TEST: file_write_line fails if no file is provided.
+    EXPECT_NOT ( file_write_line ( 0 , 100 , buffer ) );
+
+    // TEST: file_write_line fails if the provided file is invalid.
     file_t invalid_file;
     invalid_file.valid = false;
     invalid_file.handle = 0;
-    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
-    EXPECT_NOT ( file_write_line ( 0 , 100 , buffer ) );
     EXPECT_NOT ( file_write_line ( &invalid_file , 100 , buffer ) );
+
+    EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // Verify the file position is at the beginning of the file prior to testing.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+    
+    // TEST: file_write_line fails if no handle is provided to content to write.
     EXPECT_NOT ( file_write_line ( &file , 100 , 0 ) );
+
+    // TEST: file_write_line does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+
     file_close ( &file );
+
+    // TEST: file_write_line fails if file is not open for write.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
     EXPECT_NOT ( file_write_line ( &file , 100 , buffer ) );
+
+    // TEST: file_write_line does not modify the file position on failure.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+    
     file_close ( &file );
+
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
+
+    // Verify the file position is at the beginning of the file prior to testing.
+    EXPECT_EQ ( 0 , file_position_get ( &file ) );
+    
     memory_copy ( buffer , in_line , _string_length ( in_line ) + 1 );
+
+    // TEST: file_write_line succeeds given valid arguments.
     EXPECT ( _file_write_line ( &file , buffer ) );
+
+    // Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
+    EXPECT_EQ ( _string_length ( buffer ) , file_position_get ( &file ) );
+    EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
+
+    // TEST: file_write_line succeeds given valid arguments.
     EXPECT ( _file_write_line ( &file , buffer ) );
+
+    // Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
+    EXPECT_EQ ( 2 * _string_length ( buffer ) , file_position_get ( &file ) );
+    EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
+
+    // TEST: file_write_line succeeds if size of input buffer is 0.
     EXPECT ( file_write_line ( &file , 0 , buffer ) );
+
+    // TEST: Nothing was written to the file 
+    EXPECT_EQ ( 2 * _string_length ( buffer ) , file_position_get ( &file ) );
+    EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
+
     file_close ( &file );
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
     memory_clear ( buffer , 100 );

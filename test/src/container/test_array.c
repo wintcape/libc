@@ -363,10 +363,10 @@ test_array_insert_and_remove_random
 
     LOGDEBUG ( "Inserting %i elements into an array at random indices. . ." , max_op );
 
-    // Verify there was no memory error prior to testing.
     i32* array = array_create_new ( i32 );
     i32* old_memory = memory_allocate ( sizeof ( i32 ) * max_op , MEMORY_TAG_ARRAY );
 
+    // Verify there was no memory error prior to testing.
     EXPECT_NEQ ( 0 , array );
     EXPECT_NEQ ( 0 , old_memory );
     

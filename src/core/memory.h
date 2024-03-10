@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-/** @brief Type and instance definitions for memory block tags. */
+/** @brief Type and instance definitions for memory allocation tags. */
 typedef enum
 {
     MEMORY_TAG_UNKNOWN
@@ -28,6 +28,9 @@ typedef enum
 }
 MEMORY_TAG;
 
+/** @brief (see memory_allocation_count, memory_allocation_amount, memory_free_count, memory_free_amount). */
+#define MEMORY_TAG_ALL MEMORY_TAG_COUNT
+
 /**
  * @brief Initializes the memory subsystem.
  * 
@@ -42,7 +45,7 @@ MEMORY_TAG;
  */
 bool
 memory_startup
-(   const u64 capacity
+(   u64 capacity
 );
 
 /**
@@ -203,21 +206,31 @@ memory_stat
 ( void );
 
 /**
- * @brief Queries the global allocation count.
+ * @brief Queries the number of allocations made with a particular tag.
  * 
- * @return The global allocation count.
+ * To query the global allocation count, pass MEMORY_TAG_ALL.
+ * 
+ * @param tag The memory tag to query the count on. Pass MEMORY_TAG_ALL to query
+ * the global allocation count.
+ * @return The number of tag allocations made.
  */
 u64
 memory_allocation_count
-( void );
+(   MEMORY_TAG tag
+);
 
 /**
- * @brief Queries the global free count.
+ * @brief Queries the number of frees made with a particular tag.
  * 
- * @return The global free count.
+ * To query the global free count, pass MEMORY_TAG_ALL.
+ * 
+ * @param tag The memory tag to query the count on. Pass MEMORY_TAG_ALL to query
+ * the global free count.
+ * @return The number of tag frees made.
  */
 u64
 memory_free_count
-( void );
+(   MEMORY_TAG tag
+);
 
 #endif  // MEMORY_H

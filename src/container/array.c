@@ -60,8 +60,8 @@ array_copy
 
 u64
 _array_field_get
-(   const void*         array
-,   const ARRAY_FIELD   field
+(   const void* array
+,   ARRAY_FIELD field
 )
 {
     const u64* header = ( ( u64* ) array ) - ARRAY_FIELD_COUNT;
@@ -70,9 +70,9 @@ _array_field_get
 
 void
 _array_field_set
-(   void*               array
-,   const ARRAY_FIELD   field
-,   const u64           value
+(   void*       array
+,   ARRAY_FIELD field
+,   u64         value
 )
 {
     u64* header = ( u64* ) array - ARRAY_FIELD_COUNT;

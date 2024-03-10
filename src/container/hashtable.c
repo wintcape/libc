@@ -24,9 +24,9 @@ hashtable_key_hash
 
 bool
 hashtable_create
-(   const bool      pointer
-,   const u64       stride
-,   const u32       capacity
+(   bool            pointer
+,   u64             stride
+,   u32             capacity
 ,   void*           memory
 ,   hashtable_t*    hashtable
 )

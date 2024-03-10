@@ -32,7 +32,7 @@ queue_t;
  */
 bool
 queue_create
-(   const u64   stride
+(   u64         stride
 ,   queue_t*    queue
 );
 

@@ -122,14 +122,27 @@ make macos-test
 
 ## Changelog
 
-### 0.3.5 (work-in-progress)
+### 0.4.0
 - Commented all the code in the `test/` library, so it is now easy to scan through which tests I do and do not already have. This helped me realize that I was missing some tests. I added a few and fixed a few minor bugs related to this.
 - `memory_free` logs an error if an illegal size is provided for a given memory tag.
+- `memory_allocation_count` and `memory_free_count` now take a `MEMORY_TAG` parameter and can query counts for a particular tag. There are also new analogous functions `memory_allocation_amount` and `memory_free_amount` for querying number of bytes allocated for a particular tag. Many of the functions in the `test/` library now make use of these to (hopefully) improve the level of memory safety verification that each test involving memory allocations can individually perform.
 - Added function `array_size` to calculate size in bytes of an array.
-- As a result of the change above, `memory_stat` now works as intended.
-- BUG FIXING TIME!! Fixed several nasty memory allocator bugs related to string allocation (see below).
+- Many of the tests in `platform/filesystem.c` now make use of `file_position_get` and `file_position_set`.
+- Added function `memory_allocated`
+- *BUG FIXING TIME!!* Fixed several nasty memory allocator bugs related to string allocation (see below).
 - Fixed a bug where the wrong amount of memory would be freed by `_array_resize` when resizing strings; this has led to a function signature change for `_array_resize`.
 - Fixed a bug with pointer arithmetic when freeing strings via `string_free`.
+- As a result of several of the changes above, `memory_stat` now works as intended. It gets invoked automatically to provide memory reporting if there is an error during `memory_shutdown`.
+- A few function signatures have changed to remove `const` requirement, even when the current implementation holds those variables constant. List of affected functions:
+    - `memory_startup`
+    - `_array_field_set` and `_array_field_get`
+    - `hashtable_create`
+    - `queue_create`
+    - 
+
+Regarding the final change: going forward, I'll try to standardize use of `const` to the following cases:
+1. For library-internal functions and within the implementations of functions themselves, everything I can possibly label `const` should be labeled `const` explicitly.
+2. For useful API function signatures, `const` will generally be omitted unless it is explicitly documenting something like a read-only pointer.
 
 ### 0.3.4
 - Fixed a bug in `string_format` pointer arithmetic that would cause the function to fail at random (depending on operating system factors).

@@ -85,8 +85,8 @@ _array_destroy
  */
 u64
 _array_field_get
-(   const void*         array
-,   const ARRAY_FIELD   field
+(   const void* array
+,   ARRAY_FIELD field
 );
 
 /** @brief Get array field: capacity. */
@@ -110,9 +110,9 @@ _array_field_get
  */
 void
 _array_field_set
-(   void*               array
-,   const ARRAY_FIELD   field
-,   const u64           value
+(   void*       array
+,   ARRAY_FIELD field
+,   u64         value
 );
 
 /**
