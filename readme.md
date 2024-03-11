@@ -89,6 +89,7 @@ Requires GNU make.
 Makefiles use gcc by default. The library has been tested on Clang as well.
 
 ### Windows
+To test on Windows:
 ```
 make windows-test
 ```
