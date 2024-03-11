@@ -65,7 +65,7 @@ thread_wait
 bool
 thread_wait_timeout
 (   thread_t*   thread
-,   const u64   timeout_ms
+,   u64         timeout_ms
 )
 {
     return platform_thread_wait_timeout ( thread , timeout_ms );
@@ -82,7 +82,7 @@ thread_active
 void
 thread_sleep
 (   thread_t*   thread
-,   const u64   ms
+,   u64         ms
 )
 {
     platform_thread_sleep ( thread , ms );

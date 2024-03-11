@@ -125,24 +125,38 @@ make macos-test
 ### 0.4.0
 - Commented all the code in the `test/` library, so it is now easy to scan through which tests I do and do not already have. This helped me realize that I was missing some tests. I added a few and fixed a few minor bugs related to this.
 - `memory_free` logs an error if an illegal size is provided for a given memory tag.
-- `memory_allocation_count` and `memory_free_count` now take a `MEMORY_TAG` parameter and can query counts for a particular tag. There are also new analogous functions `memory_allocation_amount` and `memory_free_amount` for querying number of bytes allocated for a particular tag. Many of the functions in the `test/` library now make use of these to (hopefully) improve the level of memory safety verification that each test involving memory allocations can individually perform.
+- New function `memory_amount_allocated` for querying number of bytes allocated for a particular tag. Many of the functions in the `test/` library now make use of this in conjunction with `memory_allocation_count` and `memory_free_count` to (hopefully) improve the level of memory safety verification that each test involving memory allocations can individually perform.
 - Added function `array_size` to calculate size in bytes of an array.
 - Many of the tests in `platform/filesystem.c` now make use of `file_position_get` and `file_position_set`.
-- Added function `memory_allocated`
 - *BUG FIXING TIME!!* Fixed several nasty memory allocator bugs related to string allocation (see below).
 - Fixed a bug where the wrong amount of memory would be freed by `_array_resize` when resizing strings; this has led to a function signature change for `_array_resize`.
 - Fixed a bug with pointer arithmetic when freeing strings via `string_free`.
 - As a result of several of the changes above, `memory_stat` now works as intended. It gets invoked automatically to provide memory reporting if there is an error during `memory_shutdown`.
+- `dynamic_allocator_clear` can handle and uninitialized `dynamic_allocator_t` buffer.
 - A few function signatures have changed to remove `const` requirement, even when the current implementation holds those variables constant. List of affected functions:
     - `memory_startup`
     - `_array_field_set` and `_array_field_get`
     - `hashtable_create`
     - `queue_create`
-    - 
+    - `logger_log`
+    - `string_contains`
+    - `string_reverse`
+    - `string_f64`
+    - `string_bytesize`
+    - `string_allocate`
+    - `file_position_set`
+    - `thread_wait_timeout`
+    - `thread_sleep`
+    - `platform_string_length_clamped`
+    - `platform_error_message`
+    - `platform_sleep`
+    - `platform_file_position_set`
+    - `platform_thread_wait_timeout`
+    - `platform_thread_sleep`
 
 Regarding the final change: going forward, I'll try to standardize use of `const` to the following cases:
-1. For library-internal functions and within the implementations of functions themselves, everything I can possibly label `const` should be labeled `const` explicitly.
-2. For useful API function signatures, `const` will generally be omitted unless it is explicitly documenting something like a read-only pointer.
+1. Within the signatures of library-internal functions, within the signatures of functions labeled `INLINE`, and within the implementations of all functions, everything I can possibly label `const` should be labeled `const` explicitly.
+2. Within the signatures of useful API functions, `const` will generally be omitted, unless it is explicitly documenting something important like a read-only pointer or maximum string length.
 
 ### 0.3.4
 - Fixed a bug in `string_format` pointer arithmetic that would cause the function to fail at random (depending on operating system factors).

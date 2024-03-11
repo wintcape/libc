@@ -134,7 +134,7 @@ platform_string_length
 u64
 platform_string_length_clamped
 (   const char* string
-,   const u64   limit
+,   u64         limit
 );
 
 // End string operations.
@@ -215,7 +215,7 @@ platform_thread_wait
 bool
 platform_thread_wait_timeout
 (   thread_t*   thread
-,   const u64   timeout_ms
+,   u64         timeout_ms
 );
 
 /**
@@ -238,7 +238,7 @@ platform_thread_active
 void
 platform_thread_sleep
 (   thread_t*   thread
-,   const u64   ms
+,   u64         ms
 );
 
 /**
@@ -381,8 +381,8 @@ platform_file_position_get
  */
 bool
 platform_file_position_set
-(   file_t*     file
-,   const u64   position
+(   file_t* file
+,   u64     position
 );
 
 /**
@@ -528,9 +528,9 @@ platform_error_code
  */
 u64
 platform_error_message
-(   const i64   error
-,   char*       dst
-,   const u64   dst_length
+(   i64     error
+,   char*   dst
+,   u64     dst_length
 );
 
 // End error handling.
@@ -553,7 +553,7 @@ platform_absolute_time
 */
 void
 platform_sleep
-(   const u64 ms
+(   u64 ms
 );
 
 /**

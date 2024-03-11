@@ -126,7 +126,7 @@ platform_string_length
 u64
 platform_string_length_clamped
 (   const char* string
-,   const u64   limit
+,   u64         limit
 )
 {
     return strnlen ( string , limit );
@@ -270,7 +270,7 @@ platform_thread_wait
 bool
 platform_thread_wait_timeout
 (   thread_t*   thread
-,   const u64   timeout_ms
+,   u64         timeout_ms
 )
 {
     // TODO: Implement this.
@@ -297,7 +297,7 @@ platform_thread_active
 void
 platform_thread_sleep
 (   thread_t*   thread
-,   const u64   ms
+,   u64         ms
 )
 {
     platform_sleep ( ms );
@@ -623,8 +623,8 @@ platform_file_position_get
 
 bool
 platform_file_position_set
-(   file_t*     file_
-,   const u64   position
+(   file_t* file_
+,   u64     position
 )
 {
     if ( !file_ )
@@ -1191,9 +1191,9 @@ platform_error_code
 
 u64
 platform_error_message
-(   const i64   error
-,   char*       dst
-,   const u64   dst_length
+(   i64     error
+,   char*   dst
+,   u64     dst_length
 )
 {
     if ( !dst || !dst_length )
@@ -1227,7 +1227,7 @@ platform_absolute_time
 
 void
 platform_sleep
-(   const u64 ms
+(   u64 ms
 )
 {
     #if _POSIX_C_SOURCE >= 199309L

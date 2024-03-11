@@ -52,8 +52,8 @@ file_position_get
 
 bool
 file_position_set
-(   file_t*     file
-,   const u64   position
+(   file_t* file
+,   u64     position
 )
 {
     return platform_file_position_set ( file , position );

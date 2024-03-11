@@ -61,8 +61,8 @@ _print
  * @brief Appends a message to the log file.
  * 
  * Use logger_file_append to explicitly specify string length, or 
- * _logger_file_append to compute the lengths of null-terminated strings before
- * passing them to logger_file_append.
+ * _logger_file_append to compute the length of a null-terminated string before
+ * passing it to logger_file_append.
  * 
  * @param message The message string to append.
  * @param message_length The message length (in characters).
@@ -129,9 +129,9 @@ logger_shutdown
 
 void
 logger_log
-(   const LOG_LEVEL level
-,   const char*     message
-,   args_t          args
+(   LOG_LEVEL   level
+,   const char* message
+,   args_t      args
 )
 {
     const bool err = level < LOG_WARN;

@@ -28,7 +28,7 @@ typedef enum
 }
 MEMORY_TAG;
 
-/** @brief (see memory_allocation_count, memory_allocation_amount, memory_free_count, memory_free_amount). */
+/** @brief (see memory_amount_allocated). */
 #define MEMORY_TAG_ALL MEMORY_TAG_COUNT
 
 /**
@@ -206,30 +206,33 @@ memory_stat
 ( void );
 
 /**
- * @brief Queries the number of allocations made with a particular tag.
+ * @brief Queries the global allocation count.
  * 
- * To query the global allocation count, pass MEMORY_TAG_ALL.
- * 
- * @param tag The memory tag to query the count on. Pass MEMORY_TAG_ALL to query
- * the global allocation count.
- * @return The number of tag allocations made.
+ * @return The global allocation count.
  */
 u64
 memory_allocation_count
-(   MEMORY_TAG tag
-);
+( void );
 
 /**
- * @brief Queries the number of frees made with a particular tag.
+ * @brief Queries the global free count.
  * 
- * To query the global free count, pass MEMORY_TAG_ALL.
- * 
- * @param tag The memory tag to query the count on. Pass MEMORY_TAG_ALL to query
- * the global free count.
- * @return The number of tag frees made.
+ * @return The global free count.
  */
 u64
 memory_free_count
+( void );
+
+/**
+ * @brief Queries the total number of bytes allocated with a particular tag.
+ * 
+ * To query the total number of bytes allocated, pass MEMORY_TAG_ALL.
+ * 
+ * @param tag The memory tag to query.
+ * @return The total number of bytes allocated with tag.
+ */
+u64
+memory_amount_allocated
 (   MEMORY_TAG tag
 );
 

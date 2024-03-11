@@ -103,7 +103,7 @@ dynamic_allocator_clear
 (   dynamic_allocator_t* allocator
 )
 {
-    if ( !allocator )
+    if ( !allocator || !( *allocator ).memory )
     {
         return;
     }

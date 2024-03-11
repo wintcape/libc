@@ -114,7 +114,7 @@ string_contains
 ,   const u64   search_length
 ,   const char* find
 ,   const u64   find_length
-,   const bool  reverse
+,   bool        reverse
 ,   u64*        index
 )
 {
@@ -137,8 +137,8 @@ string_contains
 
 char*
 string_reverse
-(   char*     string
-,   u64       string_length
+(   char*       string
+,   const u64   string_length
 )
 {
     if ( !string_length )
@@ -217,10 +217,10 @@ string_u64
 
 u64
 string_f64
-(   f64         value
-,   u8          precision
-,   const bool  abbreviated
-,   char*       dst
+(   f64     value
+,   u8      precision
+,   bool    abbreviated
+,   char*   dst
 )
 {   // TODO: Implement this.
     return 0;
@@ -228,8 +228,8 @@ string_f64
 
 const char*
 string_bytesize
-(   const u64   size
-,   f64*        amount
+(   u64     size
+,   f64*    amount
 )
 {
     if ( size >= GIBIBYTES ( 1 ) )
@@ -253,7 +253,7 @@ string_bytesize
 
 char*
 string_allocate
-(   const u64 content_size
+(   u64 content_size
 )
 {
     const u64 header_size = sizeof ( u64 );

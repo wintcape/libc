@@ -93,9 +93,9 @@ logger_shutdown
  */
 void
 logger_log
-(   const LOG_LEVEL level
-,   const char*     message
-,   args_t          args
+(   LOG_LEVEL   level
+,   const char* message
+,   args_t      args
 );
 
 /** @brief Alias for calling logger_log with __VA_ARGS__. */

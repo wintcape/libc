@@ -9,11 +9,13 @@
 #include "container/string.h"
 
 #include "core/logger.h"
-#include "platform/mutex.h"
+
+#include "math/clamp.h"
 
 #include "memory/dynamic_allocator.h"
 
 #include "platform/platform.h"
+#include "platform/mutex.h"
 
 /** @brief Memory tag strings. */
 static const char* memory_tags[ MEMORY_TAG_COUNT ] = { "UNKNOWN"
@@ -420,4 +422,21 @@ memory_free_count
         return 0;
     }
     return ( *state ).stat.free_count;
+}
+
+u64
+memory_amount_allocated
+(   MEMORY_TAG tag
+)
+{
+    if ( !state )
+    {
+        return 0;
+    }
+    if ( tag == MEMORY_TAG_ALL )
+    {
+        return ( *state ).stat.allocated;
+    }
+    tag = CLAMP ( tag , ( MEMORY_TAG ) 0 , ( MEMORY_TAG ) MEMORY_TAG_COUNT );
+    return ( *state ).stat.tagged_allocations[ tag ];
 }

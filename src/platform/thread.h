@@ -95,7 +95,7 @@ thread_wait
 bool
 thread_wait_timeout
 (   thread_t*   thread
-,   const u64   timeout_ms
+,   u64         timeout_ms
 );
 
 /**
@@ -118,7 +118,7 @@ thread_active
 void
 thread_sleep
 (   thread_t*   thread
-,   const u64   ms
+,   u64         ms
 );
 
 /**
