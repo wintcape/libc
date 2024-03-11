@@ -183,7 +183,7 @@ test_string_create_and_destroy
 
     // TEST 4: string_destroy handles invalid argument.
 
-    // TEST: string_destroy does not modify the global allocator state if no string is provided.
+    // TEST 4.1: string_destroy does not modify the global allocator state if no string is provided.
     string_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
@@ -244,10 +244,10 @@ test_string_push
         // TEST 1: string_push increases the length of the string by the length of the string being appended.
         EXPECT_EQ ( old_length , string_length ( string ) - _string_length ( to_push ) );
         
-        // TEST 1: string_push appends the correct characters to the end of the string.
+        // TEST 2: string_push appends the correct characters to the end of the string.
         EXPECT ( memory_equal ( to_push , &string[ old_length ] , _string_length ( to_push ) ) );
 
-        // TEST 1: string_push leaves the remainder of the string unmodified.
+        // TEST 3: string_push leaves the remainder of the string unmodified.
         EXPECT ( memory_equal ( string , old_string , old_length ) );
     }
 
@@ -1565,6 +1565,7 @@ test_string_format
     EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
 
+    // End test.
     ////////////////////////////////////////////////////////////////////////////
 
     string_destroy ( string_in );

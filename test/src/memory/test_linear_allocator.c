@@ -43,12 +43,12 @@ test_linear_allocator_create_and_destroy
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( linear_allocator_create ( capacity , 0 , 0 ) );
 
+    // TEST 2: Auto-allocated linear allocator.
+
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
     global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
-
-    // TEST 2: Auto-allocated linear allocator.
 
     // TEST 2.1: linear_allocator_create succeeds.
     EXPECT ( linear_allocator_create ( capacity , 0 , &allocator ) );
@@ -206,10 +206,10 @@ test_linear_allocator_allocate
 
     blk = linear_allocator_allocate ( &allocator , capacity );
 
-    // TEST 2.2: linear_allocator_allocate returns a handle to an allocated block of memory. 
+    // TEST 2.1: linear_allocator_allocate returns a handle to an allocated block of memory. 
     EXPECT_NEQ ( 0 , blk );
 
-    // TEST 2.3: The allocator has allocated the correct amount of its total memory. 
+    // TEST 2.2: The allocator has allocated the correct amount of its total memory. 
     EXPECT_EQ ( capacity , allocator.allocated );
 
     // TEST 3: linear_allocator_allocate handles invalid arguments (2).

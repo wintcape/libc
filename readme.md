@@ -132,7 +132,7 @@ make macos-test
 - Fixed a bug where the wrong amount of memory would be freed by `_array_resize` when resizing strings; this has led to a function signature change for `_array_resize`.
 - Fixed a bug with pointer arithmetic when freeing strings via `string_free`.
 - As a result of several of the changes above, `memory_stat` now works as intended. It gets invoked automatically to provide memory reporting if there is an error during `memory_shutdown`.
-- `dynamic_allocator_clear` can handle and uninitialized `dynamic_allocator_t` buffer.
+- `dynamic_allocator_clear` can handle an uninitialized `dynamic_allocator_t` buffer.
 - A few function signatures have changed to remove `const` requirement, even when the current implementation holds those variables constant. List of affected functions:
     - `memory_startup`
     - `_array_field_set` and `_array_field_get`

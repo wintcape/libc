@@ -164,7 +164,7 @@ test_dynamic_allocator_allocate_and_free
     // TEST 3.1: dynamic_allocator_free logs an error and fails if no allocator is provided.
     EXPECT_NOT ( dynamic_allocator_free ( 0 , blk ) );
 
-    // TEST 3.2: dynamic_allocator_free logs an error and fail if no memory block is provided.
+    // TEST 3.2: dynamic_allocator_free logs an error and fails if no memory block is provided.
     EXPECT_NOT ( dynamic_allocator_free ( &allocator , 0 ) );
 
     // TEST 3.3: dynamic_allocator_free does not allocate if no memory block is provided.
@@ -831,8 +831,7 @@ test_dynamic_allocator_util_allocate
     EXPECT_EQ ( ( *data ).alignment , block_alignment );
     EXPECT_EQ ( ( *data ).size , block_size );
     *currently_allocated += ( *data ).size + header_size + ( *data ).alignment;
-    u64 free = dynamic_allocator_query_free ( allocator );
-    EXPECT_EQ ( total_allocator_size - *currently_allocated , free );
+    EXPECT_EQ ( total_allocator_size - *currently_allocated , dynamic_allocator_query_free ( allocator ) );
     return true;
 }
 
@@ -852,8 +851,7 @@ test_dynamic_allocator_util_free
     }
     ( *data ).block = 0;
     *currently_allocated -= ( *data ).size + header_size + ( *data ).alignment;
-    u64 free = dynamic_allocator_query_free ( allocator );
-    EXPECT_EQ ( total_allocator_size - *currently_allocated , free );
+    EXPECT_EQ ( total_allocator_size - *currently_allocated , dynamic_allocator_query_free ( allocator ) );
     return true;
 }
 

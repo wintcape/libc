@@ -447,6 +447,7 @@ test_file_write
     file_t file;
     u64 written;
     u64 read;
+    u64 old_file_position;
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -496,6 +497,9 @@ test_file_write
     // Opening in write mode truncates the file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
 
+    // Preserve file position prior to the test.
+    old_file_position = file_position_get ( &file );
+
     // TEST 2.1: file_write succeeds.
     written = 0;
     EXPECT ( _file_write ( &file , file_content_test_in_file , &written ) );
@@ -503,23 +507,21 @@ test_file_write
     // TEST 2.2: The value written to the 'written' output buffer is the correct number of bytes written.
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , written );
 
-    // TEST 2.3: The size of the file is equal to the size of the input buffer.
-    EXPECT_EQ ( _string_length ( file_content_test_in_file ) , file_size ( &file ) );
+    // TEST 2.3: Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
+    EXPECT_EQ ( old_file_position + _string_length ( file_content_test_in_file ) , file_position_get ( &file ) );
+    EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
 
-    // TEST 2.4: The file position is at the end of the file.
-    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
-
-    // TEST 2.5: file_write succeeds if input buffer size is 0.
+    // TEST 2.4: file_write succeeds if input buffer size is 0.
     written = 0;
     EXPECT ( file_write ( &file , 0 , file_content_test_in_file , &written ) );
     
-    // TEST 2.6: If input buffer size is 0, the value written to the 'written' output buffer is the correct number of bytes written (0).
+    // TEST 2.5: If input buffer size is 0, the value written to the 'written' output buffer is the correct number of bytes written (0).
     EXPECT_EQ ( 0 , written );
 
-    // TEST 2.7: file_write does not modify the size of the file if input buffer size is 0.
+    // TEST 2.6: file_write does not modify the size of the file if input buffer size is 0.
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , file_size ( &file ) );
 
-    // TEST 2.8: file_write does not modify the file position if input buffer size is 0.
+    // TEST 2.7: file_write does not modify the file position if input buffer size is 0.
     EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
 
     file_close ( &file );
@@ -531,10 +533,10 @@ test_file_write
     memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
 
-    // TEST 2.9: The size of the input buffer is equal to the number of bytes written to the file.
+    // TEST 2.8: The size of the input buffer is equal to the number of bytes written to the file.
     EXPECT_EQ ( _string_length ( file_content_test_in_file ) , read );
 
-    // TEST 2.10: The bytes of the input buffer are identical to the bytes written to the file.
+    // TEST 2.9: The bytes of the input buffer are identical to the bytes written to the file.
     EXPECT ( memory_equal ( buffer , file_content_test_in_file , _string_length ( file_content_test_in_file ) + 1 ) );
     
     file_close ( &file );
@@ -544,6 +546,9 @@ test_file_write
     // Opening in write mode truncates the file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
 
+    // Preserve file position prior to the test.
+    old_file_position = file_position_get ( &file );
+
     // TEST 3.1: file_write succeeds.
     written = 0;
     EXPECT ( file_write ( &file , sizeof ( file_content_test_in_file_binary ) , file_content_test_in_file_binary , &written ) );
@@ -551,23 +556,21 @@ test_file_write
     // TEST 3.2: The value written to the 'written' output buffer is the correct number of bytes written.
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , written );
 
-    // TEST 3.3: The size of the file is equal to the size of the input buffer.
-    EXPECT_EQ (sizeof ( file_content_test_in_file_binary ) , file_size ( &file ) );
+    // TEST 3.3: Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
+    EXPECT_EQ ( old_file_position + sizeof ( file_content_test_in_file_binary ) , file_position_get ( &file ) );
+    EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
 
-    // TEST 3.4: The file position is at the end of the file.
-    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
-
-    // TEST 3.5: file_write succeeds if input buffer size is 0.
+    // TEST 3.4: file_write succeeds if input buffer size is 0.
     written = 0;
     EXPECT ( file_write ( &file , 0 , file_content_test_in_file , &written ) );
     
-    // TEST 3.6: If input buffer size is 0, the value written to the 'written' output buffer is the correct number of bytes written (0).
+    // TEST 3.5: If input buffer size is 0, the value written to the 'written' output buffer is the correct number of bytes written (0).
     EXPECT_EQ ( 0 , written );
 
-    // TEST 3.7: file_write does not modify the size of the file if input buffer size is 0.
+    // TEST 3.6: file_write does not modify the size of the file if input buffer size is 0.
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , file_size ( &file ) );
 
-    // TEST 3.8: file_write does not modify the file position if input buffer size is 0.
+    // TEST 3.7: file_write does not modify the file position if input buffer size is 0.
     EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
 
     file_close ( &file );
@@ -579,10 +582,10 @@ test_file_write
     memory_clear ( buffer , 100 );
     EXPECT ( file_read ( &file , 100 , buffer , &read ) );
 
-    // TEST 3.9: The size of the input buffer is equal to the number of bytes written to the file.
+    // TEST 3.8: The size of the input buffer is equal to the number of bytes written to the file.
     EXPECT_EQ ( sizeof ( file_content_test_in_file_binary ) , read );
 
-    // TEST 3.10: The bytes of the input buffer are identical to the bytes written to the file.
+    // TEST 3.9: The bytes of the input buffer are identical to the bytes written to the file.
     EXPECT ( memory_equal ( buffer , file_content_test_in_file_binary , read ) );
 
     file_close ( &file );
@@ -621,6 +624,7 @@ test_file_read_line
     const u64 line_count = 100;
     file_t file;
     u64 written;
+    u64 old_file_position;
 
     char* in_lines[ 100 ];
     char* out_lines[ 101 ];
@@ -682,7 +686,8 @@ test_file_read_line
         // Append a newline to the string.
         _string_push ( in_lines[ i ] , string_char ( '\n' ) );
 
-        const u64 old_file_position = file_position_get ( &file );
+        // Preserve file position prior to write.
+        old_file_position = file_position_get ( &file );
 
         // Write the string to the file.
         EXPECT ( file_write ( &file , string_length ( in_lines[ i ] ) , in_lines[ i ] , &written ) );
@@ -729,15 +734,15 @@ test_file_read_line
 
     file_close ( &file );
 
+    // End test.
+    ////////////////////////////////////////////////////////////////////////////
+
     for ( u64 i = 0; i < line_count; ++i )
     {
         string_destroy ( in_lines[ i ] );
         string_destroy ( out_lines[ i ] );
     }
     string_destroy ( out_lines[ line_count ] );
-
-    // End test.
-    ////////////////////////////////////////////////////////////////////////////
 
     // Truncate the test file.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
@@ -771,6 +776,7 @@ test_file_write_line
     char* out_line;
     char buffer[ 100 ];
     file_t file;
+    u64 old_file_position;
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -818,25 +824,34 @@ test_file_write_line
     
     memory_copy ( buffer , in_line , _string_length ( in_line ) + 1 );
 
+    // Preserve file position prior to the test.
+    old_file_position = file_position_get ( &file );
+
     // TEST 2.1: file_write_line succeeds.
     EXPECT ( _file_write_line ( &file , buffer ) );
 
     // TEST 2.2: Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
-    EXPECT_EQ ( _string_length ( buffer ) + 1 , file_position_get ( &file ) );
+    EXPECT_EQ ( old_file_position + _string_length ( buffer ) + 1 , file_position_get ( &file ) );
     EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
+
+    // Preserve file position prior to the test.
+    old_file_position = file_position_get ( &file );
 
     // TEST 2.3: file_write_line succeeds.
     EXPECT ( _file_write_line ( &file , buffer ) );
 
     // TEST 2.4: Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
-    EXPECT_EQ ( 2 * ( _string_length ( buffer ) + 1 ) , file_position_get ( &file ) );
+    EXPECT_EQ ( old_file_position + _string_length ( buffer ) + 1 , file_position_get ( &file ) );
     EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
+
+    // Preserve file position prior to the test.
+    old_file_position = file_position_get ( &file );
 
     // TEST 2.5: file_write_line succeeds if size of input buffer is 0.
     EXPECT ( file_write_line ( &file , 0 , buffer ) );
 
-    // TEST 2.6: file_write_line writes a single newline to the file if size of input buffer is 0.
-    EXPECT_EQ ( 2 * ( _string_length ( buffer ) + 1 ) + 1 , file_position_get ( &file ) );
+    // TEST 2.6: Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
+    EXPECT_EQ ( old_file_position + 1 , file_position_get ( &file ) );
     EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
 
     file_close ( &file );
@@ -910,6 +925,7 @@ test_file_read_all
     file_t file;
     u64 read;
     u64 written;
+
     char* string_in = string_allocate ( filesize + 1 );
     u8* string_out;
 
@@ -977,12 +993,12 @@ test_file_read_all
 
     string_free ( string_out );
 
-    // TEST 3: file_read_all. File position is at beginning of file.
+    // TEST 3: File position is at beginning of file.
 
     // Open file for write.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
 
-    // Generate 1.00 GiB of random binary data to be used for populating the test file with contentt.
+    // Generate 1.00 GiB of random binary data to be used for populating the test file with content.
     do
     {
         f64 display_amount;
@@ -1024,10 +1040,11 @@ test_file_read_all
 
     string_free ( string_out );
 
-    // TEST 4: file_read_all. File position is **not** at beginning of file.
+    // TEST 4: File position is **not** at beginning of file.
 
-    // Explicitly move file pointer to end of file.
+    // Explicitly move file pointer from the beginning of file.
     EXPECT ( file_position_set ( &file , file_size ( &file ) ) );
+    EXPECT_NEQ ( 0 , file_position_get ( &file ) );
     
     // TEST 4.1: file_read_all succeeds.
     EXPECT ( file_read_all ( &file , &string_out , &read ) );
@@ -1087,6 +1104,7 @@ test_file_read_and_write_large_file
     file_t file;
     u64 read;
     u64 written;
+    u64 old_file_position;
 
     // Generate 1.00 GiB of random binary data to be used for populating the test file with content.
     do
@@ -1116,16 +1134,23 @@ test_file_read_and_write_large_file
     while ( 0 );
     for ( u8 i = 0; i < 6; ++i )
     {
+        // Preserve file position prior to the test.
+        old_file_position = file_position_get ( &file );
+
         // TEST 1: file_write succeeds with a buffer size of 1.00 GiB.
         written = 0;
         EXPECT ( file_write ( &file , buffer_size , in_buffer , &written ) );
 
         // TEST 2: The value written to the 'written' output buffer is correct.
         EXPECT_EQ ( buffer_size , written );
+
+        // TEST 3: Attempt to verify that the correct number of characters were written to the file by checking the file position and size.
+        EXPECT_EQ ( old_file_position + buffer_size , file_position_get ( &file ) );
+        EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
     }
     LOGDEBUG ( "  Done." );
 
-    // TEST 3: File size is correct.
+    // TEST 4: File size is correct.
     EXPECT ( file_size ( &file ) >= GIBIBYTES ( 6 ) );
 
     file_close ( &file );
@@ -1135,17 +1160,27 @@ test_file_read_and_write_large_file
     LOGDEBUG ( "Reading it back into program memory and validating the file content. . ." );
     for ( u8 i = 0; i < 6; ++i )
     {
-        // TEST 4: file_read succeeds with a buffer size of 1.00 GiB.
+        // Preserve file position prior to the test.
+        old_file_position = file_position_get ( &file );
+
+        // TEST 5: file_read succeeds with a buffer size of 1.00 GiB.
         read = 0;
         memory_clear ( out_buffer , buffer_size );
         EXPECT ( file_read ( &file , buffer_size , out_buffer , &read ) );
 
-        // TEST 5: The value written to the 'read' output buffer is correct.
+        // TEST 6: The value written to the 'read' output buffer is correct.
         EXPECT_EQ ( buffer_size , read );
 
-        // TEST 6: The bytes of the input line are identical to the bytes written to the file.
+        // TEST 7: The bytes of the input line are identical to the bytes written to the file.
         EXPECT ( memory_equal ( out_buffer , in_buffer , buffer_size ) );
+
+        // TEST 8: The file position has been advanced by the correct amount.
+        EXPECT_EQ ( old_file_position + buffer_size , file_position_get ( &file ) );
     }
+
+    // TEST 9: The file position is at the end of the file.
+    EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
+
     LOGDEBUG ( "  Done." );
 
     file_close ( &file );

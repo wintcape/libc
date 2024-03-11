@@ -142,38 +142,42 @@ test_queue_push_and_pop
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
+    // TEST 1: queue_push handles invalid arguments (1).
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 1: queue_push fails if no queue is provided.
+    // TEST 1.1: queue_push fails if no queue is provided.
     EXPECT_NOT ( queue_push ( 0 , &to_push ) );
 
-    // TEST 2: queue_push fails if no handle to the data to append is provided.
+    // TEST 1.2: queue_push fails if no handle to the data to append is provided.
     EXPECT_NOT ( queue_push ( &queue , 0 ) );
+
+    // TEST 2: queue_push.
 
     LOGDEBUG ( "Pushing %i elements onto a queue one-by-one. . ." , op_count );
 
     for ( u64 i = 0; i < op_count; ++i )
     {
-        // TEST 3: queue_push succeeds given valid arguments.
+        // TEST 2.1: queue_push succeeds.
         EXPECT ( queue_push ( &queue , &to_push ) );
 
         // Verify there was no memory error prior to the test.
         EXPECT_NEQ ( 0 , queue.memory );
 
-        // TEST 4: queue_push does not modify the queue stride.
+        // TEST 2.2: queue_push does not modify the queue stride.
         EXPECT_EQ ( sizeof ( to_push ) , queue.stride );
 
-        // TEST 5: queue_push increases the length of the queue by 1.
+        // TEST 2.3: queue_push increases the length of the queue by 1.
         EXPECT_EQ ( i + 1 , queue.length );
 
-        // TEST 6: Queue has access to adequate memory following queue_push.
+        // TEST 2.4: Queue has access to a memory buffer of adequate size.
         EXPECT ( queue.allocated >= queue.length * queue.stride );
 
-        // TEST 7: queue_push appends the correct element to the end of the queue.
+        // TEST 2.5: queue_push appends the correct element to the end of the queue.
         EXPECT ( memory_equal ( ( void* )( ( ( u64 )( queue.memory ) ) + queue.stride * ( queue.length - 1 ) ) , &to_push , queue.stride ) );
     }
 
-    // TEST 8: Multiple subsequent queue_push invocations result in the correct output queue.
+    // TEST 2.6: Multiple subsequent queue_push invocations result in the correct output queue.
     for ( u64 i = 0; i < queue.length; ++i )
     {
         EXPECT ( memory_equal ( ( void* )( ( ( u64 )( queue.memory ) ) + queue.stride * i ) , &to_push , sizeof ( to_push ) ) );
@@ -181,28 +185,32 @@ test_queue_push_and_pop
 
     LOGDEBUG ( "  Done." );
 
-    // TEST 9: queue_pop fails if no queue is provided.
+    // TEST 3: queue_pop handles invalid arguments (1).
+
+    // TEST 3.1: queue_pop logs an error and fails if no queue is provided.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( queue_pop ( 0 , &popped ) );
+
+    // TEST 4: queue_pop.
 
     LOGDEBUG ( "Popping %i elements off the queue one-by-one. . ." , op_count );
 
     for ( u64 i = op_count; i > 1; --i )
     {
-        // TEST 10: queue_pop succeeds given valid arguments.
+        // TEST 4.1: queue_pop succeeds.
         EXPECT ( queue_pop ( &queue , &popped ) );
 
         // Verify there was no memory error prior to the test.
         EXPECT_NEQ ( 0 , queue.memory );
 
-        // TEST 11: queue_push decreases the length of the queue by 1.
+        // TEST 4.2: queue_push decreases the length of the queue by 1.
         EXPECT_EQ ( i - 1 , queue.length );
 
-        // TEST 12: queue_push writes the correct element into the output buffer.
+        // TEST 4.3: queue_push writes the correct element into the output buffer.
         EXPECT_EQ ( to_push , popped );
     }
 
-    // TEST 13: queue_pop succeeds when no output buffer is provided.
+    // TEST 4.4: queue_pop succeeds when no output buffer is provided.
     queue_pop ( &queue , 0 );
 
     // Verify there was no memory error prior to the test.
@@ -211,30 +219,34 @@ test_queue_push_and_pop
     // Verify the queue is empty prior to the test.
     EXPECT_EQ ( 0 , queue.length );
 
-    // TEST 14: queue_pop warns when the queue is empty.
+    // TEST 4.5: queue_pop warns when the queue is empty.
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     popped = 0;
     void* queue_memory = queue.memory;
     queue_pop ( &queue , &popped );
 
-    // TEST 15: queue_pop does not perform memory allocation if the queue is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    // TEST 4.6: queue_pop does not perform memory allocation if the queue is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
     EXPECT_EQ ( queue_memory , queue.memory );
     
-    // TEST 16: queue_pop does not modify queue length if the queue is empty.
+    // TEST 4.7: queue_pop does not modify queue length if the queue is empty.
     EXPECT_EQ ( 0 , queue.length );
 
-    // TEST 17: queue_pop writes nothing to the output buffer if the queue is empty.
+    // TEST 4.8: queue_pop writes nothing to the output buffer if the queue is empty.
     EXPECT_EQ ( 0 , popped );
 
     LOGDEBUG ( "  Done." );
 
     queue_destroy ( &queue );
 
-    // TEST 18: queue_push logs an error and fails if the provided queue is uninitialized.
+    // TEST 5: queue_push handles invalid arguments (2).
+
+    // TEST 5.1: queue_push logs an error and fails if the provided queue is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( queue_push ( &queue , &to_push ) );
-    
-    // TEST 19: queue_push logs an error and fails if the provided queue is uninitialized.
+
+    // TEST 6: queue_pop handles invalid arguments (2).
+
+    // TEST 6.1: queue_push logs an error and fails if the provided queue is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( queue_pop ( &queue , &popped ) );
 
@@ -286,21 +298,25 @@ test_queue_peek
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
+    // TEST 1: queue_peek handles invalid arguments (1).
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 1: queue_peek logs an error and fails if no queue is provided.
+    // TEST 1.1: queue_peek logs an error and fails if no queue is provided.
     EXPECT_NOT ( queue_peek ( 0 , &popped ) );
 
-    // TEST 2: queue_peek logs an error and fails if no output buffer is provided.
+    // TEST 1.2: queue_peek logs an error and fails if no output buffer is provided.
     EXPECT_NOT ( queue_peek ( &queue , 0 ) );
+
+    // TEST 2: queue_peek.
 
     for ( u64 i = op_count; i; --i )
     {
-        // TEST 3: queue_peek with valid arguments.
+        // TEST 2.1: queue_peek with valid arguments.
         popped = 0;
         EXPECT ( queue_peek ( &queue , &popped ) );
 
-        // TEST 4: queue_peek writes the correct value into the output buffer.
+        // TEST 2.2: queue_peek writes the correct value into the output buffer.
         EXPECT ( memory_equal ( queue.memory , &popped , queue.stride ) );
 
         // Pop the element from the queue.
@@ -310,26 +326,20 @@ test_queue_peek
         EXPECT_NEQ ( 0 , queue.memory );
     }
 
-    // TEST 5: queue_peek warns when the queue is empty.
+    // TEST 2.3: queue_peek warns when the queue is empty.
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     popped = 0;
-    void* queue_memory = queue.memory;
     queue_peek ( &queue , &popped );
 
-    // TEST 6: queue_peek does not perform memory allocation if the queue is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
-    EXPECT_EQ ( queue_memory , queue.memory );
-    
-    // TEST 7: queue_peek does not modify queue length if the queue is empty.
-    EXPECT_EQ ( 0 , queue.length );
-
-    // TEST 8: queue_peek writes nothing to the output buffer if the queue is empty.
+    // TEST 2.4: queue_peek writes nothing to the output buffer if the queue is empty.
     EXPECT_EQ ( 0 , popped );
 
     queue_destroy ( &queue );
 
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
+    // TEST 3: queue_peek handles invalid arguments (2).
 
-    // TEST 9: queue_peek logs an error and fails if the provided queue is uninitialized.
+    // TEST 3.1: queue_peek logs an error and fails if the provided queue is uninitialized.
+    LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( queue_peek ( &queue , &popped ) );
 
     // End test.

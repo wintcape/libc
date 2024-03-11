@@ -466,7 +466,7 @@ test_freelist_util_allocate
     EXPECT ( freelist_allocate ( freelist , ( *data ).size , &( *data ).offset ) );
     EXPECT_NEQ ( ( *data ).offset , INVALID_ID );
     *allocated += ( *data ).size;
-    EXPECT_EQ ( freelist_query_free ( freelist ) , size - *allocated );
+    EXPECT_EQ ( size - *allocated , freelist_query_free ( freelist ) );
     return true;
 }
 
@@ -480,7 +480,7 @@ test_freelist_util_free
 {
     EXPECT ( freelist_free ( freelist, ( *data ).size, ( *data ).offset ) );
     *allocated -= ( *data ).size;
-    EXPECT_EQ ( freelist_query_free ( freelist ) , size - *allocated );
+    EXPECT_EQ ( size - *allocated , freelist_query_free ( freelist ) );
     ( *data ).offset = INVALID_ID;
     return true;
 }

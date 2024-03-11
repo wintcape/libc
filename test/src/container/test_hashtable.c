@@ -296,58 +296,70 @@ test_hashtable_set_and_get_data
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
+    // TEST 1: hashtable_set (on a data-valued hashtable) handles invalid arguments (1).
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 1: hashtable_set logs an error and fails if no hashtable is provided.
+    // TEST 1.1: hashtable_set logs an error and fails if no hashtable is provided.
     EXPECT_NOT ( hashtable_set ( 0 , "key" , &values[ 0 ] ) );
 
-    // TEST 2: hashtable_set logs an error and fails on a data-valued hashtable if no key is provided.
+    // TEST 1.2: hashtable_set logs an error and fails on a data-valued hashtable if no key is provided.
     EXPECT_NOT ( hashtable_set ( &hashtable , 0 , &values[ 0 ] ) );
 
-    // TEST 3: hashtable_set logs an error and fails on a data-valued hashtable if no handle to a value is provided.
+    // TEST 1.3: hashtable_set logs an error and fails on a data-valued hashtable if no handle to a value is provided.
     EXPECT_NOT ( hashtable_set ( &hashtable , "key0" , 0 ) );
 
-    // TEST 4: hashtable_set succeeds on a data-valued hashtable given valid arguments.
+    // TEST 2: hashtable_set (on a data-valued hashtable).
+
+    // TEST 2.1: hashtable_set succeeds.
     EXPECT ( hashtable_set ( &hashtable , "key0" , &values[ 0 ] ) );
     EXPECT ( hashtable_set ( &hashtable , "key1" , &values[ 1 ] ) );
     EXPECT ( hashtable_set ( &hashtable , "key2" , &values[ 2 ] ) );
 
+    // TEST 3: hashtable_get (on a data-valued hashtable) handles invalid arguments (1).
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 5: hashtable_get logs an error and fails if no hashtable is provided.
+    // TEST 3.1: hashtable_get logs an error and fails if no hashtable is provided.
     EXPECT_NOT ( hashtable_get ( 0 , "key" , &get ) );
 
-    // TEST 6: hashtable_get logs an error and fails on a data-valued hashtable if no key is provided.
+    // TEST 3.2: hashtable_get logs an error and fails on a data-valued hashtable if no key is provided.
     EXPECT_NOT ( hashtable_get ( &hashtable , 0 , &get ) );
 
-    // TEST 7: hashtable_get logs an error and fails on a data-valued hashtable if no output buffer is provided.
+    // TEST 3.3: hashtable_get logs an error and fails on a data-valued hashtable if no output buffer is provided.
     EXPECT_NOT ( hashtable_get ( &hashtable , "key0" , 0 ) );
 
-    // TEST 8: hashtable_get succeeds on a data-valued hashtable given valid arguments.
+    // TEST 4: hashtable_get (on a data-valued hashtable).
+
+    // TEST 4.1: hashtable_get succeeds on a data-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key0" , &get ) );
 
-    // TEST 9: hashtable_get writes the correct data into the provided output buffer.
+    // TEST 4.2: hashtable_get writes the correct data into the provided output buffer.
     EXPECT_EQ ( values[ 0 ] , get );
 
-    // TEST 10: hashtable_get succeeds on a data-valued hashtable given valid arguments.
+    // TEST 4.3: hashtable_get succeeds on a data-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key1" , &get ) );
 
-    // TEST 11: hashtable_get writes the correct data into the provided output buffer.
+    // TEST 4.4: hashtable_get writes the correct data into the provided output buffer.
     EXPECT_EQ ( values[ 1 ] , get );
 
-    // TEST 12: hashtable_get succeeds on a data-valued hashtable given valid arguments.
+    // TEST 4.5: hashtable_get succeeds on a data-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key2" , &get ) );
 
-    // TEST 13: hashtable_get writes the correct data into the provided output buffer.
+    // TEST 4.6: hashtable_get writes the correct data into the provided output buffer.
     EXPECT_EQ ( values[ 2 ] , get );
 
     hashtable_destroy ( &hashtable );
 
-    // TEST 14: hashtable_set logs an error and fails if the provided data-valued hashtable is uninitialized.
+    // TEST 5: hashtable_set (on a data-valued hashtable) handles invalid arguments (2).
+
+    // TEST 5.1: hashtable_set logs an error and fails if the provided data-valued hashtable is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( hashtable_set ( &hashtable , "key" , &values[ 0 ] ) );
+
+    // TEST 6: hashtable_get (on a data-valued hashtable) handles invalid arguments (2).
     
-    // TEST 15: hashtable_get logs an error and fails if the provided data-valued hashtable is uninitialized.
+    // TEST 6.1: hashtable_get logs an error and fails if the provided data-valued hashtable is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( hashtable_get ( &hashtable , "key" , &get ) );
 
@@ -389,48 +401,56 @@ test_hashtable_set_and_get_pointer
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
+    // TEST 1: hashtable_set (on a pointer-valued hashtable) handles invalid arguments (1).
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 1: hashtable_set logs an error and fails if no hashtable is provided.
+    // TEST 1.1: hashtable_set logs an error and fails if no hashtable is provided.
     EXPECT_NOT ( hashtable_set ( 0 , "key" , &values[ 0 ] ) );
 
-    // TEST 2: hashtable_set logs an error and fails on a pointer-valued hashtable if no key is provided.
+    // TEST 1.2: hashtable_set logs an error and fails on a pointer-valued hashtable if no key is provided.
     EXPECT_NOT ( hashtable_set ( &hashtable , 0 , &values[ 0 ] ) );
 
-    // TEST 3: hashtable_set succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 2: hashtable_set (on a pointer-valued hashtable).
+
+    // TEST 2.1: hashtable_set succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_set ( &hashtable , "key0" , &values[ 0 ] ) );
     EXPECT ( hashtable_set ( &hashtable , "key1" , &values[ 1 ] ) );
     EXPECT ( hashtable_set ( &hashtable , "key2" , &values[ 2 ] ) );
 
+    // TEST 3: hashtable_get (on a pointer-valued hashtable) handles invalid arguments (1).
+
     LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 4: hashtable_get logs an error and fails if no hashtable is provided.
+    // TEST 3.1: hashtable_get logs an error and fails if no hashtable is provided.
     EXPECT_NOT ( hashtable_get ( 0 , "key" , &get ) );
 
-    // TEST 5: hashtable_get logs an error and fails on a pointer-valued hashtable if no key is provided.
+    // TEST 3.2: hashtable_get logs an error and fails on a pointer-valued hashtable if no key is provided.
     EXPECT_NOT ( hashtable_get ( &hashtable , 0 , &get ) );
 
-    // TEST 6: hashtable_get logs an error and fails on a pointer-valued hashtable if no output buffer is provided.
+    // TEST 3.3: hashtable_get logs an error and fails on a pointer-valued hashtable if no output buffer is provided.
     EXPECT_NOT ( hashtable_get ( &hashtable , "key0" , 0 ) );
 
-    // TEST 7: hashtable_get succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 4: hashtable_get (on a pointer-valued hashtable).
+
+    // TEST 4.1: hashtable_get succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key0" , &get ) );
 
-    // TEST 8: hashtable_get writes the correct pointer into the output buffer.
+    // TEST 4.2: hashtable_get writes the correct pointer into the output buffer.
     EXPECT_EQ ( &values[ 0 ] , get );
     EXPECT_EQ ( values[ 0 ] , *get );
 
-    // TEST 9: hashtable_get succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 4.3: hashtable_get succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key1" , &get ) );
 
-    // TEST 10: hashtable_get writes the correct pointer into the output buffer.
+    // TEST 4.4: hashtable_get writes the correct pointer into the output buffer.
     EXPECT_EQ ( &values[ 1 ] , get );
     EXPECT_EQ ( values[ 1 ] , *get );
 
-    // TEST 11: hashtable_get succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 4.5: hashtable_get succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key2" , &get ) );
 
-    // TEST 12: hashtable_get writes the correct pointer into the output buffer.
+    // TEST 4.6: hashtable_get writes the correct pointer into the output buffer.
     EXPECT_EQ ( &values[ 2 ] , get );
     EXPECT_EQ ( values[ 2 ] , *get );
 
@@ -439,34 +459,38 @@ test_hashtable_set_and_get_pointer
     values[ 1 ] = values[ 1 ] + 1;
     values[ 2 ] = values[ 2 ] + 1;
 
-    // TEST 13: hashtable_get succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 4.7: hashtable_get succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key0" , &get ) );
 
-    // TEST 14: hashtable_get writes the correct pointer into the output buffer.
+    // TEST 4.8: hashtable_get writes the correct pointer into the output buffer.
     EXPECT_EQ ( &values[ 0 ] , get );
     EXPECT_EQ ( values[ 0 ] , *get );
 
-    // TEST 15: hashtable_get succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 4.9: hashtable_get succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key1" , &get ) );
 
-    // TEST 16: hashtable_get writes the correct pointer into the output buffer.
+    // TEST 4.10: hashtable_get writes the correct pointer into the output buffer.
     EXPECT_EQ ( &values[ 1 ] , get );
     EXPECT_EQ ( values[ 1 ] , *get );
 
-    // TEST 17: hashtable_get succeeds on a pointer-valued hashtable given valid arguments.
+    // TEST 4.11: hashtable_get succeeds on a pointer-valued hashtable given a valid key.
     EXPECT ( hashtable_get ( &hashtable , "key2" , &get ) );
 
-    // TEST 18: hashtable_get writes the correct pointer into the output buffer.
+    // TEST 4.12: hashtable_get writes the correct pointer into the output buffer.
     EXPECT_EQ ( &values[ 2 ] , get );
     EXPECT_EQ ( values[ 2 ] , *get );
 
     hashtable_destroy ( &hashtable );
 
-    // TEST 19: hashtable_set logs an error and fails if the provided pointer-valued hashtable is uninitialized.
+    // TEST 5: hashtable_set (on a pointer-valued hashtable) handles invalid arguments (2).
+
+    // TEST 5.1: hashtable_set logs an error and fails if the provided pointer-valued hashtable is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( hashtable_set ( &hashtable , "key" , &values[ 0 ] ) );
+
+    // TEST 6: hashtable_get (on a pointer-valued hashtable) handles invalid arguments (2).
     
-    // TEST 20: hashtable_get logs an error and fails if the provided pointer-valued hashtable is uninitialized.
+    // TEST 6.1: hashtable_get logs an error and fails if the provided pointer-valued hashtable is uninitialized.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     EXPECT_NOT ( hashtable_get ( &hashtable , "key" , &get ) );
 
