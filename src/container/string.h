@@ -199,6 +199,8 @@ __string_clear
 
 /**
  * @brief Trims whitespace off front and back of a string. O(n). In-place.
+ *
+ * Does **not** handle strings which contain zero-bytes (i.e. binary strings).
  * 
  * @param string The resizable string to trim. Must be non-zero.
  * @return The resizable string with whitespace trimmed off the front and back.
