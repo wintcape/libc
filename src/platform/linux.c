@@ -650,7 +650,7 @@ platform_file_position_set
     // Update host platform file position.
     if ( lseek ( ( *file ).descriptor , position , SEEK_SET ) == -1 )
     {
-        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
+        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): lseek failed on file: %s"
                            , ( *file ).path
                            );
         return false;
