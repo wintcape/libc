@@ -97,7 +97,7 @@ __string_insert
     
     if ( index > old_length )
     {
-        LOGERROR ( "_string_insert called with out of bounds index: %i (index) > %i (string length)."
+        LOGERROR ( "__string_insert called with out of bounds index: %i (index) > %i (string length)."
                  , index , string_length ( string )
                  );
         return string;
@@ -133,7 +133,7 @@ __string_remove
 
     if ( index + count > old_length )
     {
-        LOGERROR ( "_string_remove called with illegal index or count: (index %i + count %i) %i > %i (string length)."
+        LOGERROR ( "__string_remove called with illegal index or count: (index %i + count %i) %i > %i (string length)."
                  , index , count , index + count , old_length
                  );
         return string;
