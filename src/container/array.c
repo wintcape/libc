@@ -75,7 +75,7 @@ _array_field_set
 ,   u64         value
 )
 {
-    u64* header = ( u64* ) array - ARRAY_FIELD_COUNT;
+    u64* header = ( ( u64* ) array ) - ARRAY_FIELD_COUNT;
     header[ field ] = value;
 }
 
