@@ -18,7 +18,7 @@ __string_create
 {
     char* string = array_create ( char , initial_capacity );
     _array_field_set ( string , ARRAY_FIELD_LENGTH , 1 );
-    return string;//            ^ terminator
+    return string;//                                 ^ terminator
 }
 
 char*
