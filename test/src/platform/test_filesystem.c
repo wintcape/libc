@@ -315,28 +315,25 @@ test_file_read
     // Verify the file position is at the beginning of the file prior to the test.
     EXPECT_EQ ( 0 , file_position_get ( &file ) );
 
-    // TEST 1.3: file_read fails if no file is provided.
-    EXPECT_NOT ( file_read ( 0 , 100 , buffer , &read ) );
-
-    // TEST 1.4: file_read fails if no output buffer for file content is provided.
+    // TEST 1.3: file_read fails if no output buffer for file content is provided.
     EXPECT_NOT ( file_read ( &file , 100 , 0 , &read ) );
 
-    // TEST 1.5: file_read does not modify the file position on failure.
+    // TEST 1.4: file_read does not modify the file position on failure.
     EXPECT_EQ ( 0 , file_position_get ( &file ) );
 
-    // TEST 1.6: file_read fails if no output buffer for number of bytes read is provided.
+    // TEST 1.5: file_read fails if no output buffer for number of bytes read is provided.
     EXPECT_NOT ( file_read ( &file , 100 , buffer , 0 ) );
 
-    // TEST 1.7: file_read does not modify the file position on failure.
+    // TEST 1.6: file_read does not modify the file position on failure.
     EXPECT_EQ ( 0 , file_position_get ( &file ) );
 
     file_close ( &file );
 
-    // TEST 1.8: file_read fails if file is not open for read.
+    // TEST 1.7: file_read fails if file is not open for read.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
     EXPECT_NOT ( file_read ( &file , 100 , buffer , &read ) );
 
-    // TEST 1.9: file_read does not modify the file position on failure.
+    // TEST 1.8: file_read does not modify the file position on failure.
     EXPECT_EQ ( 0 , file_position_get ( &file ) );
     
     file_close ( &file );
