@@ -43,7 +43,7 @@ __string_create
  * 
  * Use _string_copy to explicitly specify string length, or string_create_from
  * to compute the length of a null-terminated string ( O(n) ) before passing it
- * to _string_copy. If the string being copied is itself a resizable string
+ * to __string_copy. If the string being copied is itself a resizable string
  * (i.e. a string itself created via the string_create class of functions),
  * string_copy may be used to implicitly fetch the current length of the
  * resizable string ( O(1) ) before passing it to __string_copy.
