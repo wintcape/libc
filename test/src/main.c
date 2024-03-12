@@ -42,15 +42,22 @@ main
 ( void )
 {
     memory_startup ( TEST_MEMORY_REQUIREMENT );
-    state = memory_allocate ( sizeof ( state_t )
+
+    u64 state_memory_requirement = sizeof ( state_t );
+
+    // Query logger memory requirement.
+    u64 logger_memory_requirement;
+    logger_startup ( &logger_memory_requirement , 0 );
+    state_memory_requirement += logger_memory_requirement;
+
+    // Initialize program state.
+    state = memory_allocate ( state_memory_requirement
                             , MEMORY_TAG_APPLICATION
                             );
+    ( *state ).logger = ( void* )( ( ( u64 ) state ) + sizeof ( state_t ) );
+    ( *state ).logger_memory_requirement = logger_memory_requirement;
     
     // Initialize logger.
-    logger_startup ( &( *state ).logger_memory_requirement , 0 );
-    ( *state ).logger = memory_allocate ( ( *state ).logger_memory_requirement
-                                        , MEMORY_TAG_APPLICATION
-                                        );
     logger_startup ( &( *state ).logger_memory_requirement
                    , ( *state ).logger
                    );
@@ -67,17 +74,13 @@ main
     test_register_filesystem ();
 
     // Run tests.
-    LOGDEBUG ( "Running test suite. . ." );
+    LOGINFO ( "Running test suite. . ." );
     const bool fail = test_run_all ();
 
     // Shutdown logger.
     logger_shutdown ( ( *state ).logger );
-    memory_free ( ( *state ).logger
-                , ( *state ).logger_memory_requirement
-                , MEMORY_TAG_APPLICATION
-                );
 
-    memory_free ( state , sizeof ( state_t ) , MEMORY_TAG_APPLICATION );
+    memory_free ( state , state_memory_requirement , MEMORY_TAG_APPLICATION );
     memory_shutdown ();
 
     return fail;
