@@ -85,7 +85,7 @@ mkdir:
 .PHONY: clean
 clean:
 	@echo rm -rf $(CLEAN)
-	@rm -rf $(CLEAN) 2>NUL
+	@rm -rf $(CLEAN) 2>/dev/null
 
 .PHONY: run-test
 run-test:

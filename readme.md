@@ -107,7 +107,6 @@ make macos-test
 ```
 
 ## Known bugs
-- Every time I run the test program on Linux, a file called NUL gets written to the working directory. I have yet to figure out why this is. I have not been able to replicate on Windows. macOS platform layer is still untested.
 - Following `string_strip_ansi`, one extra formatting character still ends up at the end of each log message in log file: console.log (see also `logger_log`).
 
 ## To-do
@@ -122,6 +121,9 @@ make macos-test
 - Make general improvements to the API design; provide more options for choosing between use of API-provided data structures versus `void*` handles the user chooses how to allocate, etc.
 
 ## Changelog
+
+### 0.4.1
+- Fixed a long standing bug where every time I ran the test program on Linux, a file called NUL got written to the working directory. It was actually a bug in the Linux/macOS Makefiles, as I had copied the Windows ones but forgotten to change one of the lines of shell code.
 
 ### 0.4.0
 - Commented all the code in the `test/` library, so it is now easy to scan through which tests I do and do not already have. This helped me realize that I was missing some tests. I added a few and fixed a few minor bugs related to this.
