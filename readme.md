@@ -119,6 +119,9 @@ make macos-test
 
 ## Changelog
 
+### 0.4.3
+- Added lines to `platform/test_filesystem.c` to ensure `FILE_MODE_READ` is detected for `file_exists` on all the test input files.
+
 ### 0.4.2
 - Swapped the meaning of `%p` and `%P` format specifiers for `string_format`, simply because I thought the convention would be clearer.
 - Standalone `%f` format specifier behavior has changed; it now truncates the value to not show any decimal point or fractional part if it evaluates to 0.

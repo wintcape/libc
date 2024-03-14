@@ -54,6 +54,11 @@ test_file_exists
     EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_ACCESS ) );
     EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_ACCESS ) );
 
+    // TEST 1.3: file_exists succeeds, verifying user has read access on all input files that will be used for subsequent tests.
+    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE , FILE_MODE_READ ) );
+    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_EMPTY , FILE_MODE_READ ) );
+    EXPECT ( file_exists ( FILE_NAME_TEST_IN_FILE_BINARY , FILE_MODE_READ ) );
+
     // End test.
     ////////////////////////////////////////////////////////////////////////////
 

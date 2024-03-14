@@ -307,6 +307,7 @@ _string_format_validate_format_specifier
 
     const char* const read_ = read;
 
+    // Defaults.
     memory_clear ( ( *format_specifier ).modifiers
                  , sizeof ( bool ) * STRING_FORMAT_MODIFIER_COUNT
                  );
@@ -315,7 +316,7 @@ _string_format_validate_format_specifier
     ( *format_specifier ).padding.length = 0;
     ( *format_specifier ).sign.tag = STRING_FORMAT_SIGN_NONE;
     ( *format_specifier ).fix_precision.tag = false;
-    ( *format_specifier ).fix_precision.precision = 6; // Default.
+    ( *format_specifier ).fix_precision.precision = 6;
 
     switch ( *read )
     {
