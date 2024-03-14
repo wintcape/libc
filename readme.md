@@ -106,9 +106,6 @@ To test on macOS/OSX:
 make macos-test
 ```
 
-## Known bugs
-- Following `string_strip_ansi`, one extra formatting character still ends up at the end of each log message in log file: console.log (see also `logger_log`).
-
 ## To-do
 - Implement `string_f64`, removing dependency `<stdio.h>`.
 - Implement unbuffered file I/O for Windows platform layer; currently lets Windows handle alignment and buffering.
@@ -124,6 +121,8 @@ make macos-test
 
 ### 0.4.1
 - Fixed a long standing bug where every time I ran the test program on Linux, a file called NUL got written to the working directory. It was actually a bug in the Linux/macOS Makefiles, as I had copied the Windows ones but forgotten to change one of the lines of shell code.
+- Fixed a long standing bug where extra zero-bytes were getting written into the middle of the log file; it was because `logger_file_append` was passing the wrong message length to `file_write_line` (off by one byte!).
+- Added a clause to `__string_replace` to exit early for a particular edge case when both the string to replace and its replacement are empty. Should hopefully improve performance.
 
 ### 0.4.0
 - Commented all the code in the `test/` library, so it is now easy to scan through which tests I do and do not already have. This helped me realize that I was missing some tests. I added a few and fixed a few minor bugs related to this.

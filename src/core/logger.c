@@ -245,10 +245,7 @@ logger_file_append
     {
         return;
     }
-    if ( !file_write_line ( &( *state ).file
-                          , ( message_length + 1 ) * sizeof ( char )
-                          , message
-                          ))
+    if ( !file_write_line ( &( *state ).file , message_length , message ) )
     {
         PRINTERROR ( LOG_LEVEL_COLOR_ERROR
                      "logger_file_append: Error writing to log file '"LOG_FILEPATH"'."

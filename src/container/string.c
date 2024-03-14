@@ -72,11 +72,13 @@ __string_push
         string = _array_resize ( string , new_size );
     }
 
-    memory_copy ( string + string_length ( string ) * stride
+    memory_copy ( ( void* )( ( ( u64 ) string ) + string_length ( string ) * stride )
                 , src
                 , src_length * stride
                 );
-    memory_clear ( string + new_length , stride ); // Append terminator.
+    memory_clear ( ( void* )( ( ( u64 ) string ) + new_length * stride )
+                 , stride
+                 ); // Append terminator.
     _array_field_set ( string , ARRAY_FIELD_LENGTH , new_size );
 
     return string;
@@ -108,12 +110,17 @@ __string_insert
         string = _array_resize ( string , new_size );
     }
 
-    memory_move ( string + index + src_length
-                , string + index
+    memory_move ( ( void* )( ( ( u64 ) string ) + ( index + src_length ) * stride )
+                , ( void* )( ( ( u64 ) string ) + index * stride )
                 , ( old_length - index ) * stride
                 );
-    memory_copy ( string + index , src , src_length * stride );
-    memory_clear ( string + old_length + src_length , stride ); // Append terminator.
+    memory_copy ( ( void* )( ( ( u64 ) string ) + index * stride )
+                , src
+                , src_length * stride
+                );
+    memory_clear ( ( void* )( ( ( u64 ) string ) + ( old_length + src_length ) * stride )
+                 , stride
+                 ); // Append terminator.
     _array_field_set ( string , ARRAY_FIELD_LENGTH , new_size );
 
     return string;
@@ -139,8 +146,8 @@ __string_remove
         return string;
     }
 
-    memory_move ( string + index
-                , string + index + count
+    memory_move ( ( void* )( ( ( u64 ) string ) + index * stride )
+                , ( void* )( ( ( u64 ) string ) + ( index + count ) * stride )
                 , ( old_length - index - count ) * stride
                 );
     memory_clear ( string + ( new_size - 1 ) * stride , stride ); // Append terminator.
@@ -200,16 +207,22 @@ __string_replace
 ,   const u64   replace_length
 )
 {
-    // CASE: Substring to remove and substring to replace are equivalent.
+    // CASE: Substring to remove and replacement substring are equivalent.
     if ( string_equal ( remove , remove_length , replace , replace_length ) )
     {
         return string;
     }
 
     // CASE: Substring to remove is empty.
-    if ( !remove_length && replace_length )
+    if ( !remove_length )
     {
-        // Duplicate the substring to replace once for each character in the
+        // CASE: Replacement substring is also empty.
+        if ( !replace_length )
+        {
+            return string;
+        }
+        
+        // Duplicate the replacement substring once for each character in the
         // original string.
         const u64 count = string_length ( string );
         string_clear ( string );
@@ -219,7 +232,7 @@ __string_replace
         }
     }
 
-    // CASE: Substring to remove and substring to replace are the same length.
+    // CASE: Substring to remove and replacement substring are the same length.
     else if ( remove_length == replace_length )
     {
         u64 index = 0;
@@ -235,7 +248,7 @@ __string_replace
         }
     }
 
-    // CASE: Substring to remove and substring to replace differ in length.
+    // CASE: Substring to remove and replacement substring differ in length.
     else
     {
         u64 index = 0;
