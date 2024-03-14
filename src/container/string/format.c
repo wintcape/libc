@@ -130,6 +130,7 @@ void _string_format_validate_format_specifier_ignore ( state_t* state , const ch
 void _string_format_validate_format_specifier_raw ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_integer ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_floating_point ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
+void _string_format_validate_format_specifier_floating_point_show_fractional ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_floating_point_abbreviated ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_floating_point_fractional_only ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_specifier_address ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
@@ -160,6 +161,7 @@ u64 _string_format_parse_next_argument_ignore ( state_t* state, const string_for
 u64 _string_format_parse_next_argument_raw ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_integer ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_floating_point ( state_t* state , const string_format_specifier_t* format_specifier );
+u64 _string_format_parse_next_argument_floating_point_show_fractional ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_floating_point_abbreviated ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_floating_point_fractional_only ( state_t* state , const string_format_specifier_t* format_specifier );
 u64 _string_format_parse_next_argument_address ( state_t* state , const string_format_specifier_t* format_specifier );
@@ -341,6 +343,12 @@ _string_format_validate_format_specifier
             ( *format_specifier ).length = read - read_ + 1;
             return;
         }
+        case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_SHOW_FRACTIONAL:
+        {
+            _string_format_validate_format_specifier_floating_point_show_fractional ( state , &read , format_specifier );
+            ( *format_specifier ).length = read - read_ + 1;
+            return;
+        }
         case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_ABBREVIATED:
         {
             _string_format_validate_format_specifier_floating_point_abbreviated ( state , &read , format_specifier );
@@ -433,6 +441,12 @@ _string_format_validate_format_specifier
                 ( *format_specifier ).length = read - read_ + 1;
                 return;
             }
+            case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_SHOW_FRACTIONAL:
+        {
+            _string_format_validate_format_specifier_floating_point_show_fractional ( state , &read , format_specifier );
+            ( *format_specifier ).length = read - read_ + 1;
+            return;
+        }
             case STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_ABBREVIATED:
             {
                 _string_format_validate_format_specifier_floating_point_abbreviated ( state , &read , format_specifier );
@@ -515,6 +529,17 @@ _string_format_validate_format_specifier_floating_point
 )
 {
     ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_FLOATING_POINT;
+    *read += 1;
+}
+
+void
+_string_format_validate_format_specifier_floating_point_show_fractional
+(   state_t*                    state
+,   const char**                read
+,   string_format_specifier_t*  format_specifier
+)
+{
+    ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL;
     *read += 1;
 }
 
@@ -647,7 +672,7 @@ _string_format_validate_format_modifier_pad
         {
             break;
         }
-        length *= 10 + to_digit ( **read );
+        length = length * 10 + to_digit ( **read );
         *read += 1;
     }
     ( *format_specifier ).padding.length = length;
@@ -730,6 +755,7 @@ _string_format_parse_next_argument
         case STRING_FORMAT_SPECIFIER_CHARACTER:                      _string_format_parse_next_argument_character ( state , format_specifier )                      ;break;
         case STRING_FORMAT_SPECIFIER_INTEGER:                        _string_format_parse_next_argument_integer ( state , format_specifier )                        ;break;
         case STRING_FORMAT_SPECIFIER_FLOATING_POINT:                 _string_format_parse_next_argument_floating_point ( state , format_specifier )                 ;break;
+        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL: _string_format_parse_next_argument_floating_point_show_fractional ( state , format_specifier ) ;break;
         case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:     _string_format_parse_next_argument_floating_point_abbreviated ( state , format_specifier )     ;break;
         case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY: _string_format_parse_next_argument_floating_point_fractional_only ( state , format_specifier ) ;break;
         case STRING_FORMAT_SPECIFIER_ADDRESS:                        _string_format_parse_next_argument_address ( state , format_specifier )                        ;break;
@@ -800,6 +826,105 @@ _string_format_parse_next_argument_integer
 
 u64
 _string_format_parse_next_argument_floating_point
+(   state_t*                            state
+,   const string_format_specifier_t*    format_specifier
+)
+{
+    const u64 arg = *( ( *state ).next_arg );
+    if ( !arg )
+    {
+        return _string_format_parse_next_argument_string ( state
+                                                         , format_specifier
+                                                         );
+    }
+
+    char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
+    const char* format;
+    if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_NONE )
+    {
+        if ( ( *format_specifier ).fix_precision.tag )
+        {
+            switch ( ( *format_specifier ).fix_precision.precision )
+            {
+                case 0:  format = "%.0lf" ;break;
+                case 1:  format = "%.1lf" ;break;
+                case 2:  format = "%.2lf" ;break;
+                case 3:  format = "%.3lf" ;break;
+                case 4:  format = "%.4lf" ;break;
+                case 5:  format = "%.5lf" ;break;
+                case 6:  format = "%.6lf" ;break;
+                case 7:  format = "%.7lf" ;break;
+                case 8:  format = "%.8lf" ;break;
+                case 9:  format = "%.9lf" ;break;
+                default: format = "%.lf"  ;break;
+            }
+        }
+        else
+        {
+            format = "%lf";
+        }
+    }
+    else
+    {
+        if ( ( *format_specifier ).fix_precision.tag )
+        {
+            switch ( ( *format_specifier ).fix_precision.precision )
+            {
+                case 0:  format = "%+.0lf" ;break;
+                case 1:  format = "%+.1lf" ;break;
+                case 2:  format = "%+.2lf" ;break;
+                case 3:  format = "%+.3lf" ;break;
+                case 4:  format = "%+.4lf" ;break;
+                case 5:  format = "%+.5lf" ;break;
+                case 6:  format = "%+.6lf" ;break;
+                case 7:  format = "%+.7lf" ;break;
+                case 8:  format = "%+.8lf" ;break;
+                case 9:  format = "%+.9lf" ;break;
+                default: format = "%+.lf"  ;break;
+            }
+        }
+        else
+        {
+            format = "%+lf";
+        }
+    }
+
+    f64 value = *( ( f64* ) arg );
+    u64 integer = ( u64 ) value;
+    f64 fractional = value - integer;
+    i32 snprintf_result = snprintf ( string
+                                   , STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH
+                                   , format
+                                   , value
+                                   );
+    if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_HIDE )
+    {
+        snprintf_result -= 1;
+        memory_move ( string , string + 1 , snprintf_result );
+        string[ snprintf_result ] = 0; // Append terminator.
+    }
+    if ( !fractional )
+    {
+        u64 index;
+        if ( string_contains ( string , snprintf_result
+                            , string_char ( '.' ) , 1
+                            , false
+                            , &index
+                            ))
+        {
+            snprintf_result = index;
+            string[ snprintf_result ] = 0;
+        }
+    }
+    return _string_format_push ( &( *state ).string
+                               , string
+                               , snprintf_result
+                               , format_specifier
+                               );
+}
+
+u64
+_string_format_parse_next_argument_floating_point_show_fractional
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
 )

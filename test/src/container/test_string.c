@@ -1222,8 +1222,8 @@ test_string_format
     const char* format_specifier_token_string = "%";
     const char* unterminated_format_specifier_string = "%;";
     const char* illegal_fix_precision_string = "`%.10f`";
-    const char* illegal_padding_string1 = "`%p .3f`";
-    const char* illegal_padding_string2 = "`%pr 0.3f`";
+    const char* illegal_padding_string1 = "`%P .3f`";
+    const char* illegal_padding_string2 = "`%Pr 0.3f`";
     const char* out1 = "23428476892";
     const char* out2 = "-23428476892";
     const char* out3 = "-100098.789357300";
@@ -1240,10 +1240,12 @@ test_string_format
     const char* out13 = "0x0";
     const char* out14 = "%.2.8f";
     const char* out15 = "%+-iSsfa\\n\nm``lpmr2kl\r\t";
-    const char* out16 = "%plr0i";
-    const char* out17 = "%pl 190234.6+pr190234i";
+    const char* out16 = "%Plr0i";
+    const char* out17 = "%Pl 190234.6+Pr190234i";
     const char* out18 = "789357300";
     const char* out19 = "-1.000988E+05";
+    const char* out20 = "qqqqqqqqqqqqqqqqqqqqqqqHello world!";
+    const char* out21 = "Hello world!.......................";
     char* string;
 
     // Verify there was no memory error prior to the test.
@@ -1444,43 +1446,57 @@ test_string_format
     string_destroy ( string );
 
     // TEST 26: Fixed-column-width format modifier, width == 80, pad left with '0'.
-    string = string_format ( "`%pl080.3f`" , &float_in1 );
+    string = string_format ( "`%Pl080.3f`" , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( out8 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out8 , string_length ( string ) ) );
     string_destroy ( string );
 
     // TEST 27: Fixed-column-width format modifier, width == 80, pad right with '0'.
-    string = string_format ( "`%pr080.3f`" , &float_in1 );
+    string = string_format ( "`%Pr080.3f`" , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( out9 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out9 , string_length ( string ) ) );
     string_destroy ( string );
     
     // TEST 28: Fixed-column-width format modifier, width == 14, pad left with newline.
-    string = string_format ( "`%pl\n14.3f`" , &float_in1 );
+    string = string_format ( "`%Pl\n14.3f`" , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( out10 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out10 , string_length ( string ) ) );
     string_destroy ( string );
 
     // TEST 29: Min-width format modifier, width >= 5, pad left with tab.
-    string = string_format ( "%Pl\t5S" , string_in );
+    string = string_format ( "%pl\t5S" , string_in );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
     string_destroy ( string );
 
+    // TEST 30: Min-width format modifier, width >= 35, pad left with 'q'.
+    string = string_format ( "%plq35S" , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( out20 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out20 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST 31: Min-width format modifier, width >= 35, pad right with '.'.
+    string = string_format ( "%pr.35S" , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( out21 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out21 , string_length ( string ) ) );
+    string_destroy ( string );
+
     LOGWARN ( "The following warnings are intentionally triggered by a test:" );
 
-    // TEST 30: If the format string contains an unterminated format specifier, string_format logs a warning and ignores it.
+    // TEST 32: If the format string contains an unterminated format specifier, string_format logs a warning and ignores it.
     string = string_format ( unterminated_format_specifier_string , 25 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( unterminated_format_specifier_string ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , unterminated_format_specifier_string , string_length ( string ) ) );
     string_destroy ( string );
 
-    // TEST 31: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
+    // TEST 33: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
     // NOTE: Fix-precision floating point format modifier only supports a single digit for precision selection, i.e. 0-9).
     string = string_format ( illegal_fix_precision_string , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
@@ -1488,7 +1504,7 @@ test_string_format
     EXPECT ( memory_equal ( string , illegal_fix_precision_string , string_length ( string ) ) );
     string_destroy ( string );
     
-    // TEST 32: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
+    // TEST 34: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
     // NOTE: Fix-width format modifier only supports a single character for the padding character, followed by any number of digits for the width.
     string = string_format ( illegal_padding_string1 , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
@@ -1496,7 +1512,7 @@ test_string_format
     EXPECT ( memory_equal ( string , illegal_padding_string1 , string_length ( string ) ) );
     string_destroy ( string );
     
-    // TEST 33: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
+    // TEST 35: If the format string contains an illegal format specifier, string_format logs a warning and ignores it.
     // NOTE: Fix-width format modifier only supports a single character for the padding character, followed by any number of digits for the width.
     string = string_format ( illegal_padding_string2 , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
@@ -1504,7 +1520,7 @@ test_string_format
     EXPECT ( memory_equal ( string , illegal_padding_string2 , string_length ( string ) ) );
     string_destroy ( string );
 
-    // TEST 34: Show-sign and hide-sign format modifiers do not affect inapplicable types.
+    // TEST 36: Show-sign and hide-sign format modifiers do not affect inapplicable types.
     string = string_format ( "%+s" , string_in );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( string_in ) , string_length ( string ) );
@@ -1516,14 +1532,14 @@ test_string_format
     EXPECT ( memory_equal ( string , string_in , string_length ( string ) ) );
     string_destroy ( string );
     
-    // TEST 35: Fix-precision format modifier does not affect inapplicable types.
+    // TEST 37: Fix-precision format modifier does not affect inapplicable types.
     string = string_format ( "%-.7@ljldkb]l-045[pwrsg439p80tu[]" , address_in );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( out11 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out11 , string_length ( string ) ) );
     string_destroy ( string );
     
-    // TEST 36: A format modifier which overwrites a previous format modifier of the same type on the same format specifier will be considered invalid.
+    // TEST 38: A format modifier which overwrites a previous format modifier of the same type on the same format specifier will be considered invalid.
     string = string_format ( out14 , &float_in1 );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( out14 ) , string_length ( string ) );
@@ -1548,7 +1564,7 @@ test_string_format
     EXPECT ( memory_equal ( string , out17 , string_length ( string ) ) );
     string_destroy ( string );
 
-    // TEST 37: string_format can handle null pointers for the following format specifiers: %s, %S, %f, %e, %d.
+    // TEST 39: string_format can handle null pointers for the following format specifiers: %s, %S, %f, %e, %d.
     string = string_format ( "%s" , 0 );
     EXPECT_NEQ ( 0 , string );
     string_destroy ( string );

@@ -119,6 +119,12 @@ make macos-test
 
 ## Changelog
 
+### 0.4.2
+- Swapped the meaning of `%p` and `%P` format specifiers for `string_format`, simply because I thought the convention would be clearer.
+- Standalone `%f` format specifier behavior has changed; it now truncates the value to not show any decimal point or fractional part if it evaluates to 0.
+- New `%F` format specifier preserves the old behavior of `%f` (always shows decimal point and fractional part)
+- Fixed a bug with `string_format` padding format specifier where the incorrect number of padding characters would be computed from the characters of the formatting string due to an order-of-arithmetic error.
+
 ### 0.4.1
 - Fixed a long standing bug where every time I ran the test program on Linux, a file called NUL got written to the working directory. It was actually a bug in the Linux/macOS Makefiles, as I had copied the Windows ones but forgotten to change one of the lines of shell code.
 - Fixed a long standing bug where extra zero-bytes were getting written into the middle of the log file; it was because `logger_file_append` was passing the wrong message length to `file_write_line` (off by one byte!).

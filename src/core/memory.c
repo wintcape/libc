@@ -358,7 +358,7 @@ memory_stat
         unit = string_bytesize ( ( *state ).stat.tagged_allocations[ i ]
                                , &amount
                                );
-        lines[ i ] = string_format ( "\t  %pr "MEMORY_TAG_MAX_STRING_LENGTH_STRING"s: %.2f %s\n"
+        lines[ i ] = string_format ( "\t  %Pr "MEMORY_TAG_MAX_STRING_LENGTH_STRING"s: %.2f %s\n"
                                    , memory_tags[ i ] , &amount , unit
                                    );
         string_push ( string
@@ -372,8 +372,8 @@ memory_stat
                            , &amount
                            );
     lines[ i ] = string_format ( "\t  ------------------------------\n"
-                                 "\t  TOTAL             : %.2f %s\n"
-                               , &amount , unit
+                                 "\t  %Pr "MEMORY_TAG_MAX_STRING_LENGTH_STRING"s: %.2f %s\n"
+                               , &"TOTAL" , &amount , unit
                                );
     string_push ( string
                 , lines[ i ]
@@ -384,8 +384,8 @@ memory_stat
     unit = string_bytesize ( ( *state ).capacity
                            , &amount
                            );
-    lines[ i ] = string_format ( "\t                      (%.2f %s reserved)"
-                               , &amount , unit
+    lines[ i ] = string_format ( "\t  %Pr "MEMORY_TAG_MAX_STRING_LENGTH_STRING"s  (%.2f %s reserved)"
+                               , &"" , &amount , unit
                                );
     string_push ( string
                 , lines[ i ]

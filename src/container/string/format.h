@@ -15,6 +15,7 @@ typedef enum
 ,   STRING_FORMAT_SPECIFIER_RAW
 ,   STRING_FORMAT_SPECIFIER_INTEGER
 ,   STRING_FORMAT_SPECIFIER_FLOATING_POINT
+,   STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL
 ,   STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED
 ,   STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY
 ,   STRING_FORMAT_SPECIFIER_ADDRESS
@@ -48,6 +49,7 @@ STRING_FORMAT_MODIFIER;
 #define STRING_FORMAT_SPECIFIER_TOKEN_RAW                            'u' /** @brief Format specifier: raw. */
 #define STRING_FORMAT_SPECIFIER_TOKEN_INTEGER                        'i' /** @brief Format specifier: integer. */
 #define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT                 'f' /** @brief Format specifier: floating point. */
+#define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_SHOW_FRACTIONAL 'F' /** @brief Format specifier: floating point (always show fractional). */
 #define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_ABBREVIATED     'e' /** @brief Format specifier: floating point (abbreviated notation). */
 #define STRING_FORMAT_SPECIFIER_TOKEN_FLOATING_POINT_FRACTIONAL_ONLY 'd' /** @brief Format specifier: floating point (fractional only). */
 #define STRING_FORMAT_SPECIFIER_TOKEN_ADDRESS                        '@' /** @brief Format specifier: address. */
@@ -55,8 +57,8 @@ STRING_FORMAT_MODIFIER;
 #define STRING_FORMAT_SPECIFIER_TOKEN_STRING                         's' /** @brief Format specifier: string. */
 #define STRING_FORMAT_SPECIFIER_TOKEN_RESIZABLE_STRING               'S' /** @brief Format specifier: resizable string. */
                                                                      
-#define STRING_FORMAT_MODIFIER_TOKEN_PAD                             'p' /** @brief Format modifier: pad. */
-#define STRING_FORMAT_MODIFIER_TOKEN_PAD_MINIMUM                     'P' /** @brief Format modifier: pad (minimum width). */
+#define STRING_FORMAT_MODIFIER_TOKEN_PAD                             'P' /** @brief Format modifier: pad. */
+#define STRING_FORMAT_MODIFIER_TOKEN_PAD_MINIMUM                     'p' /** @brief Format modifier: pad (minimum width). */
 #define STRING_FORMAT_MODIFIER_TOKEN_LEFT                            'l' /** @brief Format modifier: left. */
 #define STRING_FORMAT_MODIFIER_TOKEN_RIGHT                           'r' /** @brief Format modifier: right. */
 #define STRING_FORMAT_MODIFIER_TOKEN_SHOW_SIGN                       '+' /** @brief Format modifier: show sign. */
@@ -75,9 +77,13 @@ STRING_FORMAT_MODIFIER;
  * %% : Ignore (i.e. '%' character).
  * %u : Unsigned.
  * %i : Signed integer.
- * %f : Floating point number. The corresponding argument must be the address
+ * %F : Floating point number. The corresponding argument must be the address
  *      of an f64. (For additional information about this limitation, see
  *      common/args.h).
+ * %f : Floating point number. The corresponding argument must be the address
+ *      of an f64. (For additional information about this limitation, see
+ *      common/args.h). If the value stored at the address is a whole number,
+ *      no decimal point or fractional part will be printed.
  * %e : Floating point number (short-notation). The corresponding argument
  *      must be the address of an f64. (For additional information about this
  *      limitation, see common/args.h).
@@ -97,25 +103,25 @@ STRING_FORMAT_MODIFIER;
  * These may each be used once preceding a format specifier. They only apply
  * to arguments of a sensible type for their purpose.
  * 
- * - pl<character><number> : Fix column width to <number>. If needed, pad with
+ * - Pl<character><number> : Fix column width to <number>. If needed, pad with
  *                           <character> to the left.
  *                           Works with any format specifier.
- * - pr<character><number> : Fix column width to <number>. If needed, pad with
+ * - Pr<character><number> : Fix column width to <number>. If needed, pad with
  *                           <character> to the right.
  *                           Works with any format specifier.
- * - Pl<character><number> : Set minimum column width to <number>. If needed,
+ * - pl<character><number> : Set minimum column width to <number>. If needed,
  *                           pad with <character> to the left.
  *                           Works with any format specifier.
- * - Pr<character><number> : Set minimum column width to <number>. If needed,
+ * - pr<character><number> : Set minimum column width to <number>. If needed,
  *                           pad with <character> to the right.
  * - + : Always include sign. Default behavior is to include the sign only for
  *       a negative number.
- *       Works only with signed numeric format specifiers: %f, %e, %i.
+ *       Works only with signed numeric format specifiers: %f, %F, %e, %i.
  * - - : Never include sign. Default behavior is to include the sign only for
  *       a negative number.
- *       Works only with signed numeric format specifiers: %f, %e, %i.
+ *       Works only with signed numeric format specifiers: %f, %F, %e, %i.
  * - .<number> : Fix fractional precision to <number> decimal places.
- *               Works only with floating point format specifiers: %f, %e, %d.
+ *               Works only with floating point format specifiers: %f, %F, %e, %d.
  *
  * @param format Formatting string.
  * @param args Variadic argument list (see common/args.h).
