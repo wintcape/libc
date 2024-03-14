@@ -211,7 +211,7 @@ hashtable_fill
         return false;
     }
 
-    for ( u64 i = 0; i <  ( *hashtable ).capacity; ++i )
+    for ( u64 i = 0; i < ( *hashtable ).capacity; ++i )
     {
         memory_copy ( ( *hashtable ).memory + ( ( *hashtable ).stride * i )
                     , value

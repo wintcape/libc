@@ -638,7 +638,7 @@ platform_file_position_set
                            , FILE_BEGIN
                            ))
     {
-        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointer failed on file: %s"
+        platform_log_error ( "platform_file_position_set ("PLATFORM_STRING"): SetFilePointerEx failed on file: %s"
                            , ( *file ).path
                            );
         return false;

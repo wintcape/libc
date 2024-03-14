@@ -121,6 +121,7 @@ make macos-test
 
 ### 0.4.3
 - Added lines to `platform/test_filesystem.c` to ensure `FILE_MODE_READ` is detected for `file_exists` on all the test input files.
+- Fixed some typos in platform-specific error messages.
 
 ### 0.4.2
 - Swapped the meaning of `%p` and `%P` format specifiers for `string_format`, simply because I thought the convention would be clearer.
