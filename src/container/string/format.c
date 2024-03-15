@@ -1274,7 +1274,7 @@ _string_format_parse_argument_character
 ,   const char                          arg
 )
 {
-    if ( !newline ( arg ) && ( arg < 32 || arg > 126 ) )
+    if ( !whitespace ( arg ) && ( arg < 32 || arg > 126 ) )
     {
         return 0;
     }
