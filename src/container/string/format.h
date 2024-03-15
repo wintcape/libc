@@ -35,6 +35,8 @@ typedef enum
 ,   STRING_FORMAT_MODIFIER_SHOW_SIGN
 ,   STRING_FORMAT_MODIFIER_HIDE_SIGN
 ,   STRING_FORMAT_MODIFIER_FIX_PRECISION
+,   STRING_FORMAT_MODIFIER_ARRAY
+,   STRING_FORMAT_MODIFIER_QUEUE
 
 ,   STRING_FORMAT_MODIFIER_COUNT
 }
@@ -64,6 +66,8 @@ STRING_FORMAT_MODIFIER;
 #define STRING_FORMAT_MODIFIER_TOKEN_SHOW_SIGN                       '+' /** @brief Format modifier: show sign. */
 #define STRING_FORMAT_MODIFIER_TOKEN_HIDE_SIGN                       '-' /** @brief Format modifier: hide sign. */
 #define STRING_FORMAT_MODIFIER_TOKEN_FIX_PRECISION                   '.' /** @brief Format modifier: fix precision. */
+#define STRING_FORMAT_MODIFIER_TOKEN_ARRAY                           'a' /** @brief Format modifier: array. */
+#define STRING_FORMAT_MODIFIER_TOKEN_QUEUE                           'q' /** @brief Format modifier: queue. */
 
 /**
  * @brief String format function.
@@ -96,7 +100,7 @@ STRING_FORMAT_MODIFIER;
  *      Length is computed at runtime via O(n) _string_length.
  * %S : Resizable string of characters.
  *      This includes any string created with the __string_create class of
- *      functions; their length is fetched at runtime via O(1) string_length.
+ *      functions. Length is fetched at runtime via O(1) string_length.
  *      
  * FORMAT MODIFIERS :
  * 
@@ -121,7 +125,16 @@ STRING_FORMAT_MODIFIER;
  *       a negative number.
  *       Works only with signed numeric format specifiers: %f, %F, %e, %i.
  * - .<number> : Fix fractional precision to <number> decimal places.
- *               Works only with floating point format specifiers: %f, %F, %e, %d.
+ *               Works only with floating point format specifiers: %f, %F, %e,
+ *                                                                 %d.
+ * - a : Resizable array. The argument must be an array created with the
+ *       _array_create class of functions.
+ *       Works with any format specifier; the format specifier specifies the
+ *       print method for each array element.
+ * - q : Queue. The argument must be a queue initialized with the queue_create
+ *       function.
+ *       Works with any format specifier; the format specifier specifies the
+ *       print method for each queue element.
  *
  * @param format Formatting string.
  * @param args Variadic argument list (see common/args.h).

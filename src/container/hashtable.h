@@ -69,7 +69,7 @@ hashtable_destroy
  * @brief Sets a hashtable value. O(1).
  * 
  * @param hashtable The hashtable to mutate.
- * @param key The key whose value will be set.
+ * @param key The key whose value will be set. Must be a null-terminated string.
  * @param value Handle to the data to set as the key's value. If hashtable is
  * data-valued, this must be set to the address of the data to copy in; if
  * hashtable is pointer-valued, 0 may be passed to set the value of the key to
@@ -87,7 +87,8 @@ hashtable_set
  * @brief Queries a hashtable value. O(1).
  * 
  * @param hashtable The hashtable to query.
- * @param key The key whose value will be read.
+ * @param key The key whose value will be read. Must be a null-terminated
+ * string.
  * @param value Output buffer for the value.
  * @return true on success; false otherwise.
  */

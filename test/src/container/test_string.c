@@ -1219,6 +1219,18 @@ test_string_format
     const char* const_string_in = "Hello world!";
     char* string_in = string_create_from ( const_string_in );
     char* really_long_string_in = _string_create ( 1000 * STACK_STRING_MAX_SIZE );
+    f32 f32_array_in[ 16 ] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+    i8 i8_array_in[ 16 ] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+    f32* array_in1 = array_create_from ( f32 , f32_array_in , 16 );
+    i8* array_in2 = array_create_from ( i8 , i8_array_in , 16 );
+    const char* string_queue_in1 = "string_queue_in1";
+    const char* string_queue_in2 = "string_queue_in2";
+    const char* string_queue_in3 = "string_queue_in3";
+    queue_t queue_in;
+    EXPECT ( queue_create ( sizeof ( const char* ) , &queue_in ) );
+    EXPECT ( queue_push ( &queue_in , &string_queue_in1 ) );
+    EXPECT ( queue_push ( &queue_in , &string_queue_in2 ) );
+    EXPECT ( queue_push ( &queue_in , &string_queue_in3 ) );
     const char* format_specifier_token_string = "%";
     const char* unterminated_format_specifier_string = "%;";
     const char* illegal_fix_precision_string = "`%.10f`";
@@ -1246,6 +1258,13 @@ test_string_format
     const char* out19 = "-1.000988E+05";
     const char* out20 = "qqqqqqqqqqqqqqqqqqqqqqqHello world!";
     const char* out21 = "Hello world!.......................";
+    const char* out22 = "{ `-8.00`, `-7.00`, `-6.00`, `-5.00`, `-4.00`, `-3.00`, `-2.00`, `-1.00`, `0.00`, `1.00`, `2.00`, `3.00`, `4.00`, `5.00`, `6.00`, `7.00` }";
+    const char* out23 = "{ `-8`, `-7`, `-6`, `-5`, `-4`, `-3`, `-2`, `-1`, ` 0`, ` 1`, ` 2`, ` 3`, ` 4`, ` 5`, ` 6`, ` 7` }";
+    const char* out24 = "{ `string_queue_in1`, `string_queue_in2`, `string_queue_in3` }";
+    const char* out25 = "{ `H`, `e`, `l`, `l`, `o`, ` `, `w`, `o`, `r`, `l`, `d`, `!`, `` }";
+    const char* illegal_container_string1 = "%.2aaF";
+    const char* illegal_container_string2 = "%.2qaF";
+    const char* illegal_container_string3 = "%.2aqF";
     char* string;
 
     // Verify there was no memory error prior to the test.
@@ -1563,8 +1582,26 @@ test_string_format
     EXPECT_EQ ( _string_length ( out17 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out17 , string_length ( string ) ) );
     string_destroy ( string );
+    // ( x5 )
+    string = string_format ( illegal_container_string1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( illegal_container_string1 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_container_string1 , string_length ( string ) ) );
+    string_destroy ( string );
+    // ( x6 )
+    string = string_format ( illegal_container_string2 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( illegal_container_string2 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_container_string2 , string_length ( string ) ) );
+    string_destroy ( string );
+    // ( x7 )
+    string = string_format ( illegal_container_string3 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( illegal_container_string3 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , illegal_container_string3 , string_length ( string ) ) );
+    string_destroy ( string );
 
-    // TEST 39: string_format can handle null pointers for the following format specifiers: %s, %S, %f, %e, %d.
+    // TEST 39: string_format can handle null pointers for the following format specifiers: %s, %S, %f, %F, %e, %d.
     string = string_format ( "%s" , 0 );
     EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
@@ -1574,6 +1611,9 @@ test_string_format
     string = string_format ( "%f" , 0 );
     EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
+    string = string_format ( "%F" , 0 );
+    EXPECT_NEQ ( 0 , string );
+    string_destroy ( string );
     string = string_format ( "%e" , 0 );
     EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
@@ -1581,11 +1621,42 @@ test_string_format
     EXPECT_NEQ ( 0 , string );
     string_destroy ( string );
 
+    // TEST 40: Floating point format specifier, with fix-precision and array format modifiers.
+    string = string_format ( "%.2aF" , array_in1 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( out22 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out22 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST 41: Integer format specifier, with minimum-column-width and array format modifiers.
+    string = string_format ( "%apl 2i" , array_in2 );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( out23 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out23 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST 42: String format specifier, with queue format modifier.
+    string = string_format ( "%qs" , &queue_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( out24 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out24 , string_length ( string ) ) );
+    string_destroy ( string );
+
+    // TEST 43: Character format specifier, with array format modifier.
+    string = string_format ( "%ac" , string_in );
+    EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
+    EXPECT_EQ ( _string_length ( out25 ) , string_length ( string ) );
+    EXPECT ( memory_equal ( string , out25 , string_length ( string ) ) );
+    string_destroy ( string );
+
     // End test.
     ////////////////////////////////////////////////////////////////////////////
 
     string_destroy ( string_in );
     string_destroy ( really_long_string_in );
+    array_destroy ( array_in1 );
+    array_destroy ( array_in2 );
+    queue_destroy ( &queue_in );
 
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );

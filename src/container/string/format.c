@@ -7,6 +7,9 @@
 #include "container/string/format.h"
 #include "container/string.h"
 
+#include "container/array.h"
+#include "container/queue.h"
+
 #include "core/assert.h"
 #include "core/logger.h"
 #include "core/memory.h"
@@ -60,6 +63,22 @@ typedef struct
 }
 string_format_fix_precision_t;
 
+/** @brief Type and instance definitions for a string data structure tag. */
+typedef enum
+{
+    STRING_FORMAT_CONTAINER_NONE
+,   STRING_FORMAT_CONTAINER_ARRAY
+,   STRING_FORMAT_CONTAINER_QUEUE
+}
+STRING_FORMAT_CONTAINER;
+
+/** @brief Type definition for a container to hold string data structure configuration info. */
+typedef struct
+{
+    STRING_FORMAT_CONTAINER tag;
+}
+string_format_container_t;
+
 /** @brief Type definition for a container to hold format specifier info. */
 typedef struct
 {
@@ -70,6 +89,7 @@ typedef struct
     string_format_padding_t         padding;
     string_format_sign_t            sign;
     string_format_fix_precision_t   fix_precision;
+    string_format_container_t       container;
 }
 string_format_specifier_t;
 
@@ -140,6 +160,8 @@ void _string_format_validate_format_specifier_resizable_string ( state_t* state 
 void _string_format_validate_format_modifier_pad ( state_t* state , const char** read , const bool fixed , string_format_specifier_t* format_specifier );
 void _string_format_validate_format_modifier_sign ( state_t* state , const char** read , STRING_FORMAT_SIGN sign, string_format_specifier_t* format_specifier );
 void _string_format_validate_format_modifier_fix_precision ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
+void _string_format_validate_format_modifier_array ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
+void _string_format_validate_format_modifier_queue ( state_t* state , const char** read , string_format_specifier_t* format_specifier );
 
 /**
  * @brief Parses the next argument according to the current format specifier and
@@ -157,17 +179,19 @@ _string_format_parse_next_argument
 
 // Implementation of _string_format_parse_next_argument
 // ( see _string_format_parse_next_argument ).
-u64 _string_format_parse_next_argument_ignore ( state_t* state, const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_raw ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_integer ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_floating_point ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_floating_point_show_fractional ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_floating_point_abbreviated ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_floating_point_fractional_only ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_address ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_character ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_string ( state_t* state , const string_format_specifier_t* format_specifier );
-u64 _string_format_parse_next_argument_resizable_string ( state_t* state , const string_format_specifier_t* format_specifier );
+u64 _string_format_parse_argument_ignore ( state_t* state , const string_format_specifier_t* format_specifier , const arg_t arg );
+u64 _string_format_parse_argument_raw ( state_t* state , const string_format_specifier_t* format_specifier , const u64 arg );
+u64 _string_format_parse_argument_integer ( state_t* state , const string_format_specifier_t* format_specifier , const i64 arg );
+u64 _string_format_parse_argument_floating_point ( state_t* state , const string_format_specifier_t* format_specifier , const f64* arg );
+u64 _string_format_parse_argument_floating_point_show_fractional ( state_t* state , const string_format_specifier_t* format_specifier , const f64* arg );
+u64 _string_format_parse_argument_floating_point_abbreviated ( state_t* state , const string_format_specifier_t* format_specifier , const f64* arg );
+u64 _string_format_parse_argument_floating_point_fractional_only ( state_t* state , const string_format_specifier_t* format_specifier , const f64* arg );
+u64 _string_format_parse_argument_address ( state_t* state , const string_format_specifier_t* format_specifier , const void* arg );
+u64 _string_format_parse_argument_character ( state_t* state , const string_format_specifier_t* format_specifier , const char arg );
+u64 _string_format_parse_argument_string ( state_t* state , const string_format_specifier_t* format_specifier , const char* arg );
+u64 _string_format_parse_argument_resizable_string ( state_t* state , const string_format_specifier_t* format_specifier , const char* arg );
+u64 _string_format_parse_argument_array ( state_t* state , const string_format_specifier_t* format_specifier , const void* array );
+u64 _string_format_parse_argument_queue ( state_t* state , const string_format_specifier_t* format_specifier , const queue_t* arg );
 
 /**
  * @brief Wrapper for string_push that respects the left- and right- 'padding'
@@ -317,6 +341,7 @@ _string_format_validate_format_specifier
     ( *format_specifier ).sign.tag = STRING_FORMAT_SIGN_NONE;
     ( *format_specifier ).fix_precision.tag = false;
     ( *format_specifier ).fix_precision.precision = 6;
+    ( *format_specifier ).container.tag = STRING_FORMAT_CONTAINER_NONE;
 
     switch ( *read )
     {
@@ -415,6 +440,16 @@ _string_format_validate_format_specifier
             case STRING_FORMAT_MODIFIER_TOKEN_FIX_PRECISION:
             {
                 _string_format_validate_format_modifier_fix_precision ( state , &read , format_specifier );
+                break;
+            }
+            case STRING_FORMAT_MODIFIER_TOKEN_ARRAY:
+            {
+                _string_format_validate_format_modifier_array ( state , &read , format_specifier );
+                break;
+            }
+            case STRING_FORMAT_MODIFIER_TOKEN_QUEUE:
+            {
+                _string_format_validate_format_modifier_queue ( state , &read , format_specifier );
                 break;
             }
 
@@ -745,36 +780,87 @@ _string_format_validate_format_modifier_fix_precision
 }
 
 void
+_string_format_validate_format_modifier_array
+(   state_t*                    state
+,   const char**                read
+,   string_format_specifier_t*  format_specifier
+)
+{
+    if (   ( *format_specifier ).modifiers[ STRING_FORMAT_MODIFIER_ARRAY ]
+        || ( *format_specifier ).modifiers[ STRING_FORMAT_MODIFIER_QUEUE ]
+       )
+    {
+        ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_INVALID;
+        return;
+    }
+    ( *format_specifier ).container.tag = STRING_FORMAT_CONTAINER_ARRAY;
+    ( *format_specifier ).modifiers[ STRING_FORMAT_MODIFIER_ARRAY ] = true;
+    *read += 1;
+}
+
+void
+_string_format_validate_format_modifier_queue
+(   state_t*                    state
+,   const char**                read
+,   string_format_specifier_t*  format_specifier
+)
+{
+    if (   ( *format_specifier ).modifiers[ STRING_FORMAT_MODIFIER_ARRAY ]
+        || ( *format_specifier ).modifiers[ STRING_FORMAT_MODIFIER_QUEUE ]
+       )
+    {
+        ( *format_specifier ).tag = STRING_FORMAT_SPECIFIER_INVALID;
+        return;
+    }
+    ( *format_specifier ).container.tag = STRING_FORMAT_CONTAINER_QUEUE;
+    ( *format_specifier ).modifiers[ STRING_FORMAT_MODIFIER_QUEUE ] = true;
+    *read += 1;
+}
+
+void
 _string_format_parse_next_argument
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
 )
 {
-    switch ( ( *format_specifier ).tag )
+    const arg_t arg = *( ( *state ).next_arg );
+    if ( ( *format_specifier ).container.tag != STRING_FORMAT_CONTAINER_NONE )
     {
-        case STRING_FORMAT_SPECIFIER_RAW:                            _string_format_parse_next_argument_raw ( state , format_specifier )                            ;break;
-        case STRING_FORMAT_SPECIFIER_CHARACTER:                      _string_format_parse_next_argument_character ( state , format_specifier )                      ;break;
-        case STRING_FORMAT_SPECIFIER_INTEGER:                        _string_format_parse_next_argument_integer ( state , format_specifier )                        ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT:                 _string_format_parse_next_argument_floating_point ( state , format_specifier )                 ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL: _string_format_parse_next_argument_floating_point_show_fractional ( state , format_specifier ) ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:     _string_format_parse_next_argument_floating_point_abbreviated ( state , format_specifier )     ;break;
-        case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY: _string_format_parse_next_argument_floating_point_fractional_only ( state , format_specifier ) ;break;
-        case STRING_FORMAT_SPECIFIER_ADDRESS:                        _string_format_parse_next_argument_address ( state , format_specifier )                        ;break;
-        case STRING_FORMAT_SPECIFIER_STRING:                         _string_format_parse_next_argument_string ( state , format_specifier )                         ;break;
-        case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:               _string_format_parse_next_argument_resizable_string ( state , format_specifier )               ;break;
-        default:                                                                                                                                                    ;break;
+        switch ( ( *format_specifier ).container.tag )
+        {
+            case STRING_FORMAT_CONTAINER_ARRAY:     _string_format_parse_argument_array ( state , format_specifier , ( void* ) arg )            ;break;
+            case STRING_FORMAT_CONTAINER_QUEUE:     _string_format_parse_argument_queue ( state , format_specifier , ( queue_t* ) arg )         ;break;
+            default:                                                                                                                             break;
+        }
+    }
+    else
+    {
+        switch ( ( *format_specifier ).tag )
+        {
+            case STRING_FORMAT_SPECIFIER_RAW:                            _string_format_parse_argument_raw ( state , format_specifier , ( u64 ) arg )                                   ;break;
+            case STRING_FORMAT_SPECIFIER_CHARACTER:                      _string_format_parse_argument_character ( state , format_specifier , ( char ) arg )                            ;break;
+            case STRING_FORMAT_SPECIFIER_INTEGER:                        _string_format_parse_argument_integer ( state , format_specifier , ( i64 ) arg )                               ;break;
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT:                 _string_format_parse_argument_floating_point ( state , format_specifier , ( const f64* ) arg )                 ;break;
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL: _string_format_parse_argument_floating_point_show_fractional ( state , format_specifier , ( const f64* ) arg ) ;break;
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:     _string_format_parse_argument_floating_point_abbreviated ( state , format_specifier , ( const f64* ) arg )     ;break;
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY: _string_format_parse_argument_floating_point_fractional_only ( state , format_specifier , ( const f64* ) arg ) ;break;
+            case STRING_FORMAT_SPECIFIER_ADDRESS:                        _string_format_parse_argument_address ( state , format_specifier , ( const void* ) arg )                       ;break;
+            case STRING_FORMAT_SPECIFIER_STRING:                         _string_format_parse_argument_string ( state , format_specifier , ( const char* ) arg )                        ;break;
+            case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:               _string_format_parse_argument_resizable_string ( state , format_specifier , ( const char* ) arg )              ;break;
+            default:                                                                                                                                                                    ;break;
+        }
     }
     _string_format_consume_next_argument ( state );
 }
 
 u64
-_string_format_parse_next_argument_raw
+_string_format_parse_argument_raw
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const u64                           arg
 )
 {
     char string[ 65 ];
-    const u64 arg = *( ( *state ).next_arg );
     const u8 radix = 10;
     const u64 string_length = string_u64 ( arg , radix , string );
     return _string_format_push ( &( *state ).string
@@ -785,26 +871,26 @@ _string_format_parse_next_argument_raw
 }
 
 u64
-_string_format_parse_next_argument_integer
+_string_format_parse_argument_integer
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const i64                           arg 
 )
 {
     char string[ 65 ];
-    const u64 arg = *( ( *state ).next_arg );
     const u8 radix = 10;
     const bool hide_sign = ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_HIDE
                         && radix == 10
-                        && ( i64 ) arg < 0
+                        && arg < 0
                         ;
     const bool show_sign = ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_SHOW
                         && radix == 10
-                        && ( i64 ) arg >= 0
+                        && arg >= 0
                         ;
     u64 string_length;
     if ( hide_sign )
     {
-        string_length = string_u64 ( -( ( i64 ) arg ) , radix , string );
+        string_length = string_u64 ( -arg , radix , string );
     }
     else if ( show_sign )
     {
@@ -826,17 +912,18 @@ _string_format_parse_next_argument_integer
 #include <stdio.h>
 
 u64
-_string_format_parse_next_argument_floating_point
+_string_format_parse_argument_floating_point
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const f64*                          arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
     if ( !arg )
     {
-        return _string_format_parse_next_argument_string ( state
-                                                         , format_specifier
-                                                         );
+        return _string_format_parse_argument_string ( state
+                                                    , format_specifier
+                                                    , ( const char* ) arg
+                                                    );
     }
 
     char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
@@ -890,8 +977,8 @@ _string_format_parse_next_argument_floating_point
         }
     }
 
-    f64 value = *( ( f64* ) arg );
-    u64 integer = ( u64 ) value;
+    f64 value = *arg;
+    u64 integer = value;
     f64 fractional = value - integer;
     i32 snprintf_result = snprintf ( string
                                    , STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH
@@ -925,17 +1012,18 @@ _string_format_parse_next_argument_floating_point
 }
 
 u64
-_string_format_parse_next_argument_floating_point_show_fractional
+_string_format_parse_argument_floating_point_show_fractional
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const f64*                          arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
     if ( !arg )
     {
-        return _string_format_parse_next_argument_string ( state
-                                                         , format_specifier
-                                                         );
+        return _string_format_parse_argument_string ( state
+                                                    , format_specifier
+                                                    , ( const char* ) arg
+                                                    );
     }
 
     char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
@@ -991,7 +1079,7 @@ _string_format_parse_next_argument_floating_point_show_fractional
     i32 snprintf_result = snprintf ( string
                                    , STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH
                                    , format
-                                   , *( ( f64* ) arg )
+                                   , *arg
                                    );
     if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_HIDE )
     {
@@ -1007,17 +1095,18 @@ _string_format_parse_next_argument_floating_point_show_fractional
 }
 
 u64
-_string_format_parse_next_argument_floating_point_abbreviated
+_string_format_parse_argument_floating_point_abbreviated
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const f64*                          arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
     if ( !arg )
     {
-        return _string_format_parse_next_argument_string ( state
-                                                         , format_specifier
-                                                         );
+        return _string_format_parse_argument_string ( state
+                                                    , format_specifier
+                                                    , ( const char* ) arg
+                                                    );
     }
 
     char string[ STRING_FORMAT_MAX_FLOATING_POINT_ABBREVIATED_STRING_LENGTH ];
@@ -1073,7 +1162,7 @@ _string_format_parse_next_argument_floating_point_abbreviated
     i32 snprintf_result = snprintf ( string
                                    , STRING_FORMAT_MAX_FLOATING_POINT_ABBREVIATED_STRING_LENGTH
                                    , format
-                                   , *( ( f64* ) arg )
+                                   , *arg
                                    );
     if ( ( *format_specifier ).sign.tag == STRING_FORMAT_SIGN_HIDE )
     {
@@ -1089,17 +1178,18 @@ _string_format_parse_next_argument_floating_point_abbreviated
 }
 
 u64
-_string_format_parse_next_argument_floating_point_fractional_only
+_string_format_parse_argument_floating_point_fractional_only
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const f64*                          arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
     if ( !arg )
     {
-        return _string_format_parse_next_argument_string ( state
-                                                         , format_specifier
-                                                         );
+        return _string_format_parse_argument_string ( state
+                                                    , format_specifier
+                                                    , ( const char* ) arg
+                                                    );
     }
 
     char string[ STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH ];
@@ -1128,7 +1218,7 @@ _string_format_parse_next_argument_floating_point_fractional_only
     i32 snprintf_result = snprintf ( string
                                    , STRING_FORMAT_MAX_FLOATING_POINT_STRING_LENGTH
                                    , format
-                                   , *( ( f64* ) arg )
+                                   , *arg
                                    );
     u64 index;
     if ( string_contains ( string , snprintf_result
@@ -1154,17 +1244,22 @@ _string_format_parse_next_argument_floating_point_fractional_only
 // END <stdio.h> DEPENDENCY.
 
 u64
-_string_format_parse_next_argument_address
+_string_format_parse_argument_address
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const void*                         arg
 )
 {
     const char* prefix = "0x";
     char string[ 67 ];
-    const u64 arg = *( ( *state ).next_arg );
     const u8 radix = 16;
     memory_copy ( string , prefix , _string_length ( prefix ) );
-    const u64 string_length = string_u64 ( arg , radix , string + _string_length ( prefix ) ) + _string_length ( prefix );
+    const u64 string_length = string_u64 ( ( u64 ) arg
+                                         , radix
+                                         , string + _string_length ( prefix )
+                                         )
+                            + _string_length ( prefix )
+                            ;
     return _string_format_push ( &( *state ).string
                                , string
                                , string_length
@@ -1173,28 +1268,31 @@ _string_format_parse_next_argument_address
 }
 
 u64
-_string_format_parse_next_argument_character
+_string_format_parse_argument_character
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const char                          arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
-    const char character = ( char ) arg;
+    if ( !newline ( arg ) && ( arg < 32 || arg > 126 ) )
+    {
+        return 0;
+    }
     return _string_format_push ( &( *state ).string
-                               , &character
+                               , &arg
                                , 1
                                , format_specifier
                                );
 }
 
 u64
-_string_format_parse_next_argument_string
+_string_format_parse_argument_string
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const char*                         arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
-    char* string = arg ? ( ( char* ) arg ) : "";
+    const char* string = arg ? arg : "";
     const u64 length = _string_length ( string );
     return _string_format_push ( &( *state ).string
                                , string
@@ -1204,26 +1302,350 @@ _string_format_parse_next_argument_string
 }
 
 u64
-_string_format_parse_next_argument_resizable_string
+_string_format_parse_argument_resizable_string
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
+,   const char*                         arg
 )
 {
-    const u64 arg = *( ( *state ).next_arg );
     if ( !arg )
     {
-        return _string_format_parse_next_argument_string ( state
-                                                         , format_specifier
-                                                         );
+        return _string_format_parse_argument_string ( state
+                                                    , format_specifier
+                                                    , arg
+                                                    );
     }
 
-    char* string = ( char* ) arg;
-    const u64 length = string_length ( string );
+    const u64 length = string_length ( arg );
     return _string_format_push ( &( *state ).string
-                               , string
+                               , arg
                                , length
                                , format_specifier
                                );
+}
+
+u64
+_string_format_parse_argument_array
+(   state_t*                            state
+,   const string_format_specifier_t*    format_specifier
+,   const void*                         arg
+)
+{
+    const u64 old_length = string_length ( ( *state ).string );
+
+    _string_push ( ( *state ).string , "{ " );
+
+    for ( u64 i = 0; i < array_length ( arg ); ++i )
+    {
+        _string_push ( ( *state ).string , "`" );
+
+        // Retrieve the array element address.
+        const void* element = ( const void* )( ( ( u64 ) arg ) + i * array_stride ( arg ) );
+        
+        // Attempt to parse address value according to the format specifier and array stride.
+        // TODO: Improve this. Fails if array stride does not correspond to provided format specifier.
+        switch ( ( *format_specifier ).tag )
+        {
+            case STRING_FORMAT_SPECIFIER_RAW:
+            {
+                u64 value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( u8 ):  value = *( ( u8* ) element )  ;break;
+                    case sizeof ( u16 ): value = *( ( u16* ) element ) ;break;
+                    case sizeof ( u32 ): value = *( ( u32* ) element ) ;break;
+                    case sizeof ( u64 ): value = *( ( u64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_raw ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_CHARACTER:
+            {
+                const char value = *( ( char* ) element );
+                _string_format_parse_argument_character ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_INTEGER:
+            {
+                i64 value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( i8 ):  value = *( ( i8* ) element )  ;break;
+                    case sizeof ( i16 ): value = *( ( i16* ) element ) ;break;
+                    case sizeof ( i32 ): value = *( ( i32* ) element ) ;break;
+                    case sizeof ( i64 ): value = *( ( i64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_integer ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT:
+            {
+                f64 value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL:
+            {
+                f64 value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point_show_fractional ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:
+            {
+                f64 value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point_abbreviated ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY:
+            {
+                f64 value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point_fractional_only ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_ADDRESS:
+            {
+                void* value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( void* ): value = *( ( void** ) element );break;
+                    default:               value = 0                      ;break;
+                }
+                _string_format_parse_argument_address ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_STRING:
+            {
+                char* value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( char* ): value = *( ( char** ) element );break;
+                    default:               value = 0                      ;break;
+                }
+                _string_format_parse_argument_string ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:
+            {
+                char* value;
+                switch ( array_stride ( arg ) )
+                {
+                    case sizeof ( char* ): value = *( ( char** ) element );break;
+                    default:               value = 0                      ;break;
+                }
+                _string_format_parse_argument_resizable_string ( state , format_specifier , value );
+            }
+            break;
+            
+            default:
+            {}
+            break;
+        }
+
+        _string_push ( ( *state ).string
+                     , ( i < array_length ( arg ) - 1 ) ? "`, " : "`"
+                     );
+    }
+
+    _string_push ( ( *state ).string , " }" );
+
+    return string_length ( ( *state ).string ) - old_length;
+}
+
+u64
+_string_format_parse_argument_queue
+(   state_t*                            state
+,   const string_format_specifier_t*    format_specifier
+,   const queue_t*                      arg
+)
+{
+    const u64 old_length = string_length ( ( *state ).string );
+
+    _string_push ( ( *state ).string , "{ " );
+
+    for ( u64 i = 0; i < ( *arg ).length; ++i )
+    {
+        _string_push ( ( *state ).string , "`" );
+
+        // Retrieve the array element address.
+        const void* element = ( const void* )( ( ( u64 )( ( *arg ).memory ) ) + i * ( *arg ).stride );
+        
+        // Attempt to parse address value according to the format specifier and array stride.
+        // TODO: Improve this. Fails if array stride does not correspond to provided format specifier.
+        switch ( ( *format_specifier ).tag )
+        {
+            case STRING_FORMAT_SPECIFIER_RAW:
+            {
+                u64 value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( u8 ):  value = *( ( u8* ) element )  ;break;
+                    case sizeof ( u16 ): value = *( ( u16* ) element ) ;break;
+                    case sizeof ( u32 ): value = *( ( u32* ) element ) ;break;
+                    case sizeof ( u64 ): value = *( ( u64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_raw ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_CHARACTER:
+            {
+                const char value = *( ( char* ) element );
+                _string_format_parse_argument_character ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_INTEGER:
+            {
+                i64 value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( i8 ):  value = *( ( i8* ) element )  ;break;
+                    case sizeof ( i16 ): value = *( ( i16* ) element ) ;break;
+                    case sizeof ( i32 ): value = *( ( i32* ) element ) ;break;
+                    case sizeof ( i64 ): value = *( ( i64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_integer ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT:
+            {
+                f64 value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL:
+            {
+                f64 value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point_show_fractional ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:
+            {
+                f64 value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point_abbreviated ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY:
+            {
+                f64 value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
+                    case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
+                    default:             value = 0                     ;break;
+                }
+                _string_format_parse_argument_floating_point_fractional_only ( state , format_specifier , &value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_ADDRESS:
+            {
+                void* value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( void* ): value = *( ( void** ) element );break;
+                    default:               value = 0                      ;break;
+                }
+                _string_format_parse_argument_address ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_STRING:
+            {
+                char* value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( char* ): value = *( ( char** ) element );break;
+                    default:               value = 0                      ;break;
+                }
+                _string_format_parse_argument_string ( state , format_specifier , value );
+            }
+            break;
+
+            case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:
+            {
+                char* value;
+                switch ( ( *arg ).stride )
+                {
+                    case sizeof ( char* ): value = *( ( char** ) element );break;
+                    default:               value = 0                      ;break;
+                }
+                _string_format_parse_argument_resizable_string ( state , format_specifier , value );
+            }
+            break;
+            
+            default:
+            {}
+            break;
+        }
+
+        _string_push ( ( *state ).string
+                     , ( i < ( *arg ).length - 1 ) ? "`, " : "`"
+                     );
+    }
+
+    _string_push ( ( *state ).string , " }" );
+
+    return string_length ( ( *state ).string ) - old_length;
 }
 
 u64

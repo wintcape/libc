@@ -14,13 +14,13 @@
  * some minimum number of elements. The queue is resized, if needed.
  * 
  * @param queue The queue to (possibly) resize. Must be non-zero.
- * @param min_capacity The number of elements the queue needs to be able to
+ * @param minimum_capacity The number of elements the queue needs to be able to
  * hold.
  */
 void
 queue_resize_if_needed
 (   queue_t*    queue
-,   const u64   min_capacity
+,   const u64   minimum_capacity
 );
 
 bool
@@ -187,10 +187,10 @@ queue_pop
 void
 queue_resize_if_needed
 (   queue_t*    queue
-,   const u64   min_capacity
+,   const u64   minimum_capacity
 )
 {
-    const u64 new_size = ( *queue ).stride * min_capacity;
+    const u64 new_size = ( *queue ).stride * minimum_capacity;
     if ( ( *queue ).allocated >= new_size )
     {
         return;

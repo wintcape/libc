@@ -44,11 +44,34 @@ _array_create
 ,   ARRAY_FIELD stride
 );
 
+/** @param type C data type of the array. */
 #define array_create(type,initial_capacity) \
     _array_create ( (initial_capacity) , sizeof ( type ) )
 
+/** @param type C data type of the array. */
 #define array_create_new(type) \
     _array_create ( ARRAY_DEFAULT_CAPACITY , sizeof ( type ) )
+
+/**
+ * @brief Creates a resizable array by copying an existing array. O(n).
+ *
+ * Uses dynamic memory allocation. Call array_destroy to free.
+ * 
+ * @param array The array to copy.
+ * @param stride The fixed element size in bytes.
+ * @param length The number of elements contained by array.
+ * @return A resizable copy of array.
+*/
+void*
+_array_create_from
+(   void*       array
+,   ARRAY_FIELD stride
+,   ARRAY_FIELD length
+);
+
+/** @param type C data type of the array. */
+#define array_create_from(type,array,length) \
+    _array_create_from ( (array) , sizeof ( type ) , (length) )
 
 /**
  * @brief Copies a resizable array. O(n).
@@ -59,9 +82,12 @@ _array_create
  * @return A copy of array.
  */
 void*
-array_copy
+_array_copy
 (   void* array
 );
+
+#define array_copy(array) \
+    _array_copy ( array )
 
 /**
  * @brief Frees the memory used by a resizable array.

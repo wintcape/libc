@@ -116,8 +116,13 @@ make macos-test
 - Verify thread safety for `platform/filesystem.h`.
 - Tests for `platform/thread.h` and `platform/mutex.h`.
 - Make general improvements to the API design; provide more options for choosing between use of API-provided data structures versus `void*` handles the user chooses how to allocate, etc.
+- Implement `string_format` format specifiers for printing freelist node data and hashtable key-value pairs.
 
 ## Changelog
+
+### 0.4.4
+- Added new `string_format` format modifiers `%q` and `%a` for printing queues (see `container/queue.h`) and arrays (see `container/array.h`), respectively.
+- Added function `array_create_from` to `container/array.h` to create a resizable array by copying an existing memory buffer.
 
 ### 0.4.3
 - Added lines to `platform/test_filesystem.c` to ensure `FILE_MODE_READ` is detected for `file_exists` on all the test input files.

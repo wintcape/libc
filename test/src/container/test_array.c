@@ -94,16 +94,16 @@ test_array_create_and_destroy
     EXPECT_EQ ( global_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
 
-    // TEST 2.3: Array created via array_create has the correct capacity.
+    // TEST 2.3: Array created via array_create_new has the correct capacity.
     EXPECT_EQ ( initial_capacity , array_capacity ( array ) );
 
-    // TEST 2.4: Array created via array_create has 0 length.
+    // TEST 2.4: Array created via array_create_new has 0 length.
     EXPECT_EQ ( 0 , array_length ( array ) );
 
-    // TEST 2.5: Array created via array_create has correct stride for type.
+    // TEST 2.5: Array created via array_create_new has correct stride for type.
     EXPECT_EQ ( sizeof ( u16 ) , array_stride ( array ) );
 
-    // TEST 2.6: Array created via array_create initializes all bytes in its capacity to 0.
+    // TEST 2.6: Array created via array_create_new initializes all bytes in its capacity to 0.
     for ( u64 i = 0; i < initial_capacity; ++i )
     {
         EXPECT_EQ ( 0 , array[ i ] );
@@ -115,9 +115,47 @@ test_array_create_and_destroy
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
 
-    // TEST 3: array_destroy handles invalid argument.
+    // TEST 3: array_create_from.
 
-    // TEST: array_destroy does not modify the global allocator state if no array is provided.
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+
+    f32 fs[ 16 ] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+    array = array_create_from ( f32 , fs , 16 );
+
+    // Verify there was no memory error prior to the test.
+    EXPECT_NEQ ( 0 , array );
+
+    // TEST 3.1: array_create_from performed one memory allocation.
+    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+
+    // TEST 3.2: array_create_from allocated the correct number of bytes with the correct memory tag.
+    EXPECT_EQ ( global_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+
+    // TEST 3.3: Array created via array_create_from has the correct capacity.
+    EXPECT ( sizeof ( fs ) >= array_capacity ( array ) );
+
+    // TEST 3.4: Array created via array_create_from has correct length.
+    EXPECT_EQ ( 16 , array_length ( array ) );
+
+    // TEST 3.5: Array created via array_create_from has correct stride for type.
+    EXPECT_EQ ( sizeof ( f32 ) , array_stride ( array ) );
+
+    // TEST 3.6: Array created via array_create_from correctly copies the source array.
+    EXPECT ( memory_equal ( array , fs , array_length ( array ) * array_stride ( array ) ) );
+
+    // TEST 3.7: array_destroy restores the global allocator state.
+    array_destroy ( array );
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+
+    // TEST 4: array_destroy handles invalid argument.
+
+    // TEST 4.1: array_destroy does not modify the global allocator state if no array is provided.
     array_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );

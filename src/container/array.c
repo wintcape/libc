@@ -46,7 +46,21 @@ _array_destroy
 }
 
 void*
-array_copy
+_array_create_from
+(   void*       array_
+,   ARRAY_FIELD stride
+,   ARRAY_FIELD length
+)
+{
+    const u64 capacity = length * stride;
+    void* array = _array_create ( capacity , stride );
+    memory_copy ( array , array_ , capacity );
+    _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
+    return array;
+}
+
+void*
+_array_copy
 (   void* src
 )
 {
