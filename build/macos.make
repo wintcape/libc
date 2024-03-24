@@ -2,26 +2,27 @@ TARGET := libc
 CC ?= gcc
 
 CFLAGS := -g -O2 -W -Wvarargs -Wall -Werror -Werror=vla -Wno-unused-parameter
-DEPS := m
 INCLUDE := src
-OBJFILES := math.o test.o clock.o memory.o logger.o string_utils.o string.o string_format.o array.o queue.o hashtable.o freelist.o memory_linear_allocator.o memory_dynamic_allocator.o filesystem.o thread.o mutex.o platform.o
+DEPENDENCIES := m
 
 TEST := test
 TEST_INCLUDE := test/src
-TEST_OBJFILES := test_main.o test_array.o test_queue.o test_hashtable.o test_string.o test_freelist.o test_memory_linear_allocator.o test_memory_dynamic_allocator.o test_filesystem.o
 
 POST := build/.post-macos
 
 ################################################################################
 
+OBJFILES := math.o test.o clock.o memory.o logger.o string_utils.o string.o string_format.o array.o queue.o hashtable.o freelist.o memory_linear_allocator.o memory_dynamic_allocator.o filesystem.o thread.o mutex.o platform.o
+TEST_OBJFILES := test_main.o test_array.o test_queue.o test_hashtable.o test_string.o test_freelist.o test_memory_linear_allocator.o test_memory_dynamic_allocator.o test_filesystem.o
+
 INCFLAGS := $(foreach x,$(INCLUDE), $(addprefix -I,$(x)))
 OBJFLAGS := $(CFLAGS) -c
-LDFLAGS := $(foreach x,$(DEPS), $(addprefix -l,$(x)))
+LDFLAGS := $(foreach x,$(DEPENDENCIES), $(addprefix -l,$(x)))
 OBJ := $(foreach x,$(OBJFILES), $(addprefix obj/,$(x)))
 
 TEST_INCFLAGS := $(INCFLAGS) $(foreach x,$(TEST_INCLUDE), $(addprefix -I,$(x)))
 TEST_OBJFLAGS := $(CFLAGS) -c
-TEST_LDFLAGS := -Llib -llibc
+TEST_LDFLAGS := -Llib -l$(TARGET) $(LDFLAGS)
 TEST_OBJ := $(foreach x,$(TEST_OBJFILES), $(addprefix obj/,$(x)))
 
 CLEAN := lib/$(TARGET).lib $(OBJ)
@@ -81,6 +82,7 @@ all: lib test
 .PHONY: mkdir
 mkdir:
 	@mkdir -p bin
+	@mkdir -p lib
 	@mkdir -p obj
 
 .PHONY: clean
