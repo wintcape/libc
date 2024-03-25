@@ -26,6 +26,9 @@ typedef _Bool bool;
 /** @brief Type definition for a 32-bit padded boolean type. */
 typedef u32 b32;
 
+/** @brief Type definition for a generic comparator function. */
+typedef i32 ( *comparator_function_t )( const void* , const void* );
+
 // Compile-time assertions.
 #include "common/static_assert.h"
 

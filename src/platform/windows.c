@@ -137,6 +137,17 @@ platform_string_length_clamped
     return strnlen ( string , limit );
 }
 
+void
+platform_array_sort
+(   void*                   array
+,   u64                     array_stride
+,   u64                     array_length
+,   comparator_function_t   comparator
+)
+{
+    qsort ( array , array_length , array_stride , comparator );
+}
+
 bool
 platform_thread_create
 (   thread_start_function_t function

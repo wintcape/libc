@@ -249,7 +249,7 @@ f32
 math_randomf
 ( void )
 {
-    return ( f32 ) math_random () / ( f32 ) RAND_MAX;
+    return math_randomf2 ( 0.0f , 1.0f );
 }
 
 f32
@@ -440,7 +440,7 @@ f64
 math_randomf_64
 ( void )
 {
-    return ( f64 ) math_random_64 () / ( f64 ) RAND_MAX;
+    return math_randomf2_64 ( 0.0f , 1.0f );
 }
 
 f64

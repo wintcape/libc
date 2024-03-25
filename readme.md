@@ -17,6 +17,9 @@ Pseudorandom number generation:
 - `rand`
 - `srand`
 
+Sorting an array in-place:
+- `qsort`
+
 ### `<string.h>`
 
 Highly-optimized string operations:
@@ -89,21 +92,45 @@ Requires GNU make.
 Makefiles use gcc by default. The library has been tested on Clang as well.
 
 ### Windows
-To test on Windows:
+To compile static library on Windows:
+```
+make windows
+```
+To compile test executable on Windows:
 ```
 make windows-test
 ```
+To build all and run test executable on Windows:
+```
+make windows-run
+```
 
 ### GNU/Linux
-To test on GNU/Linux:
+To compile static library on GNU/Linux:
+```
+make linux
+```
+To compile test executable on GNU/Linux:
 ```
 make linux-test
 ```
+To build all and run test executable on GNU/Linux:
+```
+make linux-run
+```
 
 ### macOS/OSX
-To test on macOS/OSX:
+To compile static library on macOS/OSX:
+```
+make macos
+```
+To compile test executable on macOS/OSX:
 ```
 make macos-test
+```
+To build all and run test executable on macOS/OSX:
+```
+make macos-run
 ```
 
 ## To-do
@@ -117,8 +144,18 @@ make macos-test
 - Tests for `platform/thread.h` and `platform/mutex.h`.
 - Make general improvements to the API design; provide more options for choosing between use of API-provided data structures versus `void*` handles the user chooses how to allocate, etc.
 - Implement `string_format` format specifiers for printing freelist node data and hashtable key-value pairs.
+- Add a library to provide support for regular expressions: `container/string/regex.h`.
 
 ## Changelog
+
+### 0.4.5
+- Changed the build process. `make linux|windows|macos` now outputs a static library; `make linux-test|windows-test|macos-test` only recompiles (and runs) the test executable; `make linux-all|windows-all|macos-all` recompiles both the library and test executable, and then runs the executable.
+- The output value of `randomf` and `randomf64` now always falls in the range [ 0.0 , 1.0 ].
+- New function `array_reverse` for reversing an array.
+- New functions `array_shuffle` and `array_sort` for shuffling and sorting an array.
+- New header `core/bitv.h` for dealing with bit vectors of arbitrary length; `common/bitops.h` header only contains inline functions for dealing with bit vectors of exactly 64-bits.
+- New functions `mix` and `mix64` in `math/float.h` for performing linear interpolation operations.
+- Tests for `array_reverse` and `array_sort`.
 
 ### 0.4.4
 - Added new `string_format` format modifiers `%q` and `%a` for printing queues (see `container/queue.h`) and arrays (see `container/array.h`), respectively.

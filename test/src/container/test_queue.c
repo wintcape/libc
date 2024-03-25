@@ -12,10 +12,6 @@
 
 #include "math/math.h"
 
-/** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
-    ( memory_allocation_count () - memory_free_count () )
-
 u8
 test_queue_create_and_destroy
 ( void )
@@ -31,7 +27,7 @@ test_queue_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     queue_amount_allocated = memory_amount_allocated ( MEMORY_TAG_QUEUE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     queue_t queue;
 
@@ -53,13 +49,13 @@ test_queue_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     queue_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_QUEUE );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     // TEST 2.1: queue_create succeeds.
     EXPECT ( queue_create ( 10 , &queue ) );
 
     // TEST 2.2: queue_create performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2.3: queue_create allocated the correct number of bytes with the correct memory tag.
     EXPECT_EQ ( global_amount_allocated_ + queue.allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -83,7 +79,7 @@ test_queue_create_and_destroy
     queue_destroy ( &queue );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 3.2: queue_destroy clears all queue data structure fields.
     EXPECT_EQ ( 0 , queue.allocated );
@@ -93,17 +89,17 @@ test_queue_create_and_destroy
 
     // TEST 4: queue_destroy handles invalid argument.
 
-    // TEST: queue_destroy does not modify the global allocator state if no queue is provided.
+    // TEST 4.1: queue_destroy does not modify the global allocator state if no queue is provided.
     queue_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST: queue_destroy does not modify the global allocator state if the provided queue is uninitialized.
+    // TEST 4.2: queue_destroy does not modify the global allocator state if the provided queue is uninitialized.
     queue_destroy ( &queue );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -111,7 +107,7 @@ test_queue_create_and_destroy
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -127,7 +123,7 @@ test_queue_push_and_pop
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     queue_amount_allocated = memory_amount_allocated ( MEMORY_TAG_QUEUE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 op_count = 65536;
     const u32 to_push = random ();
@@ -256,7 +252,7 @@ test_queue_push_and_pop
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -272,7 +268,7 @@ test_queue_peek
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     queue_amount_allocated = memory_amount_allocated ( MEMORY_TAG_QUEUE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
     
     const u64 op_count = 10000;
     u32 to_push;
@@ -348,7 +344,7 @@ test_queue_peek
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }

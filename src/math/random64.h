@@ -42,7 +42,7 @@ math_random2_64
 /**
  * @brief Generates a random floating point number.
  * 
- * @return A random floating point number.
+ * @return A random floating point number in the range [ 0.0 , 1.0 ].
  */
 f64
 math_randomf_64

@@ -25,7 +25,7 @@ static const char* file_content_test_in_file = "This is a file with\nthree lines
 static const i8 file_content_test_in_file_binary[] = { 89 , 44 , 7 , -63 , 107 , -29 , 125 , -104 , -114 , -98 , -101 , -21 , -96 , -103 , 92 , 47 , 52 , 31 , 107 , -60 , -18 , -64 , 41 , 120 , -76 , -20 , -2 , -57 , 40 , 29 , 4 , -66 , 117 , -96 , 121 , 32 , -80 , -90 , 54 , 14 , 0 , -77 , -4 , -104 , -76 , -83 , -58 , 36 , -69 , 55 };
 
 /** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
+#define MEMORY_ALLOCATION_COUNT \
     ( memory_allocation_count () - memory_free_count () )
 
 u8
@@ -39,7 +39,7 @@ test_file_exists
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
@@ -65,7 +65,7 @@ test_file_exists
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -81,7 +81,7 @@ test_file_open_and_close
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     file_t file;
 
@@ -277,7 +277,7 @@ test_file_open_and_close
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -293,7 +293,7 @@ test_file_read
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     char buffer[ 100 ];
     file_t file;
@@ -427,7 +427,7 @@ test_file_read
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -443,7 +443,7 @@ test_file_write
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     char buffer[ 100 ];
     file_t file;
@@ -602,7 +602,7 @@ test_file_write
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -620,7 +620,7 @@ test_file_read_line
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 max_line_length = MEGABYTES ( 1 );
     const u64 line_count = 100;
@@ -754,7 +754,7 @@ test_file_read_line
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
     
     return true;
 }
@@ -772,7 +772,7 @@ test_file_write_line
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* in_line = "This is the line to be written to the file.";
     char* out_line;
@@ -903,7 +903,7 @@ test_file_write_line
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -921,7 +921,7 @@ test_file_read_all
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 filesize = MEBIBYTES ( 100 );
     file_t file;
@@ -1080,7 +1080,7 @@ test_file_read_all
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
     EXPECT_EQ ( string_amount_allocated , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -1098,7 +1098,7 @@ test_file_read_and_write_large_file
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 buffer_size = GIBIBYTES ( 1 );
     char* in_buffer = string_allocate ( buffer_size );
@@ -1201,7 +1201,7 @@ test_file_read_and_write_large_file
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( file_amount_allocated , memory_amount_allocated ( MEMORY_TAG_FILE ) );
     EXPECT_EQ ( string_amount_allocated , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }

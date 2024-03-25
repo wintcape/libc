@@ -21,10 +21,6 @@ typedef struct
 }
 alloc_t;
 
-/** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
-    ( memory_allocation_count () - memory_free_count () )
-
 u8
 test_dynamic_allocator_init_and_clear
 ( void )
@@ -36,7 +32,7 @@ test_dynamic_allocator_init_and_clear
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     dynamic_allocator_t allocator;
     u64 memory_requirement = 0;
@@ -97,7 +93,7 @@ test_dynamic_allocator_init_and_clear
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -113,7 +109,7 @@ test_dynamic_allocator_allocate_and_free
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 allocator_size = 1024;
     const u16 alignment = 1;
@@ -268,7 +264,7 @@ test_dynamic_allocator_allocate_and_free
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -284,7 +280,7 @@ test_dynamic_allocator_single_allocation_all_space
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
@@ -329,7 +325,7 @@ test_dynamic_allocator_single_allocation_all_space
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -345,7 +341,7 @@ test_dynamic_allocator_multiple_allocation_all_space
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
@@ -416,7 +412,7 @@ test_dynamic_allocator_multiple_allocation_all_space
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -431,7 +427,7 @@ test_dynamic_allocator_multiple_requests_too_many
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
@@ -482,7 +478,7 @@ test_dynamic_allocator_multiple_requests_too_many
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true; 
 }
@@ -498,7 +494,7 @@ test_dynamic_allocator_single_request_too_large
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 allocator_size = 1024;
     const u64 alignment = 1;
@@ -548,7 +544,7 @@ test_dynamic_allocator_single_request_too_large
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true; 
 }
@@ -564,7 +560,7 @@ test_dynamic_allocator_single_allocation_aligned
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 allocator_size = 1024;
     const u64 alignment = 16;
@@ -617,7 +613,7 @@ test_dynamic_allocator_single_allocation_aligned
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -633,7 +629,7 @@ test_dynamic_allocator_multiple_allocation_aligned_different_alignments
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 header_size = dynamic_allocator_header_size ();
     const u32 alloc_count = 4;
@@ -809,7 +805,7 @@ test_dynamic_allocator_multiple_allocation_aligned_different_alignments
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -866,7 +862,7 @@ test_dynamic_allocator_multiple_allocation_aligned_different_alignments_random
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
     
     const u64 header_size = dynamic_allocator_header_size ();
     const u32 alloc_count = 65556;
@@ -950,7 +946,7 @@ test_dynamic_allocator_multiple_allocation_aligned_different_alignments_random
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -966,7 +962,7 @@ test_dynamic_allocator_multiple_allocation_and_free_aligned_different_alignments
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
     
     const u32 max_op = 1000000;
     const u64 header_size = dynamic_allocator_header_size ();
@@ -1080,7 +1076,7 @@ test_dynamic_allocator_multiple_allocation_and_free_aligned_different_alignments
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }

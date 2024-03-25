@@ -12,10 +12,6 @@
 
 #include "math/math.h"
 
-/** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
-    ( memory_allocation_count () - memory_free_count () )
-
 u8
 test_hashtable_create_and_destroy
 ( void )
@@ -31,7 +27,7 @@ test_hashtable_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 stride = 8;
     const u32 capacity = 64;
@@ -58,13 +54,13 @@ test_hashtable_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     // TEST 2.1: hashtable_create succeeds.
     EXPECT ( hashtable_create ( true , stride , capacity , 0 , &hashtable ) );
 
     // TEST 2.2: hashtable_create performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2.3: hashtable_create allocated the correct number of bytes with the correct memory tag.
     EXPECT_EQ ( global_amount_allocated_ + capacity * stride , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -90,7 +86,7 @@ test_hashtable_create_and_destroy
     // TEST 2.9: hashtable_destroy restores the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
  
     // TEST 2.10: hashtable_destroy clears all hashtable data structure fields.
     EXPECT_EQ ( 0 , hashtable.memory );
@@ -104,13 +100,13 @@ test_hashtable_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     // TEST 3.1: hashtable_create succeeds with valid arguments.
     EXPECT ( hashtable_create ( false , stride , capacity , 0 , &hashtable ) );
 
     // TEST 3.2: hashtable_create performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 3.3: hashtable_create allocated the correct number of bytes with the correct memory tag.
     EXPECT_EQ ( global_amount_allocated_ + capacity * stride , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -136,7 +132,7 @@ test_hashtable_create_and_destroy
     // TEST 3.9: hashtable_destroy restores the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 3.10: hashtable_destroy clears all hashtable data structure fields.
     EXPECT_EQ ( 0 , hashtable.memory );
@@ -150,20 +146,20 @@ test_hashtable_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     void* memory = memory_allocate ( capacity * stride , MEMORY_TAG_HASHTABLE );
 
     // Verify the memory allocation was successful prior to the test.
     EXPECT_NEQ ( 0 , memory );
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
     EXPECT_EQ ( global_amount_allocated_ + capacity * stride , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ + capacity * stride , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
 
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     // TEST 4.1: hashtable_create succeeds.
     EXPECT ( hashtable_create ( true , stride , capacity , memory , &hashtable ) );
@@ -171,7 +167,7 @@ test_hashtable_create_and_destroy
     // TEST 4.2: hashtable_create does not modify the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 4.3: Hashtable created via hashtable_create does not own its own memory.
     EXPECT_NOT ( hashtable.owns_memory );
@@ -193,7 +189,7 @@ test_hashtable_create_and_destroy
     // TEST 4.8: hashtable_destroy does not modify the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 4.9: hashtable_destroy clears all hashtable data structure fields.
     EXPECT_EQ ( 0 , hashtable.memory );
@@ -210,7 +206,7 @@ test_hashtable_create_and_destroy
     // TEST 5.2: hashtable_create does not modify the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 5.3: Hashtable created via hashtable_create does not own its own memory.
     EXPECT_NOT ( hashtable.owns_memory );
@@ -232,7 +228,7 @@ test_hashtable_create_and_destroy
     // TEST 5.8: hashtable_destroy does not modify the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 5.9: hashtable_destroy clears all hashtable data structure fields.
     EXPECT_EQ ( 0 , hashtable.memory );
@@ -247,13 +243,13 @@ test_hashtable_create_and_destroy
     hashtable_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 6.2: hashtable_destroy does not modify the global allocator state if the provided hashtable is uninitializes.
     hashtable_destroy ( &hashtable );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -263,7 +259,7 @@ test_hashtable_create_and_destroy
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -279,7 +275,7 @@ test_hashtable_set_and_get_data
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 element_size = sizeof ( u64 );
     const u64 element_count = 3;
@@ -369,7 +365,7 @@ test_hashtable_set_and_get_data
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -385,7 +381,7 @@ test_hashtable_set_and_get_pointer
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 element_count = 3;
     u64 values[ 3 ] = { random () , random () , random () };
@@ -500,7 +496,7 @@ test_hashtable_set_and_get_pointer
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -516,7 +512,7 @@ test_hashtable_get_nonexistent
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 element_size = sizeof ( u64 );
     const u64 element_count = 3;
@@ -555,7 +551,7 @@ test_hashtable_get_nonexistent
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -571,7 +567,7 @@ test_hashtable_remove_pointer
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     hashtable_amount_allocated = memory_amount_allocated ( MEMORY_TAG_HASHTABLE );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 element_count = 3;
     u64 values[ 3 ] = { random () , random () , random () };
@@ -631,7 +627,7 @@ test_hashtable_remove_pointer
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( hashtable_amount_allocated , memory_amount_allocated ( MEMORY_TAG_HASHTABLE ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }

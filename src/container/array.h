@@ -34,8 +34,8 @@ ARRAY_FIELD;
  * 
  * Uses dynamic memory allocation. Call array_destroy to free.
  * 
- * @param initial_capacity The initial capacity.
- * @param stride The fixed element size in bytes.
+ * @param initial_capacity The initial capacity. Must be non-zero.
+ * @param stride The fixed element size in bytes. Must be non-zero.
  * @return A resizable array.
  */
 void*
@@ -58,7 +58,7 @@ _array_create
  * Uses dynamic memory allocation. Call array_destroy to free.
  * 
  * @param array The array to copy.
- * @param stride The fixed element size in bytes.
+ * @param stride The fixed element size in bytes. Must be non-zero.
  * @param length The number of elements contained by array.
  * @return A resizable copy of array.
 */
@@ -159,7 +159,7 @@ _array_size
  * 
  * @param array The array to resize. Must be non-zero.
  * @param minimum_capacity The minimum capacity of the new array.
- * @return The new array.
+ * @return A copy of the original array content with an expanded capacity.
  */
 void*
 _array_resize
@@ -245,5 +245,87 @@ _array_remove
 
 #define array_remove(array,index,dst) \
     _array_remove ( (array) , (index) , (dst) )
+
+/**
+ * @brief Reverses an array. O(n). In-place.
+ * 
+ * Use _array_reverse to explicitly specify fixed array stride and length, or
+ * array_reverse (for arrays created with the _array_create class of functions)
+ * to fetch these fields using array_field_get prior to passing them to
+ * _array_reverse.
+ * 
+ * @param array The array to reverse. Must be non-zero.
+ * @param array_stride The array stride.
+ * @param array_length The number of elements contained by the array.
+ * @return The array after reversal.
+ */
+void*
+_array_reverse
+(   void*       array
+,   const u64   array_stride
+,   const u64   array_length
+);
+
+#define array_reverse(array) \
+    _array_reverse ( (array) , array_stride ( array ) , array_length ( array ) )
+
+/**
+ * @brief Shuffles the elements of an array. O(n).
+ * 
+ * Use _array_shuffle to explicitly specify fixed array stride and length, or
+ * array_shuffle (for arrays created with the _array_create class of functions)
+ * to fetch these fields using array_field_get prior to passing them to
+ * _array_shuffle.
+ * 
+ * @param array The array to shuffle. Must be non-zero.
+ * @param array_stride The array stride.
+ * @param array_length The number of elements contained by the array.
+ * @return The array with its elements shuffled.
+ */
+void*
+_array_shuffle
+(   void*   array
+,   u64     array_stride
+,   u64     array_length
+);
+
+#define array_shuffle(array)                \
+    _array_shuffle ( (array)                \
+                   , array_stride ( array ) \
+                   , array_length ( array ) \
+                   )
+
+/**
+ * @brief Sorts an array in-place.
+ * 
+ * Current implementation uses quicksort algorithm.
+ * AVERAGE CASE TIME COMPLEXITY : O(n log(n))
+ * WORST CASE TIME COMPLEXITY   : O(n²)
+ * 
+ * Use _array_sort to explicitly specify fixed array stride and length, or
+ * array_sort (for arrays created with the _array_create class of functions)
+ * to fetch these fields using array_field_get prior to passing them to
+ * _array_sort.
+ * 
+ * @param array The array to sort. Must be non-zero.
+ * @param array_stride The array stride.
+ * @param array_length The number of elements contained by the array.
+ * @param comparator A function which compares two array elements.
+ * @return The array with all elements sorted according to the comparator.
+ */
+void*
+_array_sort
+(   void*                   array
+,   u64                     array_stride
+,   u64                     array_length
+,   comparator_function_t   comparator
+);
+
+#define array_sort(array)                \
+    _array_sort ( (array)                \
+                , array_stride ( array ) \
+                , array_length ( array ) \
+                , (comparator)           \
+                )
 
 #endif  // ARRAY_H

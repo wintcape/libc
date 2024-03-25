@@ -9,6 +9,8 @@
 #include "core/logger.h"
 #include "core/memory.h"
 
+#include "math/math.h"
+
 void*
 _array_create
 (   ARRAY_FIELD initial_capacity
@@ -239,5 +241,88 @@ _array_remove
                 );
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
 
+    return array;
+}
+
+void*
+_array_reverse
+(   void*       array
+,   const u64   array_stride
+,   const u64   array_length
+)
+{
+    if ( !array_stride || array_length < 2 )
+    {
+        return array;
+    }
+
+    const u64 array_ = ( ( u64 ) array );
+    void* swap = memory_allocate ( array_stride , MEMORY_TAG_ARRAY );
+    u64 i;
+    u64 j;
+    for ( i = 0 , j = array_length - 1; i < j; ++i , --j )
+    {
+        memory_copy ( swap
+                    , ( void* )( array_ + i * array_stride )
+                    , array_stride
+                    );
+        memory_copy ( ( void* )( array_ + i * array_stride )
+                    , ( void* )( array_ + j * array_stride )
+                    , array_stride
+                    );
+        memory_copy ( ( void* )( array_ + j * array_stride )
+                    , swap
+                    , array_stride
+                    );
+    }
+    memory_free ( swap , array_stride , MEMORY_TAG_ARRAY );
+
+    return array;
+}
+
+void*
+_array_shuffle
+(   void*   array
+,   u64     array_stride
+,   u64     array_length
+)
+{
+    if ( !array_stride || array_length < 2 )
+    {
+        return array;
+    }
+
+    const u64 array_ = ( ( u64 ) array );
+    void* swap = memory_allocate ( array_stride , MEMORY_TAG_ARRAY );
+    for ( u64 i = 0; i < array_length - 1; ++i )
+    {
+        u64 j = random2 ( 0 , i );
+        memory_copy ( swap
+                    , ( void* )( array_ + i * array_stride )
+                    , array_stride
+                    );
+        memory_copy ( ( void* )( array_ + i * array_stride )
+                    , ( void* )( array_ + j * array_stride )
+                    , array_stride
+                    );
+        memory_copy ( ( void* )( array_ + j * array_stride )
+                    , swap
+                    , array_stride
+                    );
+    }
+    memory_free ( swap , array_stride , MEMORY_TAG_ARRAY );
+
+    return array;
+}
+
+void*
+_array_sort
+(   void*                   array
+,   u64                     array_stride
+,   u64                     array_length
+,   comparator_function_t   comparator
+)
+{
+    platform_array_sort ( array , array_stride , array_length , comparator );
     return array;
 }

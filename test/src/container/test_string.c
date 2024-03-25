@@ -10,10 +10,6 @@
 
 #include "core/memory.h"
 
-/** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
-    ( memory_allocation_count () - memory_free_count () )
-
 u8
 test_string_allocate_and_free
 ( void )
@@ -29,7 +25,7 @@ test_string_allocate_and_free
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* hello = "Hello world!";
 
@@ -41,12 +37,12 @@ test_string_allocate_and_free
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     string_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_STRING );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     char* string = string_allocate_from ( hello );
 
     // TEST 1.1: string_allocate_from performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 1.2: string_allocate_from allocated the correct number of bytes with the correct memory tag (length of string + terminator + u64 (used internally to store string length to free)).
     EXPECT_EQ ( global_amount_allocated_ + _string_length ( hello ) + sizeof ( char ) + sizeof ( u64 ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -64,13 +60,13 @@ test_string_allocate_and_free
     string_free ( string );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( string_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2.2: string_free does not modify the global allocator state if no string is provided.
     string_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( string_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -78,7 +74,7 @@ test_string_allocate_and_free
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( string_amount_allocated , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -98,7 +94,7 @@ test_string_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* hello = "Hello world!";
 
@@ -110,7 +106,7 @@ test_string_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     char* string = string_create ();
 
@@ -118,7 +114,7 @@ test_string_create_and_destroy
     EXPECT_NEQ ( 0 , string );
 
     // TEST 1.1: string_create performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 1.2: string_create allocated the correct number of bytes with the correct memory tag (array is used internally to represent a resizable string).
     EXPECT_EQ ( global_amount_allocated_ + array_size ( string ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -134,7 +130,7 @@ test_string_create_and_destroy
     string_destroy ( string );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2: string_create_from.
 
@@ -144,7 +140,7 @@ test_string_create_and_destroy
     EXPECT_NEQ ( 0 , string );
 
     // TEST 2.1: string_create_from performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2.2: string_create_from allocated the correct number of bytes with the correct memory tag (array is used internally to represent a resizable string).
     EXPECT_EQ ( array_amount_allocated_ + array_size ( string ) , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
@@ -163,7 +159,7 @@ test_string_create_and_destroy
     EXPECT_NEQ ( 0 , copy );
 
     // TEST 3.1: string_copy performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count + 1 + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count + 1 + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 3.2: string_copy allocated the correct number of bytes with the correct memory tag (array is used internally to represent a resizable string).
     EXPECT_EQ ( array_amount_allocated + array_size ( string ) + array_size ( copy ) , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
@@ -179,7 +175,7 @@ test_string_create_and_destroy
     string_destroy ( string );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 4: string_destroy handles invalid argument.
 
@@ -187,7 +183,7 @@ test_string_create_and_destroy
     string_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -195,7 +191,7 @@ test_string_create_and_destroy
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -213,7 +209,7 @@ test_string_push
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* to_push = "push";
     const u64 op_count = 100000;
@@ -263,7 +259,7 @@ test_string_push
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( string_amount_allocated , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -279,7 +275,7 @@ test_string_insert_and_remove
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* to_insert[] = { "He" , "llo " , "world" , "!" };
     const char* insert1     =          "llo "                  ;
@@ -478,7 +474,7 @@ test_string_insert_and_remove
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -496,7 +492,7 @@ test_string_insert_and_remove_random
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 op_count = 100000;
 
@@ -597,7 +593,7 @@ test_string_insert_and_remove_random
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( string_amount_allocated , memory_amount_allocated ( MEMORY_TAG_STRING ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -613,7 +609,7 @@ test_string_trim
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     char* string = string_create ();
     const char* empty = "";
@@ -671,7 +667,7 @@ test_string_trim
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -876,7 +872,7 @@ test_string_replace
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* original = "Replace\r\nall\r\nnewlines\r\nwith\r\n4\r\nspaces.\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n";
     const char* replaced = "Replace    all    newlines    with    4    spaces.                                            ";
@@ -952,7 +948,7 @@ test_string_replace
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -968,7 +964,7 @@ test_string_strip_ansi
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const char* in1 = ANSI_CC ( ANSI_CC_BG_DARK_RED ) "Strip me." ANSI_CC_RESET;
     const char* in2 = "Strip \033[0;1;2;43;44;45;46m" ANSI_CC ( ANSI_CC_BG_DARK_RED ) "me." ANSI_CC_RESET;
@@ -1053,7 +1049,7 @@ test_string_strip_ansi
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -1207,7 +1203,7 @@ test_string_format
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 raw_in = 23428476892;
     const i64 integer_in1 = -23428476892;
@@ -1661,7 +1657,7 @@ test_string_format
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }

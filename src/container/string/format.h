@@ -118,11 +118,11 @@ STRING_FORMAT_MODIFIER;
  *                           Works with any format specifier.
  * - pr<character><number> : Set minimum column width to <number>. If needed,
  *                           pad with <character> to the right.
- * - + : Always include sign. Default behavior is to include the sign only for
- *       a negative number.
+ * - + : Always print sign. Default behavior is to print the sign only for a
+ *       negative number.
  *       Works only with signed numeric format specifiers: %f, %F, %e, %i.
- * - - : Never include sign. Default behavior is to include the sign only for
- *       a negative number.
+ * - - : Never print sign. Default behavior is to print the sign only for a
+ *       negative number.
  *       Works only with signed numeric format specifiers: %f, %F, %e, %i.
  * - .<number> : Fix fractional precision to <number> decimal places.
  *               Works only with floating point format specifiers: %f, %F, %e,

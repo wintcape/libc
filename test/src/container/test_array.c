@@ -10,9 +10,23 @@
 
 #include "core/memory.h"
 
-/** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
-    ( memory_allocation_count () - memory_free_count () )
+/**
+ * @brief Comparator function used by test_array_sort.
+ * 
+ * @param x The address of a 32-bit integer.
+ * @param y The address of 32-bit integer.
+ * @return < 0 if x < y.
+ *         > 0 if x > y.
+ *         = 0 otherwise.
+ */
+i32
+test_array_sort_compare
+(   const void* x
+,   const void* y
+)
+{
+    return *( ( i32* ) x ) - *( ( i32* ) y );
+}
 
 u8
 test_array_create_and_destroy
@@ -29,7 +43,7 @@ test_array_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
@@ -39,7 +53,7 @@ test_array_create_and_destroy
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     u16* array = array_create_new ( u16 );
 
@@ -47,7 +61,7 @@ test_array_create_and_destroy
     EXPECT_NEQ ( 0 , array );
 
     // TEST 1.1: array_create_new performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 1.2: array_create_new allocated the correct number of bytes with the correct memory tag.
     EXPECT_EQ ( global_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -72,14 +86,14 @@ test_array_create_and_destroy
     array_destroy ( array );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2: array_create.
 
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     const u64 initial_capacity = 4 * ARRAY_DEFAULT_CAPACITY + 3;
     array = array_create ( u16 , initial_capacity );
@@ -88,7 +102,7 @@ test_array_create_and_destroy
     EXPECT_NEQ ( 0 , array );
 
     // TEST 2.1: array_create_new performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 2.2: array_create_new allocated the correct number of bytes with the correct memory tag.
     EXPECT_EQ ( global_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -113,14 +127,14 @@ test_array_create_and_destroy
     array_destroy ( array );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 3: array_create_from.
 
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count_ = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     f32 fs[ 16 ] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
     array = array_create_from ( f32 , fs , 16 );
@@ -129,7 +143,7 @@ test_array_create_and_destroy
     EXPECT_NEQ ( 0 , array );
 
     // TEST 3.1: array_create_from performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
     // TEST 3.2: array_create_from allocated the correct number of bytes with the correct memory tag.
     EXPECT_EQ ( global_amount_allocated_ + array_size ( array ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -151,7 +165,7 @@ test_array_create_and_destroy
     array_destroy ( array );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 4: array_destroy handles invalid argument.
 
@@ -159,7 +173,7 @@ test_array_create_and_destroy
     array_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count_ , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -167,7 +181,7 @@ test_array_create_and_destroy
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -183,7 +197,7 @@ test_array_push_and_pop
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const i16 to_push = 437;
     const u64 max_op = 100000;
@@ -291,7 +305,7 @@ test_array_push_and_pop
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -307,7 +321,7 @@ test_array_insert_and_remove
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const i64 to_insert[] = { 437 , 24 , -179253478 , -15799 };
     const i64 remove1[]   = { 437 , 24 , -15799 };
@@ -514,7 +528,7 @@ test_array_insert_and_remove
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -530,7 +544,7 @@ test_array_insert_and_remove_random
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 max_op = 10000;
 
@@ -557,13 +571,13 @@ test_array_insert_and_remove_random
         // Verify there was no memory error prior to the test.
         EXPECT_NEQ ( 0 , array );
 
-        // TEST: array_insert increases array length by 1.
+        // TEST 1: array_insert increases array length by 1.
         EXPECT_EQ ( old_length , array_length ( array ) - 1 );
 
-        // TEST: array_insert inserts the correct element at the correct array index.
+        // TEST 2: array_insert inserts the correct element at the correct array index.
         EXPECT_EQ ( to_insert , array[ insert_index ] );
 
-        // TEST: array_insert leaves the existing array data unmodified.
+        // TEST 3: array_insert leaves the existing array data unmodified.
         if ( !insert_index )
         {
             EXPECT ( memory_equal ( &array[ 1 ] , &old_memory[ 0 ] , old_length * array_stride ( array ) ) );
@@ -600,13 +614,13 @@ test_array_insert_and_remove_random
         // Verify there was no memory error prior to the test.
         EXPECT_NEQ ( 0 , array );
 
-        // TEST: array_remove decreases array length by 1.
+        // TEST 4: array_remove decreases array length by 1.
         EXPECT_EQ ( old_length , array_length ( array ) + 1 );
 
-        // TEST: array_remove writes the correct array element into the output buffer.
+        // TEST 5: array_remove writes the correct array element into the output buffer.
         EXPECT_EQ ( old_memory[ remove_index ] , removed );
 
-        // TEST: array_remove removes the array element and leaves the remaining array data unmodified.
+        // TEST 6: array_remove removes the array element and leaves the remaining array data unmodified.
         if ( !remove_index )
         {
             EXPECT ( memory_equal ( &array[ 0 ] , &old_memory[ 1 ] , array_stride ( array ) * array_length ( array ) ) );
@@ -622,28 +636,28 @@ test_array_insert_and_remove_random
         }
     }
 
-    // TEST: array_remove succeeds when no output buffer is provided.
+    // TEST 7: array_remove succeeds when no output buffer is provided.
     array_remove ( array , 0 , 0 );
 
     // Verify there was no memory error prior to the test.
     EXPECT_NEQ ( 0 , array );
 
-    // TEST: array_remove decreases array length by 1.
+    // TEST 8: array_remove decreases array length by 1.
     EXPECT_EQ ( 0 , array_length ( array ) );
 
-    // TEST: array_remove warns when array is empty.
+    // TEST 9: array_remove warns when array is empty.
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     removed = 0;
     i32* array_ = array;
     array_remove ( array , 0 , &removed );
 
-    // TEST: array_remove does not perform memory allocation if the array is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    // TEST 10: array_remove does not perform memory allocation if the array is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
     EXPECT_EQ ( array_ , array );
 
-    // TEST: array_remove does not modify array length if the array is empty.
+    // TEST 11: array_remove does not modify array length if the array is empty.
     EXPECT_EQ ( 0 , array_length ( array ) );
 
-    // TEST: array_remove writes nothing to the output buffer if the array is empty.
+    // TEST 12: array_remove writes nothing to the output buffer if the array is empty.
     EXPECT_EQ ( 0 , removed );
 
     memory_free ( old_memory , sizeof ( i32 ) * max_op , MEMORY_TAG_ARRAY );
@@ -654,8 +668,146 @@ test_array_insert_and_remove_random
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
     
+    return true;
+}
+
+u8
+test_array_reverse
+( void )
+{
+    const i32 array_empty[] = {};
+    const i32 array_single_element[] = { 1 };
+    const i32 array_stride = sizeof ( i32 );
+    const i32 array_length = 16;
+    const i32 array_in[] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+    const i32 array_out[] = { 7 , 6 , 5 , 4 , 3 , 2 , 1 , 0 , -1 , -2 , -3 , -4 , -5 , -6 , -7 , -8 };
+    i32 array[ 16 ];
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Start test.
+
+    // TEST 1: array_reverse does not fail on an empty array.
+    memory_copy ( array , array_empty , sizeof ( array_empty ) );
+    _array_reverse ( array , array_stride , 0 );
+    EXPECT ( memory_equal ( array , array_empty , sizeof ( array_empty ) ) );
+
+    // TEST 2: array_reverse does not fail on a single-element array.
+    memory_copy ( array , array_single_element , sizeof ( array_single_element ) );
+    _array_reverse ( array , array_stride , 1 );
+    EXPECT ( memory_equal ( array , array_single_element , sizeof ( array_single_element ) ) );
+
+    // TEST 3: array_reverse correctly reverses an input array with more than one element.
+    memory_copy ( array , array_in , sizeof ( array_in ) );
+    _array_reverse ( array , array_stride , array_length );
+    EXPECT ( memory_equal ( array , array_out , sizeof ( array_out ) ) );
+    // (reverse it again)
+    _array_reverse ( array , array_stride , array_length );
+    EXPECT ( memory_equal ( array , array_in , sizeof ( array_in ) ) );
+
+    // End test.
+    ////////////////////////////////////////////////////////////////////////////
+
+    return true;
+}
+
+u8
+test_array_sort
+( void )
+{
+    u64 global_amount_allocated;
+    u64 array_amount_allocated;
+    u64 global_allocation_count;
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
+
+    const u64 stride = sizeof ( i32 );
+    const u64 length = 10000000;
+
+    LOGDEBUG ( "Sorting an array of %i integers multiple times. . ." , length );
+
+    const i32 array_empty[] = {};
+    const i32 array_single_element[] = { 1 };
+    const i32 array_all_elements_equal[] = { 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 };
+    i32* array_sorted = _array_create ( length , stride );
+    i32* array_unsorted = _array_create ( length , stride );
+    i32* array_reverse_order = _array_create ( length , stride );
+    i32* array = _array_create ( length , stride );
+    i32 array_element;
+
+    // Verify there was no memory error prior to the test.
+    EXPECT_NEQ ( 0 , array_sorted );
+    EXPECT_NEQ ( 0 , array_unsorted );
+    EXPECT_NEQ ( 0 , array_reverse_order );
+    EXPECT_NEQ ( 0 , array );
+
+    // Populate the arrays to compare against.
+    array_element = -50000;
+    for ( u64 i = 0; i < length; ++i )
+    {
+        array_push ( array_sorted , array_element );
+        array_element += 1;
+    }
+    for ( u64 i = 0; i < length; ++i )
+    {
+        array_element = array_sorted[ length - 1 - i ];
+        array_push ( array_reverse_order , array_element );
+    }
+    memory_copy ( array_unsorted , array_sorted , stride * length );
+    array_shuffle ( array_unsorted );
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Start test.
+
+    // TEST 1: array_sort does not fail on an empty array.
+    memory_copy ( array , array_empty , sizeof ( array_empty ) );
+    _array_sort ( array , stride , 0 , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_empty , sizeof ( array_empty ) ) );
+
+    // TEST 2: array_sort does not modify a single-element array.
+    memory_copy ( array , array_single_element , sizeof ( array_single_element ) );
+    _array_sort ( array , stride , 1 , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_single_element , sizeof ( array_single_element ) ) );
+
+    // TEST 3: array_sort does not modify an array where every element is equal.
+    memory_copy ( array , array_all_elements_equal , sizeof ( array_all_elements_equal ) );
+    _array_sort ( array , stride , sizeof ( array_all_elements_equal ) / stride , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_all_elements_equal , sizeof ( array_all_elements_equal ) ) );
+
+    // TEST 4: array_sort does not modify an array that is already sorted.
+    memory_copy ( array , array_sorted , stride * length );
+    _array_sort ( array , stride , length , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_sorted , stride * length ) );
+
+    // TEST 5: array_sort successfully sorts a random array.
+    memory_copy ( array , array_unsorted , stride * length );
+    _array_sort ( array , stride , length , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_sorted , stride * length ) );
+
+    // TEST 6: array_sort successfully sorts an array which is in reverse order.
+    memory_copy ( array , array_reverse_order , stride * length );
+    _array_sort ( array , stride , length , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_sorted , stride * length ) );
+
+    // End test.
+    ////////////////////////////////////////////////////////////////////////////
+
+    array_destroy ( array );
+    array_destroy ( array_sorted );
+    array_destroy ( array_unsorted );
+    array_destroy ( array_reverse_order );
+
+    LOGDEBUG ( "  Done." );
+
+    // Verify the test allocated and freed all of its memory properly.
+    EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
+
     return true;
 }
 
@@ -667,4 +819,6 @@ test_register_array
     test_register ( test_array_push_and_pop , "Testing array 'push' and 'pop' operations." );
     test_register ( test_array_insert_and_remove , "Testing array 'insert' and 'remove' operations." );
     test_register ( test_array_insert_and_remove_random , "Testing array 'insert' and 'remove' operations with random indices and elements." );
+    test_register ( test_array_reverse , "Testing array in-place 'reverse' operation." );
+    test_register ( test_array_sort , "Testing array in-place 'sort' operation." );
 }

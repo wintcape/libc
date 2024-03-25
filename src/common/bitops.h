@@ -2,7 +2,7 @@
  * @author Matthew Weissel (mweissel3@gatech.edu)
  * @file common/bitops.h
  * @brief Functions and preprocessor bindings which implement bit manipulation
- * operations.
+ * operations on 64-bit values.
  */
 #ifndef BITOPS_H
 #define BITOPS_H
@@ -20,9 +20,9 @@
 #define BITSWP(x,n) ( (x) ^= ( U64_1 << (n) ) )           /** @brief Internal preprocessor binding (use inline function instead for type safety). */
 
 /**
- * @brief Reads a bit from a bit vector.
+ * @brief Reads a bit from a 64-bit value.
  * 
- * @param x A bit vector.
+ * @param x A 64-bit value.
  * @param n The bit to read.
  * @return true if bit n of x set; false otherwise.
  */
@@ -37,9 +37,9 @@ bit
 }
 
 /**
- * @brief Sets a bit within a bit vector.
+ * @brief Sets a bit within a 64-bit value.
  * 
- * @param x A bit vector.
+ * @param x A 64-bit value
  * @param n The bit to set.
  * @return x with bit n set.
  */
@@ -54,9 +54,9 @@ bitset
 }
 
 /**
- * @brief Clears a bit within a bit vector.
+ * @brief Clears a bit within a 64-bit value.
  * 
- * @param x A bit vector.
+ * @param x A 64-bit value.
  * @param n The bit to clear.
  * @return x with bit n cleared.
  */
@@ -71,9 +71,9 @@ bitclr
 }
 
 /**
- * @brief Toggles a bit within a bit vector.
+ * @brief Toggles a bit within a 64-bit value.
  * 
- * @param x A bit vector.
+ * @param x A 64-bit value.
  * @param n The bit to toggle.
  * @return x with bit n toggled.
  */

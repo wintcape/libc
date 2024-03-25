@@ -137,6 +137,26 @@ platform_string_length_clamped
 ,   u64         limit
 );
 
+/**
+ * @brief Platform-independent function to sort an array in-place.
+ * 
+ * Current implementation uses quicksort algorithm.
+ * AVERAGE CASE TIME COMPLEXITY : O(n log(n))
+ * WORST CASE TIME COMPLEXITY   : O(n²)
+ * 
+ * @param array The array to sort. Must be non-zero.
+ * @param array_stride The array stride. Must be non-zero.
+ * @param array_length The number of elements contained by the array.
+ * @param comparator A function which compares two array elements.
+ */
+void
+platform_array_sort
+(   void*                   array
+,   u64                     array_stride
+,   u64                     array_length
+,   comparator_function_t   comparator
+);
+
 // End string operations.
 ////////////////////////////////////////////////////////////////////////////////
 // Begin thread operations.

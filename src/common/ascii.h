@@ -175,7 +175,8 @@ to_digit
  * single-digit integer.
  * 
  * @param digit An integer value in the range [ 0 , 9 ].
- * @return The Arabic numeral ASCII character corresponding to digit.
+ * @return The Arabic numeral ASCII character corresponding to digit, if it is a
+ * single base-10 digit. Otherwise, digit.
  */
 INLINE
 unsigned char
@@ -183,7 +184,9 @@ char_digit
 (   const u8 digit
 )
 {
-    return ( ( unsigned char ) '0' ) + digit;
+    return ( digit < 10 ) ? ( ( unsigned char ) '0' ) + digit
+                          : digit
+                          ;
 }
 
 #endif  // ASCII_H

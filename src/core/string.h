@@ -156,7 +156,6 @@ string_reverse
         char* string__ = (string);                                 \
         string_reverse ( string__ , _string_length ( string__ ) ); \
     })
-    
 
 /**
  * @brief Signed integer stringify utility.

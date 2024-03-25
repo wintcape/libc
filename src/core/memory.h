@@ -31,6 +31,10 @@ MEMORY_TAG;
 /** @brief (see memory_amount_allocated). */
 #define MEMORY_TAG_ALL MEMORY_TAG_COUNT
 
+/** @brief Computes current global number of unfreed allocations. */
+#define MEMORY_ALLOCATION_COUNT \
+    ( memory_allocation_count () - memory_free_count () )
+
 /**
  * @brief Initializes the memory subsystem.
  * 

@@ -141,7 +141,7 @@ string_reverse
 ,   const u64   string_length
 )
 {
-    if ( !string_length )
+    if ( string_length < 2 )
     {
         return string;
     }

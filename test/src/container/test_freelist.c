@@ -18,10 +18,6 @@ typedef struct
 }
 alloc_t;
 
-/** @brief Computes current global number of unfreed allocations. */
-#define GLOBAL_ALLOCATION_COUNT \
-    ( memory_allocation_count () - memory_free_count () )
-
 u8
 test_freelist_init_and_clear
 ( void )
@@ -33,7 +29,7 @@ test_freelist_init_and_clear
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     freelist_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     freelist_t freelist;
     u64 memory_requirement = 0;
@@ -92,7 +88,7 @@ test_freelist_init_and_clear
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( freelist_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -108,7 +104,7 @@ test_freelist_allocate_one_and_free_one
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     freelist_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     freelist_t freelist;
     u64 memory_requirement = 0;
@@ -184,7 +180,7 @@ test_freelist_allocate_one_and_free_one
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( freelist_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -200,7 +196,7 @@ test_freelist_allocate_one_and_free_multiple
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     freelist_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     freelist_t freelist;
     u64 memory_requirement = 0;
@@ -289,7 +285,7 @@ test_freelist_allocate_one_and_free_multiple
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( freelist_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -305,7 +301,7 @@ test_freelist_allocate_one_and_free_multiple_varying_sizes
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     freelist_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     freelist_t freelist;
     u64 memory_requirement = 0;
@@ -328,61 +324,61 @@ test_freelist_allocate_one_and_free_multiple_varying_sizes
     // TEST 2: First freelist_allocate with bad offset sets the offset to 0 and writes it to the output buffer.
     EXPECT_EQ ( 0 , offset1 );
 
-    // TEST: Freelist has correct amount of free space following freelist_allocate.
+    // TEST 3: Freelist has correct amount of free space following freelist_allocate.
     EXPECT_EQ ( size - 64 , freelist_query_free ( &freelist ) );
 
-    // TEST 3: freelist_allocate succeeds with bad offset.
+    // TEST 4: freelist_allocate succeeds with bad offset.
     u64 offset2 = INVALID_ID;
     EXPECT ( freelist_allocate ( &freelist , 64 , &offset2 ) );
 
-    // TEST 4: Subsequent freelist_allocate with bad offset sets the offset to the current offset + the size of the previous allocation and writes it to the output buffer.
+    // TEST 5: Subsequent freelist_allocate with bad offset sets the offset to the current offset + the size of the previous allocation and writes it to the output buffer.
     EXPECT_EQ ( 64 , offset2 );
 
-    // TEST 5: Freelist has correct amount of free space following freelist_allocate.
+    // TEST 6: Freelist has correct amount of free space following freelist_allocate.
     EXPECT_EQ ( size - 128 , freelist_query_free ( &freelist ) );
     
-    // TEST 6: freelist_allocate succeeds with bad offset.
+    // TEST 7: freelist_allocate succeeds with bad offset.
     u64 offset3 = INVALID_ID;
     EXPECT ( freelist_allocate ( &freelist , 64 , &offset3 ) );
 
-    // TEST 7: Subsequent freelist_allocate with bad offset sets the offset to the current offset + the size of the previous allocation and writes it to the output buffer.
+    // TEST 8: Subsequent freelist_allocate with bad offset sets the offset to the current offset + the size of the previous allocation and writes it to the output buffer.
     EXPECT_EQ ( 128 , offset3 );
 
-    // TEST 8: Freelist has correct amount of free space following freelist_allocate.
+    // TEST 9: Freelist has correct amount of free space following freelist_allocate.
     EXPECT_EQ ( size - 192 , freelist_query_free( &freelist ) );
 
-    // TEST 9: freelist_free succeeds with valid block.
+    // TEST 10: freelist_free succeeds with valid block.
     EXPECT ( freelist_free ( &freelist , 64 , offset2 ) );
 
-    // TEST 10: Freelist has correct amount of free space following freelist_free.
+    // TEST 11: Freelist has correct amount of free space following freelist_free.
     EXPECT_EQ ( size - 128 , freelist_query_free ( &freelist ) );
 
-    // TEST 11: freelist_allocate (with bad offset) succeeds in filling the space freed by previous freelist_free call.
+    // TEST 12: freelist_allocate (with bad offset) succeeds in filling the space freed by previous freelist_free call.
     u64 offset4 = INVALID_ID;
     EXPECT ( freelist_allocate ( &freelist , 64 , &offset4 ) );
 
-    // TEST 12: Subsequent freelist_allocate with bad offset sets the offset to the offset of the removed block (since the new one is occupying its spot) and writes it to the output buffer.
+    // TEST 13: Subsequent freelist_allocate with bad offset sets the offset to the offset of the removed block (since the new one is occupying its spot) and writes it to the output buffer.
     EXPECT_EQ ( offset2 , offset4 );
 
-    // TEST 13: Freelist has correct amount of free space following freelist_allocate.
+    // TEST 14: Freelist has correct amount of free space following freelist_allocate.
     EXPECT_EQ ( size - 192 , freelist_query_free ( &freelist ) );
 
-    // TEST 14: freelist_free succeeds with valid block.
+    // TEST 15: freelist_free succeeds with valid block.
     EXPECT ( freelist_free ( &freelist , 64 , offset1 ) );
 
-    // TEST 15: Freelist has correct amount of free space following freelist_free.
+    // TEST 16: Freelist has correct amount of free space following freelist_free.
     EXPECT_EQ ( size - 128 , freelist_query_free ( &freelist ) );
 
-    // TEST 16: freelist_free succeeds with valid block.
+    // TEST 17: freelist_free succeeds with valid block.
     EXPECT ( freelist_free ( &freelist , 64 , offset3 ) );
 
-    // TEST 17: Freelist has correct amount of free space following freelist_free.
+    // TEST 18: Freelist has correct amount of free space following freelist_free.
     EXPECT_EQ ( size - 64 , freelist_query_free ( &freelist ) );
 
-    // TEST 18: freelist_free succeeds with valid block.
+    // TEST 19: freelist_free succeeds with valid block.
     EXPECT ( freelist_free ( &freelist , 64 , offset4 ) );
 
-    // TEST 19: Freelist has correct amount of free space following freelist_free.
+    // TEST 20: Freelist has correct amount of free space following freelist_free.
     EXPECT_EQ ( size , freelist_query_free ( &freelist ) );
 
     // End test.
@@ -394,7 +390,7 @@ test_freelist_allocate_one_and_free_multiple_varying_sizes
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( freelist_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -410,7 +406,7 @@ test_freelist_allocate_until_full_and_fail_to_allocate_more
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     freelist_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     freelist_t freelist;
     u64 memory_requirement = 0;
@@ -449,7 +445,7 @@ test_freelist_allocate_until_full_and_fail_to_allocate_more
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( freelist_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
 
     return true;
 }
@@ -496,7 +492,7 @@ test_freelist_multiple_allocate_and_free_random
     // Copy the current global allocator state prior to the test.
     global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
     freelist_amount_allocated = memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR );
-    global_allocation_count = GLOBAL_ALLOCATION_COUNT;
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u32 alloc_count = 65556;
     const u32 max_op = 100000;
@@ -602,7 +598,7 @@ test_freelist_multiple_allocate_and_free_random
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( freelist_amount_allocated , memory_amount_allocated ( MEMORY_TAG_DYNAMIC_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count , GLOBAL_ALLOCATION_COUNT );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
     
     return true;
 }
