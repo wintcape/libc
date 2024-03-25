@@ -1,4 +1,4 @@
-TARGET := libc
+TARGET := c-windows
 CC ?= gcc
 
 CFLAGS := -g -O2 -W -Wvarargs -Wall -Werror -Werror=vla -Wno-unused-parameter
@@ -25,10 +25,10 @@ TEST_OBJFLAGS := $(CFLAGS) -c
 TEST_LDFLAGS := -Llib -l$(TARGET) $(LDFLAGS)
 TEST_OBJ := $(foreach x,$(TEST_OBJFILES), $(addprefix obj\,$(x)))
 
-CLEAN := lib\$(TARGET).lib $(OBJ)
+CLEAN := lib\lib$(TARGET).a $(OBJ)
 TEST_CLEAN := bin\$(TEST) $(TEST_OBJ)
 
-lib\$(TARGET).lib: $(OBJ)
+lib\lib$(TARGET).a: $(OBJ)
 	ar rcs $@ $^
 
 bin\$(TEST): $(TEST_OBJ)
@@ -71,7 +71,7 @@ obj\test_memory_dynamic_allocator.o:	test\src\memory\test_dynamic_allocator.c
 obj\test_filesystem.o:					test\src\platform\test_filesystem.c
 
 .PHONY: lib
-lib: mkdir clean lib\$(TARGET).lib
+lib: mkdir clean lib\lib$(TARGET).a
 
 .PHONY: test
 test: mkdir test-clean bin\$(TEST) post run-test

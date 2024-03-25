@@ -1,4 +1,4 @@
-TARGET := libc
+TARGET := c-linux
 CC ?= gcc
 
 CFLAGS := -g -O2 -W -Wvarargs -Wall -Werror -Werror=vla -Wno-unused-parameter

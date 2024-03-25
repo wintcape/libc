@@ -1,6 +1,7 @@
 .git/*
 .vscode/*
-obj/*
 bin/*
+lib/*
+obj/*
 console.log
 test/assets/out-file

@@ -1,4 +1,4 @@
-TARGET := libc
+TARGET := c-macos
 CC ?= gcc
 
 CFLAGS := -g -O2 -W -Wvarargs -Wall -Werror -Werror=vla -Wno-unused-parameter
