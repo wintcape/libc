@@ -12,13 +12,16 @@
 
 #include "container/freelist.h"
 
-/** @brief Type definition for an internal state. */
+/** @brief Type definition for internal state. */
 typedef struct
 {
     u64         capacity;
-    freelist_t  freelist;
-    void*       freelist_start;
-    void*       memory_start;
+
+    u64         freelist_memory_requirement;
+    freelist_t* freelist;
+
+    bool        owns_memory;
+    void*       memory;
 }
 state_t;
 
@@ -36,83 +39,146 @@ header_t;
 
 /** @brief Maximum single allocation size. */
 #define MAX_SINGLE_ALLOCATION_SIZE \
-    GIBIBYTES ( 4 )
+    GiB ( 4 )
 
 bool
-dynamic_allocator_init
+dynamic_allocator_create
 (   u64                     capacity
-,   u64*                    memory_requirement
-,   void*                   memory
-,   dynamic_allocator_t*    allocator
+,   u64*                    memory_requirement_
+,   void*                   memory_
+,   dynamic_allocator_t**   allocator
 )
 {
-    if ( !capacity || !memory_requirement )
+    if ( !capacity )
     {
-        if ( !capacity )
-        {
-            LOGERROR ( "dynamic_allocator_init: Value of capacity argument must be non-zero." );
-        }
-        if ( !memory_requirement )
-        {
-            LOGERROR ( "dynamic_allocator_init: Missing argument: memory_requirement." );
-        }
+        LOGERROR ( "dynamic_allocator_init: Value of capacity argument must be non-zero." );
         return false;
     }
 
     u64 freelist_memory_requirement = 0;
-    freelist_init ( capacity , &freelist_memory_requirement , 0 , 0 );
-    
-    *memory_requirement = freelist_memory_requirement
-                        + sizeof ( state_t )
-                        + capacity
-                        ;
-
-    if ( !memory )
+    freelist_create ( capacity , &freelist_memory_requirement , 0 , 0 );
+    const u64 memory_requirement = freelist_memory_requirement
+                                 + capacity
+                                 + sizeof ( state_t )
+                                 ;
+    if ( memory_requirement_ )
     {
-        return true;
+        *memory_requirement_ = memory_requirement;
+        if ( !memory_ )
+        {
+            return true;
+        }
+    }
+
+    void* memory;
+    if ( memory_ )
+    {
+        memory = memory_;
+    }
+    else
+    {
+        memory = memory_allocate ( memory_requirement
+                                 , MEMORY_TAG_DYNAMIC_ALLOCATOR
+                                 );
     }
 
     if ( !allocator )
     {
-        LOGERROR ( "dynamic_allocator_init: Missing argument: allocator (output buffer)." );
+        LOGERROR ( "dynamic_allocator_create: Missing argument: allocator (output buffer)." );
+        if ( !memory_ )
+        {
+            memory_free ( memory
+                        , memory_requirement
+                        , MEMORY_TAG_DYNAMIC_ALLOCATOR
+                        );
+        }
         return false;
     }
 
-    ( *allocator ).memory = memory;
-    
-    state_t* state = ( *allocator ).memory;
+    state_t* state = memory;
+
     ( *state ).capacity = capacity;
-    ( *state ).freelist_start = ( *allocator ).memory + sizeof ( state_t );
-    ( *state ).memory_start = ( *state ).freelist_start
-                            + freelist_memory_requirement
-                            ;
+    ( *state ).owns_memory = !memory_;
 
-    freelist_init ( capacity
-                  , &freelist_memory_requirement
-                  , ( *state ).freelist_start
-                  , &( *state ).freelist
-                  );
+    ( *state ).freelist_memory_requirement = freelist_memory_requirement;
+    if ( !freelist_create ( capacity
+                          , 0
+                          , ( void* )( ( ( u64 ) memory ) + sizeof ( state_t ) )
+                          , &( *state ).freelist
+                          ))
+    {
+        LOGERROR ( "dynamic_allocator_create: Failed to initialize backend freelist." );
+        if ( ( *state ).owns_memory )
+        {
+            memory_free ( memory
+                        , memory_requirement
+                        , MEMORY_TAG_DYNAMIC_ALLOCATOR
+                        );
+        }
+        return false;
+    }
 
-    memory_clear ( ( *state ).memory_start , capacity );
+    ( *state ).memory = ( void* )( ( ( u64 ) memory )
+                                 + sizeof ( state_t )
+                                 + ( *state ).freelist_memory_requirement
+                                 );
+    memory_clear ( ( *state ).memory , capacity );
 
+    *allocator = state;
     return true;
 }
 
 void
-dynamic_allocator_clear
-(   dynamic_allocator_t* allocator
+dynamic_allocator_destroy
+(   dynamic_allocator_t** allocator
 )
 {
-    if ( !allocator || !( *allocator ).memory )
+    if ( !allocator )
     {
         return;
     }
 
-    state_t* state = ( *allocator ).memory;
-    freelist_clear ( &( *state ).freelist );
-    memory_clear ( ( *state ).memory_start , ( *state ).capacity );
-    ( *state ).capacity = 0;
-    ( *allocator ).memory = 0;
+    state_t* state = *allocator;
+    if ( !state )
+    {
+        return;
+    }
+
+    freelist_destroy ( &( *state ).freelist );
+
+    const u64 memory_requirement = ( *state ).freelist_memory_requirement
+                                 + ( *state ).capacity
+                                 + sizeof ( state_t )
+                                 ;
+    if ( ( *state ).owns_memory )
+    {
+        memory_free ( state
+                    , memory_requirement
+                    , MEMORY_TAG_DYNAMIC_ALLOCATOR
+                    );
+    }
+    else
+    {
+        memory_clear ( state , memory_requirement );
+    }
+
+    *allocator = 0;
+}
+
+u64
+dynamic_allocator_capacity
+(   const dynamic_allocator_t* allocator
+)
+{
+    return ( *( ( state_t* ) allocator ) ).capacity;
+}
+
+bool
+dynamic_allocator_owns_memory
+(   const dynamic_allocator_t* allocator
+)
+{
+    return ( *( ( state_t* ) allocator ) ).owns_memory;
 }
 
 void*
@@ -131,30 +197,7 @@ dynamic_allocator_allocate_aligned
 ,   u16                     alignment
 )
 {
-    if ( !allocator || !size || !alignment || !( *allocator ).memory )
-    {
-        if ( !allocator )
-        {
-            LOGERROR ( "dynamic_allocator_allocate: Missing argument: allocator." );
-        }
-        if ( !size )
-        {
-            LOGERROR ( "dynamic_allocator_allocate: Cannot allocate block of size 0." );
-        }
-        if ( !alignment )
-        {
-            LOGERROR ( "dynamic_allocator_allocate: Cannot allocate block with alignment 0." );
-        }
-        if ( allocator && !( *allocator ).memory )
-        {
-            LOGERROR ( "dynamic_allocator_allocate: The provided allocator is uninitialized (%@)."
-                     , allocator
-                     );
-        }
-        return 0;
-    }
-
-    state_t* state = ( *allocator ).memory;
+    state_t* state = allocator;
 
     const u64 header_size = sizeof ( header_t );
     const u64 storage_size = SIZE_STORAGE;
@@ -162,17 +205,19 @@ dynamic_allocator_allocate_aligned
 
     if ( required_size >= MAX_SINGLE_ALLOCATION_SIZE )
     {
-        f64 amount;
-        const char* unit = string_bytesize ( MAX_SINGLE_ALLOCATION_SIZE , &amount );
-        LOGERROR ( "dynamic_allocator_allocate: Cannot request block size larger than MAX_SINGLE_ALLOCATION_SIZE (%.2f %s)."
-                 , &amount
-                 , unit
+        f64 max_amount;
+        f64 req_amount;
+        const char* max_unit = string_bytesize ( MAX_SINGLE_ALLOCATION_SIZE , &max_amount );
+        const char* req_unit = string_bytesize ( required_size , &req_amount );
+        LOGERROR ( "dynamic_allocator_allocate: Cannot request block size larger than MAX_SINGLE_ALLOCATION_SIZE (maximum: %.2f %s, requested: %.2f %s)."
+                 , &max_amount , max_unit
+                 , &req_amount , req_unit
                  );
         return 0;
     }
 
     u64 base_offset = 0;
-    if ( !freelist_allocate ( &( *state ).freelist
+    if ( !freelist_allocate ( ( *state ).freelist
                             , required_size
                             , &base_offset
                             ))
@@ -180,7 +225,7 @@ dynamic_allocator_allocate_aligned
         f64 req_amount;
         f64 rem_amount;
         const char* req_unit = string_bytesize ( size , &req_amount );
-        const char* rem_unit = string_bytesize ( freelist_query_free ( &( *state ).freelist )
+        const char* rem_unit = string_bytesize ( freelist_query_free ( ( *state ).freelist )
                                                , &rem_amount
                                                );
         LOGERROR ( "dynamic_allocator_allocate: No blocks of memory large enough to allocate from."
@@ -191,8 +236,8 @@ dynamic_allocator_allocate_aligned
         return 0;
     }
 
-    void* memory = ( void* )( ( u64 )( ( *state ).memory_start ) + base_offset );
-    u64 memory_offset = aligned ( ( u64 ) memory + SIZE_STORAGE , alignment );
+    void* memory = ( void* )( ( ( u64 )( ( *state ).memory ) ) + base_offset );
+    u64 memory_offset = aligned ( ( ( u64 ) memory ) + SIZE_STORAGE , alignment );
     u32* memory_size = ( u32* )( memory_offset - SIZE_STORAGE );
     *memory_size = ( u32 ) size;
     header_t* header = ( header_t* )( memory_offset + size );
@@ -216,50 +261,32 @@ dynamic_allocator_free_aligned
 ,   void*                   memory
 )
 {
-    if ( !allocator || !memory || !( *allocator ).memory )
-    {
-        if ( !allocator )
-        {
-            LOGERROR ( "dynamic_allocator_free: Missing argument: allocator." );
-        }
-        if ( !memory )
-        {
-            LOGERROR ( "dynamic_allocator_free: Missing argument: memory." );
-        }
-        if ( allocator && !( *allocator ).memory )
-        {
-            LOGERROR ( "dynamic_allocator_free: The provided allocator is uninitialized (%@)."
-                     , allocator
-                     );
-        }
-        return false;
-    }
-    
-    state_t* state = ( *allocator ).memory;
-    const void* const memory_end = ( *state ).memory_start + ( *state ).capacity;
+    state_t* state = allocator;
+    const void* const memory_end = ( *state ).memory + ( *state ).capacity;
 
-    if (   memory < ( *state ).memory_start
+    if (   memory < ( *state ).memory
         || memory > memory_end
        )
     {
         LOGWARN ( "dynamic_allocator_free: Trying to release block [%@] outside of allocator range [%@ .. %@]."
                 , memory
-                , ( *state ).memory_start
+                , ( *state ).memory
                 , memory_end
                 );
         return false;
     }
 
-    u32* size = ( u32* )( ( u64 ) memory - SIZE_STORAGE );
-    header_t* header = ( header_t* )( ( u64 ) memory + *size );
-    u64 offset = ( u64 ) ( *header ).start - ( u64 ) ( *state ).memory_start;
+    u32* size = ( u32* )( ( ( u64 ) memory ) - SIZE_STORAGE );
+    header_t* header = ( header_t* )( ( ( u64 ) memory ) + *size );
+    u64 offset = ( ( u64 )( ( *header ).start ) )
+               - ( ( u64 )( ( *state ).memory ) );
     u64 required_size = ( *header ).alignment
                       + sizeof ( header_t )
                       + SIZE_STORAGE
                       + *size
                       ;
 
-    if ( !freelist_free ( &( *state ).freelist
+    if ( !freelist_free ( ( *state ).freelist
                         , required_size
                         , offset
                         ))
@@ -290,8 +317,7 @@ dynamic_allocator_query_free
 (   const dynamic_allocator_t* allocator
 )
 {
-    state_t* state = ( *allocator ).memory;
-    return freelist_query_free ( &( *state ).freelist );
+    return freelist_query_free ( ( *( ( state_t* ) allocator ) ).freelist );
 }
 
 u64

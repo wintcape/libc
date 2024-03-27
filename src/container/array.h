@@ -6,7 +6,10 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include "common.h"
+#include "core/array.h"
+
+/** @brief Type declaration for a resizable array. */
+typedef void array_t;
 
 /** @brief Type and instance definitions for array fields. */
 typedef enum
@@ -24,7 +27,7 @@ ARRAY_FIELD;
 
 /** @brief Array rescale factor. */
 #define ARRAY_SCALE_FACTOR(capacity) \
-    ( ( (capacity) * 3 ) >> 1 )
+    ( ( 3 * (capacity) ) >> 1 )
 
 /**
  * @brief Allocates memory for a resizable array.
@@ -36,9 +39,9 @@ ARRAY_FIELD;
  * 
  * @param initial_capacity The initial capacity. Must be non-zero.
  * @param stride The fixed element size in bytes. Must be non-zero.
- * @return A resizable array.
+ * @return An empty resizable array.
  */
-void*
+array_t*
 _array_create
 (   ARRAY_FIELD initial_capacity
 ,   ARRAY_FIELD stride
@@ -53,66 +56,51 @@ _array_create
     _array_create ( ARRAY_DEFAULT_CAPACITY , sizeof ( type ) )
 
 /**
- * @brief Creates a resizable array by copying an existing array. O(n).
+ * @brief Creates a resizable array by copying an existing fixed-length array.
+ * O(n).
  *
  * Uses dynamic memory allocation. Call array_destroy to free.
  * 
- * @param array The array to copy.
- * @param stride The fixed element size in bytes. Must be non-zero.
+ * @param array The fixed-length array to copy. Must be non-zero.
  * @param length The number of elements contained by array.
+ * @param stride The fixed element size in bytes.
  * @return A resizable copy of array.
 */
-void*
+array_t*
 _array_create_from
-(   void*       array
-,   ARRAY_FIELD stride
+(   const void* array
 ,   ARRAY_FIELD length
+,   ARRAY_FIELD stride
 );
 
 /** @param type C data type of the array. */
 #define array_create_from(type,array,length) \
-    _array_create_from ( (array) , sizeof ( type ) , (length) )
-
-/**
- * @brief Copies a resizable array. O(n).
- * 
- * Uses dynamic memory allocation. Call array_destroy to free.
- * 
- * @param array The array to copy.
- * @return A copy of array.
- */
-void*
-_array_copy
-(   void* array
-);
-
-#define array_copy(array) \
-    _array_copy ( array )
+    _array_create_from ( (array) , (length) , sizeof ( type ) )
 
 /**
  * @brief Frees the memory used by a resizable array.
  * 
- * @param array The array to free.
+ * @param array The resizable array to free.
  */
 void
 _array_destroy
-(   void* array
+(   array_t* array
 );
 
 #define array_destroy(array) \
     _array_destroy ( array )
 
 /**
- * @brief Obtains the value of an array field. O(1).
+ * @brief Obtains the value of a resizable array field. O(1).
  * 
- * @param array The array to query. Must be non-zero.
+ * @param array The resizable array to query. Must be non-zero.
  * @param field The field to read.
- * @return The value of the array field.
+ * @return The value of the resizable array field.
  */
 u64
 _array_field_get
-(   const void* array
-,   ARRAY_FIELD field
+(   const array_t*  array
+,   ARRAY_FIELD     field
 );
 
 /** @brief Get array field: capacity. */
@@ -128,204 +116,178 @@ _array_field_get
     _array_field_get ( (array) , ARRAY_FIELD_STRIDE )
 
 /**
- * @brief Sets the value of an array field. O(1).
+ * @brief Sets the value of a resizable array field. O(1).
  * 
- * @param array The array to mutate. Must be non-zero.
+ * @param array The resizable array to mutate. Must be non-zero.
  * @param field The field to set.
  * @param value The value to set.
  */
 void
 _array_field_set
-(   void*       array
+(   array_t*    array
 ,   ARRAY_FIELD field
 ,   u64         value
 );
 
 /**
- * @brief Computes the size (in bytes) of an array data structure. O(1).
+ * @brief Computes the size in bytes of a resizable array data structure. O(1).
  * 
- * @param array The array to query. Must be non-zero.
+ * @param array The resizable array to query. Must be non-zero.
+ * @return The size in bytes of a resizable array data structure.
  */
 u64
 _array_size
-(   const void* array
+(   const array_t* array
 );
 
 #define array_size(array) \
     _array_size ( array )
 
 /**
- * @brief Resizes an existing array. O(n).
+ * @brief Resizes an existing resizable array. O(n).
  * 
- * @param array The array to resize. Must be non-zero.
- * @param minimum_capacity The minimum capacity of the new array.
- * @return A copy of the original array content with an expanded capacity.
+ * @param array The resizable array to resize. Must be non-zero.
+ * @param minimum_capacity The minimum number of elements the new array is
+ * required to hold. If the value of this parameter is less than the current
+ * array length, the array will be automatically shrunk and data loss will
+ * occur.
+ * @return The array after resizing (possibly with new address).
  */
-void*
+array_t*
 _array_resize
-(   void*   array
-,   u64     minimum_capacity
+(   array_t*    array
+,   ARRAY_FIELD minimum_capacity
 );
 
+/** @brief Alias for calling array_resize with ARRAY_SCALE_FACTOR. */
+#define array_resize(array,minimum_capacity) \
+    _array_resize ( (array) , ARRAY_SCALE_FACTOR ( minimum_capacity ) )
+
 /**
- * @brief Appends an element to an array. O(1), on average.
+ * @brief Appends an element to a resizable array. O(1), on average.
  * 
- * @param array The array to append to. Must be non-zero.
+ * @param array The resizable array to append to. Must be non-zero.
  * @param src The element to append. Must be non-zero.
  * @return The array (possibly with new address).
  */
-void*
+array_t*
 _array_push
-(   void*       array
+(   array_t*    array
 ,   const void* src
 );
 
 #define array_push(array,value)                  \
-    do                                           \
-    {                                            \
+    ({                                           \
         __typeof__ ( (value) ) tmp = (value);    \
        (array) = _array_push ( (array) , &tmp ); \
-    }                                            \
-    while ( 0 )
+    })
 
 /**
- * @brief Removes the last element from an array. O(1).
+ * @brief Removes the last element from a resizable array. O(1).
  * 
- * @param array The array to remove from. Must be non-zero.
- * @param dst A destination buffer to store the element that was removed. Pass 0
- * to retrieve nothing.
+ * @param array The resizable array to remove from. Must be non-zero.
+ * @param dst Output buffer to store the element that was removed. Pass 0 to
+ * retrieve nothing.
+ * @return true on success; false otherwise.
  */
-void
+bool
 _array_pop
-(   void* array
-,   void* dst
+(   array_t*    array
+,   void*       dst
 );
 
 #define array_pop(array,dst) \
     _array_pop ( (array) , (dst) )
 
 /**
- * @brief Inserts an element into an array at a specified index. O(n).
+ * @brief Inserts an element into a resizable array at a specified index. O(n).
  * 
- * @param array The array to append to. Must be non-zero.
+ * @param array The resizable array to append to. Must be non-zero.
  * @param index The index to insert at.
  * @param src The element to insert. Must be non-zero.
  * @return The array (possibly with new address).
  */
-void*
+array_t*
 _array_insert
-(   void*       array
+(   array_t*    array
 ,   u64         index
 ,   const void* src
 );
 
 #define array_insert(array,index,value)                      \
-    do                                                       \
-    {                                                        \
+    ({                                                       \
         __typeof__ ( (value) ) tmp = (value);                \
        (array) = _array_insert ( (array) , (index) , &tmp ); \
-    }                                                        \
-    while ( 0 )
+    })
 
 /**
- * @brief Removes an element from an array at a specified index. O(n).
+ * @brief Removes an element from a resizable array at a specified index. O(n).
  * 
- * @param array The array to mutate. Must be non-zero.
+ * @param array The resizable array to mutate. Must be non-zero.
  * @param index The index of the element to remove.
- * @param dst A destination buffer to store the element that was removed. Pass 0
- * to retrieve nothing.
- * @return The array (possibly with new address).
+ * @param dst Output buffer to store the element that was removed. Pass 0 to
+ * retrieve nothing.
+ * @return The array.
  */
-void*
+array_t*
 _array_remove
-(   void*   array
-,   u64     index
-,   void*   dst
+(   array_t*    array
+,   u64         index
+,   void*       dst
 );
 
 #define array_remove(array,index,dst) \
     _array_remove ( (array) , (index) , (dst) )
 
-/**
- * @brief Reverses an array. O(n). In-place.
- * 
- * Use _array_reverse to explicitly specify fixed array stride and length, or
- * array_reverse (for arrays created with the _array_create class of functions)
- * to fetch these fields using array_field_get prior to passing them to
- * _array_reverse.
- * 
- * @param array The array to reverse. Must be non-zero.
- * @param array_stride The array stride.
- * @param array_length The number of elements contained by the array.
- * @return The array after reversal.
- */
-void*
-_array_reverse
-(   void*       array
-,   const u64   array_stride
-,   const u64   array_length
-);
-
-#define array_reverse(array) \
-    _array_reverse ( (array) , array_stride ( array ) , array_length ( array ) )
 
 /**
- * @brief Shuffles the elements of an array. O(n).
+ * @brief Copies a resizable array. O(n).
  * 
- * Use _array_shuffle to explicitly specify fixed array stride and length, or
- * array_shuffle (for arrays created with the _array_create class of functions)
- * to fetch these fields using array_field_get prior to passing them to
- * _array_shuffle.
+ * Uses dynamic memory allocation. Call array_destroy to free.
  * 
- * @param array The array to shuffle. Must be non-zero.
- * @param array_stride The array stride.
- * @param array_length The number of elements contained by the array.
- * @return The array with its elements shuffled.
+ * @param array The resizable array to copy.
+ * @return A copy of the array.
  */
-void*
-_array_shuffle
-(   void*   array
-,   u64     array_stride
-,   u64     array_length
+array_t*
+__array_copy
+(   const array_t* array
 );
 
-#define array_shuffle(array)                \
-    _array_shuffle ( (array)                \
-                   , array_stride ( array ) \
-                   , array_length ( array ) \
-                   )
+// Extra underscore avoids a name conflict with array_copy from core/array.h.
+#define _array_copy(array) \
+    __array_copy ( array )
 
 /**
- * @brief Sorts an array in-place.
- * 
- * Current implementation uses quicksort algorithm.
- * AVERAGE CASE TIME COMPLEXITY : O(n log(n))
- * WORST CASE TIME COMPLEXITY   : O(n²)
- * 
- * Use _array_sort to explicitly specify fixed array stride and length, or
- * array_sort (for arrays created with the _array_create class of functions)
- * to fetch these fields using array_field_get prior to passing them to
- * _array_sort.
- * 
- * @param array The array to sort. Must be non-zero.
- * @param array_stride The array stride.
- * @param array_length The number of elements contained by the array.
- * @param comparator A function which compares two array elements.
- * @return The array with all elements sorted according to the comparator.
+ * @brief Alias for calling array_reverse on a resizable array.
+ * (see core/array.h)
  */
-void*
-_array_sort
-(   void*                   array
-,   u64                     array_stride
-,   u64                     array_length
-,   comparator_function_t   comparator
-);
+#define _array_reverse(array,swap)         \
+    array_reverse ( (array)                \
+                  , array_length ( array ) \
+                  , array_stride ( array ) \
+                  , (swap)                 \
+                  )
 
-#define array_sort(array)                \
-    _array_sort ( (array)                \
-                , array_stride ( array ) \
-                , array_length ( array ) \
-                , (comparator)           \
-                )
+/**
+ * @brief Alias for calling array_shuffle on a resizable array.
+ * (see core/array.h)
+ */
+#define _array_shuffle(array,swap)         \
+    array_shuffle ( (array)                \
+                  , array_length ( array ) \
+                  , array_stride ( array ) \
+                  , (swap)                 \
+                  )
+
+/**
+ * @brief Alias for calling array_sort on a resizable array.
+ * (see core/array.h)
+ */
+#define _array_sort(array,comparator)   \
+    array_sort ( (array)                \
+               , array_length ( array ) \
+               , array_stride ( array ) \
+               , (comparator)           \
+               )
 
 #endif  // ARRAY_H

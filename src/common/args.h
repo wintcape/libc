@@ -39,14 +39,14 @@ args_t;
  *
  * EXAMPLE USAGE :
  * 
- *     i32 _my_function ( u8 a , u8 b , args_t args );
- * 
- *     #define my_function(a,b,...)                               \
- *         ({                                                     \
- *             DISABLE_WARNING ( -Wint-conversion )               \
- *             _my_function ( (a) , (b) , ARGS ( __VA_ARGS__ ) ); \
- *             REENABLE_WARNING ()                                \
- *         })
+ *  |  i32 _my_function ( u8 a , u8 b , args_t args );
+ *  |
+ *  |  #define my_function(a,b,...)                               \
+ *  |      ({                                                     \
+ *  |          DISABLE_WARNING ( -Wint-conversion )               \
+ *  |          _my_function ( (a) , (b) , ARGS ( __VA_ARGS__ ) ); \
+ *  |          REENABLE_WARNING ()                                \
+ *  |      })
  */
 #define ARGS(...)                                                   \
     (( args_t ){ .arg_count = sizeof ( ( arg_t[] ){ __VA_ARGS__ } ) \

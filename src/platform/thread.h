@@ -10,12 +10,12 @@
 
 #include "container/queue.h"
 
-/** @brief Type definition for an abstract thread. */
+/** @brief Type definition for a thread. */
 typedef struct
 {
-    void*   internal;
-    u64     id;
-    queue_t work;
+    void*       internal;
+    u64         id;
+    queue_t*    work;
 }
 thread_t;
 

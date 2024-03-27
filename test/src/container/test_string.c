@@ -177,9 +177,30 @@ test_string_create_and_destroy
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 4: string_destroy handles invalid argument.
+    // TEST 4: string_create handles invalid argument.
 
-    // TEST 4.1: string_destroy does not modify the global allocator state if no string is provided.
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // TEST 4.1: string_create logs an error and fails if provided capacity is invalid.
+    LOGWARN ( "The following error is intentionally triggered by a test:" );
+    EXPECT_EQ ( 0 , _string_create ( 0 ) );
+
+    // TEST 4.2: string_create does not allocate memory on failure.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TEST 5: string_destroy handles invalid argument.
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // TEST 5.1: string_destroy does not modify the global allocator state if no string is provided.
     string_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
@@ -221,8 +242,6 @@ test_string_push
     EXPECT_NEQ ( 0 , string );
     EXPECT_NEQ ( 0 , old_string );
 
-    LOGDEBUG ( "Appending %i bytes to an empty string. . ." , op_count * _string_length ( to_push ) );
-
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
@@ -246,8 +265,6 @@ test_string_push
         // TEST 3: string_push leaves the remainder of the string unmodified.
         EXPECT ( memory_equal ( string , old_string , old_length ) );
     }
-
-    LOGDEBUG ( "  Done." );
     
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -506,8 +523,6 @@ test_string_insert_and_remove_random
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    LOGDEBUG ( "Inserting %i random-length strings into an array at random indices. . ." , op_count );
-
     for ( u64 i = 0; i < op_count; ++i )
     {
         // Copy the string state prior to performing the operation being tested.
@@ -544,10 +559,6 @@ test_string_insert_and_remove_random
         }
     }
 
-    LOGDEBUG ( "  Done." );
-
-    LOGDEBUG ( "Removing a random number of characters in random order. . ." );
-
     while ( string_length ( string ) )
     {
         // Copy the string state prior to performing the operation being tested.
@@ -582,8 +593,7 @@ test_string_insert_and_remove_random
         }
     }
 
-    LOGDEBUG ( "  Done." );
-
+    // End test.
     ////////////////////////////////////////////////////////////////////////////
 
     string_free ( old_string );
@@ -1222,11 +1232,14 @@ test_string_format
     const char* string_queue_in1 = "string_queue_in1";
     const char* string_queue_in2 = "string_queue_in2";
     const char* string_queue_in3 = "string_queue_in3";
-    queue_t queue_in;
-    EXPECT ( queue_create ( sizeof ( const char* ) , &queue_in ) );
-    EXPECT ( queue_push ( &queue_in , &string_queue_in1 ) );
-    EXPECT ( queue_push ( &queue_in , &string_queue_in2 ) );
-    EXPECT ( queue_push ( &queue_in , &string_queue_in3 ) );
+    queue_t* queue_in = queue_create ( const char* );
+    EXPECT_NEQ ( 0 , queue_in );
+    queue_push ( queue_in , &string_queue_in1 );
+    EXPECT_NEQ ( 0 , queue_in );
+    queue_push ( queue_in , &string_queue_in2 );
+    EXPECT_NEQ ( 0 , queue_in );
+    queue_push ( queue_in , &string_queue_in3 );
+    EXPECT_NEQ ( 0 , queue_in );
     const char* format_specifier_token_string = "%";
     const char* unterminated_format_specifier_string = "%;";
     const char* illegal_fix_precision_string = "`%.10f`";
@@ -1632,7 +1645,7 @@ test_string_format
     string_destroy ( string );
 
     // TEST 42: String format specifier, with queue format modifier.
-    string = string_format ( "%qs" , &queue_in );
+    string = string_format ( "%qs" , queue_in );
     EXPECT_NEQ ( 0 , string ); // Verify there was no memory error prior to the test.
     EXPECT_EQ ( _string_length ( out24 ) , string_length ( string ) );
     EXPECT ( memory_equal ( string , out24 , string_length ( string ) ) );
@@ -1652,7 +1665,7 @@ test_string_format
     string_destroy ( really_long_string_in );
     array_destroy ( array_in1 );
     array_destroy ( array_in2 );
-    queue_destroy ( &queue_in );
+    queue_destroy ( queue_in );
 
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );

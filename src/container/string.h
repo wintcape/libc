@@ -119,15 +119,13 @@ __string_push
     ( (string) = __string_push ( (string) , (src) , (length) ) )
 
 #define _string_push(string,src)                            \
-    do                                                      \
-    {                                                       \
+    ({                                                      \
         const char* src__ = (src);                          \
         (string) = __string_push ( (string)                 \
                                  , src__                    \
                                  , _string_length ( src__ ) \
                                  );                         \
-    }                                                       \
-    while ( 0 )
+    })
 
 /**
  * @brief Inserts into a resizable string. O(n).
@@ -154,16 +152,14 @@ __string_insert
     ( (string) = __string_insert ( (string) , (index) , (src) , (length) ) )
 
 #define _string_insert(string,index,src)                      \
-    do                                                        \
-    {                                                         \
+    ({                                                        \
         const char* src__ = (src);                            \
         (string) = __string_insert ( (string)                 \
                                    , (index)                  \
                                    , src__                    \
                                    , _string_length ( src__ ) \
                                    );                         \
-    }                                                         \
-    while ( 0 )
+    })
 
 /**
  * @brief Removes a substring from a resizable string. O(n).
@@ -246,8 +242,7 @@ __string_replace
                                   ) )
 
 #define _string_replace(string,remove,replace)                     \
-    do                                                             \
-    {                                                              \
+    ({                                                             \
         const char* remove__ = (remove);                           \
         const char* replace__ = (replace);                         \
         (string) = __string_replace ( (string)                     \
@@ -256,8 +251,7 @@ __string_replace
                                     , replace__                    \
                                     , _string_length ( replace__ ) \
                                     );                             \
-    }                                                              \
-    while ( 0 )
+    })
 
 /**
  * @brief Strips a string of ANSI formatting codes. O(n). In-place.

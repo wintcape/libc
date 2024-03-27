@@ -27,8 +27,9 @@ typedef struct
 {
     u64     capacity;
     u64     max_entries;
+    bool    owns_memory;
     node_t* head;
-    node_t* freelist;
+    node_t* content;
 }
 state_t;
 
@@ -54,37 +55,55 @@ freelist_return_node
 );
 
 bool
-freelist_init
-(   u64         capacity
-,   u64*        memory_requirement
-,   void*       memory
-,   freelist_t* freelist
+freelist_create
+(   u64             capacity
+,   u64*            memory_requirement_
+,   void*           memory_
+,   freelist_t**    freelist
 )
 {
-    if ( !memory_requirement )
+    if ( !capacity )
     {
-        LOGERROR ( "freelist_init: Missing argument: memory_requirement." );
+        LOGERROR ( "freelist_create: Value of capacity argument must be non-zero." );
         return false;
     }
 
     const u64 max_entries = MAX ( 20U
                                 , capacity / ( sizeof ( void* ) * sizeof ( node_t ) )
                                 );
-
-    *memory_requirement = sizeof ( state_t ) + sizeof ( node_t ) * max_entries;
-
-    if ( !memory )
+    const u64 memory_requirement = sizeof ( state_t ) + max_entries
+                                                      * sizeof ( node_t )
+                                                      ;
+    if ( memory_requirement_ )
     {
-        return true;
+        *memory_requirement_ = memory_requirement;
+        if ( !memory_ )
+        {
+            return true;
+        }
+    }
+
+    void* memory;
+    if ( memory_ )
+    {
+        memory = memory_;
+    }
+    else
+    {
+        memory = memory_allocate ( memory_requirement , MEMORY_TAG_FREELIST );
     }
 
     if ( !freelist )
     {
-        LOGERROR ( "freelist_init: Missing argument: freelist (output buffer)." );
+        LOGERROR ( "freelist_create: Missing argument: freelist (output buffer)." );
+        if ( !memory_ )
+        {
+            memory_free ( memory , memory_requirement , MEMORY_TAG_FREELIST );
+        }
         return false;
     }
 
-    u64 minimum_recommended_capacity = ( sizeof ( state_t ) + sizeof ( node_t ) ) * 8;
+    u64 minimum_recommended_capacity = 8 * ( sizeof ( state_t ) + sizeof ( node_t ) );
     if ( capacity < minimum_recommended_capacity )
     {
         f64 arg_amount;
@@ -98,42 +117,59 @@ freelist_init
                 );
     }
 
-    ( *freelist ).memory = memory;
-
-    memory_clear ( ( *freelist ).memory , *memory_requirement );
+    memory_clear ( memory , memory_requirement );
     
-    state_t* state = ( *freelist ).memory;
-    ( *state ).freelist = ( *freelist ).memory + sizeof ( state_t );
+    state_t* state = memory;
+    ( *state ).owns_memory = !memory_;
+    ( *state ).content = ( void* )( ( ( u64 ) memory ) + sizeof ( state_t ) );
     ( *state ).max_entries = max_entries;
     ( *state ).capacity = capacity;
-
-    memory_clear ( ( *state ).freelist
-                 , sizeof ( node_t ) * ( *state ).max_entries
-                 );
-    
-    ( *state ).head = &( *state ).freelist[ 0 ];
+    ( *state ).head = &( *state ).content[ 0 ];
     ( *( ( *state ).head ) ).offset = 0;
     ( *( ( *state ).head ) ).size = capacity;
     ( *( ( *state ).head ) ).next = 0;
 
+    *freelist = state;
     return true;
 }
 
 void
-freelist_clear
-(   freelist_t* freelist
+freelist_destroy
+(   freelist_t** freelist
 )
 {
-    if ( !freelist || !( *freelist ).memory )
+    if ( !freelist )
     {
         return;
     }
 
-    state_t* state = ( *freelist ).memory;
-    memory_clear ( ( *freelist ).memory
-                 , sizeof ( state_t ) + sizeof ( node_t ) * ( *state ).max_entries
-                 );
-    ( *freelist ).memory = 0;
+    state_t* state = *freelist;
+    if ( !state )
+    {
+        return;
+    }
+
+    const u64 memory_requirement = sizeof ( state_t ) + ( *state ).max_entries
+                                                      * sizeof ( node_t )
+                                                      ;
+    if ( ( *state ).owns_memory )
+    {
+        memory_free ( state , memory_requirement , MEMORY_TAG_FREELIST );
+    }
+    else
+    {
+        memory_clear ( state , memory_requirement );
+    }
+
+    *freelist = 0;
+}
+
+bool
+freelist_owns_memory
+(   const freelist_t* freelist
+)
+{
+    return ( *( ( state_t* ) freelist ) ).owns_memory;
 }
 
 bool
@@ -143,24 +179,7 @@ freelist_allocate
 ,   u64*        offset
 )
 {
-    if ( !freelist || !offset || !( *freelist ).memory )
-    {
-        if ( !freelist )
-        {
-            LOGERROR ( "freelist_allocate: Missing argument: freelist." );
-        }
-        else if ( !( *freelist ).memory )
-        {
-            LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
-        }
-        if ( !offset )
-        {
-            LOGERROR ( "freelist_allocate: Missing argument: offset." );
-        }
-        return false;
-    }
-
-    state_t* state = ( *freelist ).memory;
+    state_t* state = freelist;
     node_t* current_node = ( *state ).head;
     node_t* previous_node = 0;
 
@@ -216,24 +235,7 @@ freelist_free
 ,   u64         offset
 )
 {
-    if ( !freelist || !size || !( *freelist ).memory )
-    {
-        if ( !freelist )
-        {
-            LOGERROR ( "freelist_allocate: Missing argument: freelist." );
-        }
-        if ( !size )
-        {
-            LOGERROR ( "freelist_allocate: Value of size argument must be non-zero." );
-        }
-        if ( freelist && !( *freelist ).memory )
-        {
-            LOGERROR ( "freelist_allocate: The provided freelist is uninitialized." );
-        }
-        return false;
-    }
-
-    state_t* state = ( *freelist ).memory;
+    state_t* state = freelist;
     node_t* current_node = ( *state ).head;
     node_t* previous_node = 0;
 
@@ -327,63 +329,81 @@ freelist_free
     }// End while.
 
     LOGWARN ( "freelist_free: Did not find a block to free. Memory corruption probable." );
+    
     return false;
 }
 
 bool
 freelist_resize
-(   freelist_t* freelist
-,   u64*        memory_requirement
-,   void*       new_memory
-,   u64         new_capacity
-,   void**      old_memory
+(   freelist_t**    freelist
+,   u64             minimum_capacity
+,   u64*            memory_requirement_
+,   void*           new_memory_
+,   void**          old_memory_
 )
 {
-    if (    !freelist
-         || !memory_requirement
-         || ( *( ( state_t* )( ( *freelist ).memory ) ) ).capacity > new_capacity
-       )
+    if ( !freelist )
+    {
+        LOGERROR ( "freelist_resize: Missing argument: freelist." );
+        return false;
+    }
+
+    state_t* state = *freelist;
+    if ( ( *state ).capacity >= minimum_capacity )
     {
         return false;
     }
 
     const u64 max_entries = MAX ( 20U
-                                , new_capacity / ( sizeof ( void* ) )
+                                , minimum_capacity / ( sizeof ( void* ) )
                                 );
+    const u64 memory_requirement = sizeof ( state_t ) + sizeof ( node_t )
+                                                      * max_entries
+                                                      ;
 
-    *memory_requirement = sizeof ( state_t ) + sizeof ( node_t ) * max_entries;
-
-    if ( !new_memory )
+    void* old_memory = state;
+    void* new_memory;
+    if ( memory_requirement_ )
     {
-        return true;
+        *memory_requirement_ = memory_requirement;
+        if ( !new_memory_ )
+        {
+            return true;
+        }
+        new_memory = new_memory_;
+        if ( !old_memory_ )
+        {
+            LOGERROR ( "freelist_resize: Missing argument: old_memory (output buffer)." );
+            return false;
+        }
+        *old_memory_ = old_memory;
+    }
+    else
+    {
+        new_memory = memory_allocate ( memory_requirement
+                                     , MEMORY_TAG_FREELIST
+                                     );
     }
 
-    *old_memory = ( *freelist ).memory;
+    state_t* old_state = old_memory;
+    const u64 capacity_difference = minimum_capacity - ( *old_state ).capacity;
 
-    state_t* state_old = ( *freelist ).memory;
-    const u64 capacity_difference = new_capacity - ( *state_old ).capacity;
-
-    ( *freelist ).memory = new_memory;
-
-    memory_clear ( ( *freelist ).memory , *memory_requirement );
-
-    state_t* state = ( *freelist ).memory;
-    ( *state ).freelist = ( *freelist ).memory + sizeof ( state_t );
+    state = new_memory;
+    memory_clear ( state , memory_requirement );
+    ( *state ).owns_memory = !new_memory_;
+    ( *state ).content = ( void* )( ( ( u64 ) new_memory_ )
+                                  + sizeof ( state_t )
+                                  );
     ( *state ).max_entries = max_entries;
-    ( *state ).capacity = new_capacity;
-
-    memory_clear ( ( *state ).freelist
-                 , sizeof ( node_t ) * ( *state ).max_entries
-                 );
-
-    ( *state ).head = &( *state ).freelist[ 0 ];
+    ( *state ).capacity = minimum_capacity;
+    ( *state ).head = &( *state ).content[ 0 ];
 
     node_t* current_node_new = ( *state ).head;
-    node_t* current_node_old = ( *state_old ).head;
+    node_t* current_node_old = ( *old_state ).head;
 
     if ( !current_node_old )
     {
-        ( *( ( *state ).head ) ).offset = ( *state_old ).capacity;
+        ( *( ( *state ).head ) ).offset = ( *old_state ).capacity;
         ( *( ( *state ).head ) ).size = capacity_difference;
         ( *( ( *state ).head ) ).next = 0;
         return true;
@@ -406,14 +426,14 @@ freelist_resize
         }
         else
         {
-            if ( ( *current_node_old ).offset + ( *current_node_old ).size == ( *state_old ).capacity )
+            if ( ( *current_node_old ).offset + ( *current_node_old ).size == ( *old_state ).capacity )
             {
                 ( *new_node ).size += capacity_difference;
             }
             else
             {
                 node_t* new_tail = freelist_get_node ( freelist );
-                ( *new_tail ).offset = ( *state_old ).capacity;
+                ( *new_tail ).offset = ( *old_state ).capacity;
                 ( *new_tail ).size = capacity_difference;
                 ( *new_tail ).next = 0;
                 ( *new_node ).next = new_tail;
@@ -423,6 +443,7 @@ freelist_resize
         }
     }
 
+    *freelist = state;
     return true;
 }
 
@@ -431,17 +452,10 @@ freelist_reset
 (   freelist_t* freelist
 )
 {
-    if ( !freelist || !( *freelist ).memory )
-    {
-        return;
-    }
-
-    state_t* state = ( *freelist ).memory;
-
-    memory_clear ( ( *state ).freelist
+    state_t* state = freelist;
+    memory_clear ( ( *state ).content
                  , sizeof ( node_t ) * ( *state ).max_entries
                  );
-
     ( *( ( *state ).head ) ).offset = 0;
     ( *( ( *state ).head ) ).size = ( *state ).capacity;
     ( *( ( *state ).head ) ).next = 0;
@@ -453,21 +467,14 @@ freelist_query_free
 (   freelist_t* freelist
 )
 {
-    if ( !freelist || !( *freelist ).memory )
-    {
-        return 0;
-    }
-
+    state_t* state = freelist;
     u64 sum = 0;
-    state_t* state = ( *freelist ).memory;
     node_t* node = ( *state ).head;
-
     while ( node )
     {
         sum += ( *node ).size;
         node = ( *node ).next;
     }
-
     return sum;
 }
 
@@ -476,18 +483,16 @@ freelist_get_node
 (   freelist_t* freelist
 )
 {
-    state_t* state = ( *freelist ).memory;
-    
+    state_t* state = freelist;
     for ( u64 i = 1; i < ( *state ).max_entries; ++i )
     {
-        if ( ( *state ).freelist[ i ].size == 0 )
+        if ( ( *state ).content[ i ].size == 0 )
         {
-            ( *state ).freelist[ i ].next = 0;
-            ( *state ).freelist[ i ].offset = 0;
-            return &( *state ).freelist[ i ];
+            ( *state ).content[ i ].next = 0;
+            ( *state ).content[ i ].offset = 0;
+            return &( *state ).content[ i ];
         }
     }
-
     return 0;
 }
 

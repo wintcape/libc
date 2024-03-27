@@ -133,20 +133,33 @@ To build all and run test executable on macOS/OSX:
 make macos-run
 ```
 
-## To-do
+## TO-DO
 - Implement `string_f64`, removing dependency `<stdio.h>`.
 - Implement unbuffered file I/O for Windows platform layer; currently lets Windows handle alignment and buffering.
-- Implement `platform_thread_wait`, `platform_thread_wait_timeout`, and `platform_thread_active` for macOS/Linux platform layers.
-- Change implementation of `platform/test_filesystem.c` such that one failed test doesn't result in all of the other filesystem I/O tests failing due to broken pipe (Currently, when a test fails, the test function exits early, meaning the file handle never gets closed before the next test tries to open the same handle again).
-- Improve robustness of tests in `platform/filesystem.c`.
+- Implement `platform_thread_wait`, `platform_thread_wait_timeout`, and `platform_thread_active` for macOS and Linux platform layers.
+- Try to improve some of the tests so that they can operate independently; as it stands now, one failed test frequently results in the entire registered module currently being tested failing.
+- Improve the robustness of tests in `platform/filesystem.c`.
 - Implement `FILE_MODE_APPEND`.
 - Verify thread safety for `platform/filesystem.h`.
-- Tests for `platform/thread.h` and `platform/mutex.h`.
-- Make general improvements to the API design; provide more options for choosing between use of API-provided data structures versus `void*` handles the user chooses how to allocate, etc.
-- Implement `string_format` format specifiers for printing freelist node data and hashtable key-value pairs.
+- Tests for `core/memory.h`, `core/logger.h`, `platform/thread.h` and `platform/mutex.h`.
 - Add a library to provide support for regular expressions: `container/string/regex.h`.
 
 ## Changelog
+
+### 0.5.0
+- All data structures which may require memory allocation now use `void` pointers into obfuscated data structures instead of having the data structure fields defined directly in the header; user-accessible fields have user-accessible getter/setter functions. This was just done for additional user safety. It has led to changes in the usage of most data structures (and changes to function signatures to most functions) in `container/` and `memory/`. Note that an important cost of this change is that affected data structures now lose their type-safety, because they are all just `void`.
+- Changed `logger_startup` and `logger_shutdown` so that they can use implicit memory allocation, if desired. `logger_startup` also now takes an argument for the log filepath.
+- Queues are now implemented a similar manner to arrays; as such, the functions in `container/queue.h` no longer accept null queue pointers (except `queue_destroy`).
+- All data structures in `container/` and `memory/` (barring `array_t` and `queue_t`) now provide the user the option to pre-allocate memory for the data structure, or to use implicit memory allocation instead. If pre-allocating the memory for a data structure, the memory requirement needs to be queried first; otherwise, a null pointer may be passed as the `memory_requirement` argument of these functions.
+- Moved fixed-length array functions into `core/array.h`. `array_copy` is now a fixed-length array-copy function; use `_array_copy` for copying a resizable array created via the `_array_create` class of functions.
+- `array_pop` returns a boolean success value. It fails if the array is empty -- similar to `queue_pop`.
+- `_array_resize` can now shrink arrays too, resulting in data loss / truncation -- if this is desired. It also returns the original array if the capacity passed is identical to the current capacity. There is a test for this added.
+- Length argument is now specified before stride argument in all array function signatures. Several function signatures involving arrays changed as a result.
+- Documentation incorrectly stated in multiple places that `array_reverse` is in-place; it is not. I also added the option to pre-allocate swap buffers for `array_reverse` and `array_shuffle`.
+- Added the option to choose implicit memory allocation when creating a freelist or dynamic memory allocator; querying the memory requirement and then passing your own buffer is still an option as well.
+- A lot fewer functions still check their arguments when called; most of them just blindly start executing. If the function documentation says that the value of an argument "must be non-zero," then it is telling the truth; that value better not be zero, or undefined behavior will most-certainly occur.
+- Most `create` and `destroy` -style functions still check their arguments: `create` functions which were told to use implicit memory allocation now automatically free the memory in the event that it was allocated and the function is going to exit unsuccessfully.
+- Fixed a bug where `EXPECT_NEQ` did not print the line number of the failed test.
 
 ### 0.4.5
 - Changed the build process. `make linux|windows|macos` now outputs a static library; `make linux-test|windows-test|macos-test` only recompiles (and runs) the test executable; `make linux-all|windows-all|macos-all` recompiles both the library and test executable, and then runs the executable.

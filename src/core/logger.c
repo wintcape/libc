@@ -11,9 +11,6 @@
 
 #include "core/memory.h"
 
-/** @brief Log filepath. */
-#define LOG_FILEPATH "console.log"
-
 /** @brief Output message prefixes. */
 static const char* log_level_prefixes[] = { LOG_LEVEL_PREFIX_FATAL
                                           , LOG_LEVEL_PREFIX_ERROR
@@ -36,7 +33,9 @@ static const char* log_level_colors[] = { LOG_LEVEL_COLOR_FATAL
 /** @brief Type definition for logger subsystem state. */
 typedef struct
 {
-    file_t file;
+    file_t      file;
+    const char* filepath;
+    bool        owns_memory;
 }
 state_t;
 
@@ -46,8 +45,8 @@ static state_t* state = 0;
 /**
  * @brief Primary implementation of print (see print).
  * 
- * @param file File to print to.
- * @param string The string to print.
+ * @param file File to print to. Must be non-zero.
+ * @param string The string to print. Must be non-zero.
  * @param string_length The number of characters in the string.
  */
 void
@@ -64,7 +63,7 @@ _print
  * _logger_file_append to compute the length of a null-terminated string before
  * passing it to logger_file_append.
  * 
- * @param message The message string to append.
+ * @param message The message string to append. Must be non-zero.
  * @param message_length The message length (in characters).
  */
 void
@@ -78,43 +77,57 @@ logger_file_append
 
 bool
 logger_startup
-(   u64*    memory_requirement
-,   void*   state_
+(   const char* filepath
+,   u64*        memory_requirement_
+,   void*       state_
 )
 {
-    if ( !memory_requirement )
+    if ( state )
     {
-        LOGERROR ( "logger_startup: Missing argument: memory_requirement." );
+        LOGERROR ( "logger_startup: Called more than once." );
         return false;
     }
 
-    *memory_requirement = sizeof ( state_t );
+    const u64 memory_requirement = sizeof ( state_t );
 
-    if ( !state_ )
+    if ( memory_requirement_ )
     {
-        return true;
+        *memory_requirement_ = memory_requirement;
+        if ( !state_ )
+        {
+            return true;
+        }
     }
 
-    state = state_;
-    memory_clear ( state , sizeof ( state_t ) );
+    if ( state_ )
+    {
+        state = state_;
+        ( *state ).owns_memory = false;
+    }
+    else
+    {
+        state = memory_allocate ( memory_requirement , MEMORY_TAG_LOGGER );
+        ( *state ).owns_memory = true;
+    }
     
     // Initialize log file.
-    if ( !file_open ( LOG_FILEPATH , FILE_MODE_WRITE , &( *state ).file ) )
+    if ( !file_open ( filepath , FILE_MODE_WRITE , &( *state ).file ) )
     {
         PRINTERROR ( LOG_LEVEL_COLOR_ERROR LOG_LEVEL_PREFIX_ERROR
-                     "logger_startup: Unable to open '"LOG_FILEPATH"' for writing."
+                     "logger_startup: Unable to open log file for writing:  %s."
                      ANSI_CC_RESET "\n"
+                   , filepath
                    );
         return false;
     }
+    ( *state ).filepath = filepath;
 
     return true;
 }
 
 void
 logger_shutdown
-(   void* state_
-)
+( void )
 {
     if ( !state )
     {
@@ -123,6 +136,16 @@ logger_shutdown
 
     // Close log file.
     file_close ( &( *state ).file );
+
+    const u64 memory_requirement = sizeof ( state_t );
+    if ( ( *state ).owns_memory )
+    {
+        memory_free ( state , memory_requirement , MEMORY_TAG_LOGGER );
+    }
+    else
+    {
+        memory_clear ( state , memory_requirement );
+    }
 
     state = 0;
 }
@@ -248,8 +271,9 @@ logger_file_append
     if ( !file_write_line ( &( *state ).file , message_length , message ) )
     {
         PRINTERROR ( LOG_LEVEL_COLOR_ERROR
-                     "logger_file_append: Error writing to log file '"LOG_FILEPATH"'."
+                     "logger_file_append: Error writing to log file:  %s"
                      ANSI_CC_RESET "\n"
+                   , ( *state ).filepath
                    );
     }
 }

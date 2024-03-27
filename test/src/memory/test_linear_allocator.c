@@ -28,126 +28,160 @@ test_linear_allocator_create_and_destroy
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 capacity = sizeof ( u64 ) * 8;
-    linear_allocator_t allocator;
+
+    linear_allocator_t* allocator;
+    void* memory;
+    u64 memory_requirement;
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
     // TEST 1: linear_allocator_create handles invalid arguments.
 
-    // TEST 1.1: linear_allocator_create fails if no output buffer is provided for the linear allocator.
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( linear_allocator_create ( capacity , 0 , 0 ) );
-
-    // TEST 2: Auto-allocated linear allocator.
-
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
     global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
-    // TEST 2.1: linear_allocator_create succeeds.
-    EXPECT ( linear_allocator_create ( capacity , 0 , &allocator ) );
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
 
-    // TEST 2.2: linear_allocator_create performed one memory allocation.
-    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
+    // TEST 1.1: linear_allocator_create fails if no output buffer is provided for the linear allocator.
+    EXPECT_NOT ( linear_allocator_create ( capacity , 0 , 0 , 0 ) );
 
-    // TEST 2.3: linear_allocator_create allocated the correct number of bytes with the correct memory tag.
-    EXPECT_EQ ( global_amount_allocated_ + allocator.capacity , memory_amount_allocated ( MEMORY_TAG_ALL ) );
-    EXPECT_EQ ( allocator_amount_allocated_ + allocator.capacity , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
+    // TEST 1.2: linear_allocator_create fails if provided capacity is invalid.
+    EXPECT_NOT ( linear_allocator_create ( 0 , 0 , 0 , &allocator ) );
 
-    // TEST 2.4: Linear allocator created via linear_allocator_create owns its own memory.
-    EXPECT ( allocator.owns_memory );
-
-    // TEST 2.5: Linear allocator created via linear_allocator_create has access to a valid memory buffer.
-    EXPECT_NEQ ( 0 , allocator.memory );
-
-    // TEST 2.6: Linear allocator created via linear_allocator_create has the correct capacity.
-    EXPECT_EQ ( capacity , allocator.capacity );
-
-    // TEST 2.7: Linear allocator created via linear_allocator_create is initialized with all of its memory free.
-    EXPECT_EQ ( 0 , allocator.allocated );
-
-    linear_allocator_destroy ( &allocator );
-
-    // TEST 2.8: linear_allocator_destroy restores the global allocator state.
+    // TEST 1.3: linear_allocator_create did not modify the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 2.9: linear_allocator_destroy clears all linear allocator data structure fields.
-    EXPECT_EQ ( 0 , allocator.allocated );
-    EXPECT_EQ ( 0 , allocator.capacity );
-    EXPECT_EQ ( 0 , allocator.memory );
-    EXPECT_EQ ( 0 , allocator.owns_memory );
-
-    // TEST 3: Pre-allocated linear allocator.
-
-    // Copy the current global allocator state prior to the allocation.
+    // TEST 2: linear_allocator_create can be used to query the memory requirement for a linear allocator.
+    
+    // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
     global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+    
+    // TEST 2.1: linear_allocator_create succeeds.
+    memory_requirement = 0;
+    EXPECT ( linear_allocator_create ( capacity , &memory_requirement , 0 , 0 ) );
 
-    void* memory = memory_allocate ( capacity , MEMORY_TAG_LINEAR_ALLOCATOR );
+    // TEST 2.2: linear_allocator_create writes the memory requirement to the output buffer.
+    EXPECT_NEQ ( 0 , memory_requirement );
 
-    // Verify the memory allocation was successful prior to the test.
-    EXPECT_NEQ ( 0 , memory );
-    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
-    EXPECT_EQ ( allocator_amount_allocated_ + capacity , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
+    // TEST 2.3: linear_allocator_create did not modify the global allocator state.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TEST 3: Auto-allocated linear allocator.
 
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     allocator_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
     global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // Query the memory requirement prior to the test.
+    EXPECT ( linear_allocator_create ( capacity , &memory_requirement , 0 , 0 ) );
 
     // TEST 3.1: linear_allocator_create succeeds.
-    EXPECT ( linear_allocator_create ( capacity , memory , &allocator ) );
+    allocator = 0;
+    EXPECT ( linear_allocator_create ( capacity , 0 , 0 , &allocator ) );
 
-    // TEST 3.2: linear_allocator_create does not modify the global allocator state.
-    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
-    EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
-    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+    // Verify no memory error occurred prior to the test.
+    EXPECT_NEQ ( 0 , allocator );
 
-    // TEST 3.3: Linear allocator created via linear_allocator_create does not own its own memory.
-    EXPECT_NOT ( allocator.owns_memory );
+    // TEST 3.2: linear_allocator_create performed one memory allocation.
+    EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 3.4: Linear allocator created via linear_allocator_create has access to the provided memory buffer.
-    EXPECT_EQ ( memory , allocator.memory );
+    // TEST 3.3: linear_allocator_create allocated the correct number of bytes with the correct memory tag.
+    EXPECT_EQ ( global_amount_allocated_ + memory_requirement , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( allocator_amount_allocated_ + memory_requirement , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
+
+    // TEST 3.4: Linear allocator created via linear_allocator_create owns its own memory.
+    EXPECT ( linear_allocator_owns_memory ( allocator ) );
 
     // TEST 3.5: Linear allocator created via linear_allocator_create has the correct capacity.
-    EXPECT_EQ ( capacity , allocator.capacity );
+    EXPECT_EQ ( capacity , linear_allocator_capacity ( allocator ) );
 
     // TEST 3.6: Linear allocator created via linear_allocator_create is initialized with all of its memory free.
-    EXPECT_EQ ( 0 , allocator.allocated );
+    EXPECT_EQ ( 0 , linear_allocator_allocated ( allocator ) );
 
+    // TEST 3.7: linear_allocator_destroy nullifies the allocator handle.
     linear_allocator_destroy ( &allocator );
+    EXPECT_EQ ( 0 , allocator );
 
-    // TEST 3.7: linear_allocator_destroy does not modify the global allocator state.
+    // TEST 3.8: linear_allocator_destroy restores the global allocator state.
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 3.8: linear_allocator_destroy clears all linear allocator data structure fields.
-    EXPECT_EQ ( 0 , allocator.allocated );
-    EXPECT_EQ ( 0 , allocator.capacity );
-    EXPECT_EQ ( 0 , allocator.memory );
-    EXPECT_EQ ( 0 , allocator.owns_memory );
+    // TEST 4: Pre-allocated linear allocator.
+
+    // Allocate the correct amount of memory prior to the test.
+    EXPECT ( linear_allocator_create ( capacity , &memory_requirement , 0 , 0 ) );
+    memory = memory_allocate ( memory_requirement , MEMORY_TAG_LINEAR_ALLOCATOR );
+
+    // Verify no memory error occurred prior to the test.
+    EXPECT_NEQ ( 0 , memory );
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    allocator_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // TEST 4.1: linear_allocator_create succeeds.
+    allocator = 0;
+    EXPECT ( linear_allocator_create ( capacity , 0 , memory , &allocator ) );
+
+    // Verify no memory error occurred prior to the test.
+    EXPECT_NEQ ( 0 , allocator );
+
+    // TEST 4.2: linear_allocator_create does not modify the global allocator state.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TEST 4.3: Linear allocator created via linear_allocator_create does not own its own memory.
+    EXPECT_NOT ( linear_allocator_owns_memory ( allocator ) );
+
+    // TEST 4.4: Linear allocator created via linear_allocator_create has the correct capacity.
+    EXPECT_EQ ( capacity , linear_allocator_capacity ( allocator ) );
+
+    // TEST 4.5: Linear allocator created via linear_allocator_create is initialized with all of its memory free.
+    EXPECT_EQ ( 0 , linear_allocator_allocated ( allocator ) );
+
+    // TEST 3.7: linear_allocator_destroy nullifies the allocator handle.
+    linear_allocator_destroy ( &allocator );
+    EXPECT_EQ ( 0 , allocator );
+
+    // TEST 3.8: linear_allocator_destroy does not modify the global allocator state.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    memory_free ( memory , memory_requirement , MEMORY_TAG_LINEAR_ALLOCATOR );
 
     // TEST 4: linear_allocator_destroy handles invalid arguments.
 
-    // TEST 4.1: linear_allocator_destroy does not modify the global allocator state if no linear allocator is provided.
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    allocator_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // TEST 4.1: linear_allocator_destroy does not modify the global allocator state if null handle is provided.
     linear_allocator_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 4.2: linear_allocator_destroy does not modify the global allocator state if the provided linear allocator is uninitialized.
+    // TEST 4.2: linear_allocator_destroy does not modify the global allocator state if provided linear_allocator is null.
+    allocator = 0;
     linear_allocator_destroy ( &allocator );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( allocator_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
-
-    memory_free ( memory , capacity , MEMORY_TAG_LINEAR_ALLOCATOR );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -174,52 +208,30 @@ test_linear_allocator_allocate
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 capacity = sizeof ( u64 ) * 8;
-    linear_allocator_t allocator;
+
+    linear_allocator_t* allocator = 0;
     void* blk;
 
-    EXPECT ( linear_allocator_create ( capacity , 0 , &allocator ) );
+    EXPECT ( linear_allocator_create ( capacity , 0 , 0 , &allocator ) );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , allocator.memory );
+    EXPECT_NEQ ( 0 , allocator );
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    // TEST 1: linear_allocator_allocate handles invalid arguments (1).
+    blk = linear_allocator_allocate ( allocator , capacity );
 
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
-
-    // TEST 1.1: linear_allocator_allocate logs an error and returns 0 if no allocator is provided.
-    blk = linear_allocator_allocate ( 0 , 1 );
-    EXPECT_EQ ( 0 , blk );
-
-    // TEST 1.2: linear_allocator_allocate logs an error and does not perform memory allocation if the provided size is invalid.
-    blk = linear_allocator_allocate ( &allocator , 0 );
-    EXPECT_EQ ( 0 , blk );
-    EXPECT_EQ ( 0 , allocator.allocated );
-
-    // TEST 2: linear_allocator_allocate succeeds with valid arguments.
-
-    blk = linear_allocator_allocate ( &allocator , capacity );
-
-    // TEST 2.1: linear_allocator_allocate returns a handle to an allocated block of memory. 
+    // TEST 1: linear_allocator_allocate returns a handle to an allocated block of memory. 
     EXPECT_NEQ ( 0 , blk );
 
-    // TEST 2.2: The allocator has allocated the correct amount of its total memory. 
-    EXPECT_EQ ( capacity , allocator.allocated );
-
-    // TEST 3: linear_allocator_allocate handles invalid arguments (2).
-
-    linear_allocator_destroy ( &allocator );
-
-    // TEST 3.1: linear_allocator_allocate logs an error and does not perform memory allocation if the provided allocator is uninitialized.
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    blk = linear_allocator_allocate ( &allocator , capacity );
-    EXPECT_EQ ( 0 , blk );
-    EXPECT_EQ ( 0 , allocator.allocated );
+    // TEST 2: The allocator has allocated the correct amount of its total memory.
+    EXPECT_EQ ( capacity , linear_allocator_allocated ( allocator ) );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
+
+    linear_allocator_destroy ( &allocator );
 
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -243,26 +255,27 @@ test_linear_allocator_max_allocation_count
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 op_count = 1024;
-    linear_allocator_t allocator;
+
+    linear_allocator_t* allocator = 0;
     void* blk;
 
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * op_count , 0 , &allocator ) );
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * op_count , 0 , 0 , &allocator ) );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , allocator.memory );
+    EXPECT_NEQ ( 0 , allocator );
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
     for ( u64 i = 0; i < op_count; ++i )
     {
-        blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+        blk = linear_allocator_allocate ( allocator , sizeof ( u64 ) );
 
         // TEST 1: linear_allocator_allocate returns a handle to an allocated block of memory.
         EXPECT_NEQ ( 0 , blk );
 
         // TEST 2: The allocator has allocated the correct amount of its total memory. 
-        EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , allocator.allocated );
+        EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , linear_allocator_allocated ( allocator ) );
     }
 
     // End test.
@@ -291,24 +304,24 @@ test_linear_allocator_max_allocation_size
     allocator_amount_allocated = memory_amount_allocated ( MEMORY_TAG_LINEAR_ALLOCATOR );
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
-    linear_allocator_t allocator;
+    linear_allocator_t* allocator = 0;
     void* blk;
 
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) , 0 , &allocator ) );
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) , 0 , 0 , &allocator ) );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , allocator.memory );
+    EXPECT_NEQ ( 0 , allocator );
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+    blk = linear_allocator_allocate ( allocator , sizeof ( u64 ) );
 
     // TEST 1: linear_allocator_allocate returns a handle to an allocated block of memory.
     EXPECT_NEQ ( 0 , blk );
 
     // TEST 2: The allocator has allocated the correct amount of its total memory (all of it).
-    EXPECT_EQ ( sizeof ( u64 ) , allocator.allocated );
+    EXPECT_EQ ( sizeof ( u64 ) , linear_allocator_allocated ( allocator ) );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -337,20 +350,21 @@ test_linear_allocator_overflow
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 op_count = 1024;
-    linear_allocator_t allocator;
+
+    linear_allocator_t* allocator = 0;
     void* blk;
 
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * op_count , 0 , &allocator ) );
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * op_count , 0 , 0 , &allocator ) );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , allocator.memory );
+    EXPECT_NEQ ( 0 , allocator );
 
     // Fill the allocator prior to the test.
     for ( u64 i = 0; i < op_count; ++i )
     {
-        blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+        blk = linear_allocator_allocate ( allocator , sizeof ( u64 ) );
         EXPECT_NEQ ( 0 , blk );
-        EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , allocator.allocated );
+        EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , linear_allocator_allocated ( allocator ) );
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -358,9 +372,9 @@ test_linear_allocator_overflow
 
     // TEST 1: linear_allocator_allocate logs an error and does not perform memory allocation if the provided allocator is full.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
-    blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+    blk = linear_allocator_allocate ( allocator , sizeof ( u64 ) );
     EXPECT_EQ ( 0 , blk );
-    EXPECT_EQ ( sizeof ( u64 ) * op_count , allocator.allocated );
+    EXPECT_EQ ( sizeof ( u64 ) * op_count , linear_allocator_allocated ( allocator ) );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -389,47 +403,36 @@ test_linear_allocator_free
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 max_allocations = 1024;
-    linear_allocator_t allocator;
+
+    linear_allocator_t* allocator = 0;
     void* blk;
 
-    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * max_allocations , 0 , &allocator ) );
+    EXPECT ( linear_allocator_create ( sizeof ( u64 ) * max_allocations , 0 , 0 , &allocator ) );
     
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , allocator.memory );
+    EXPECT_NEQ ( 0 , allocator );
 
     // Fill the allocator first prior to the test.
     for ( u64 i = 0; i < max_allocations; ++i )
     {
-        blk = linear_allocator_allocate ( &allocator , sizeof ( u64 ) );
+        blk = linear_allocator_allocate ( allocator , sizeof ( u64 ) );
         EXPECT_NEQ ( 0 , blk );
-        EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , allocator.allocated );
+        EXPECT_EQ ( sizeof ( u64 ) * ( i + 1 ) , linear_allocator_allocated ( allocator ) );
     }
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    // TEST 1: linear_allocator_free succeeds with valid argument.
+    // TEST 1: linear_allocator_free succeeds.
+    EXPECT ( linear_allocator_free ( allocator ) );
 
-    // TEST 1.1: linear_allocator_free succeeds.
-    EXPECT ( linear_allocator_free ( &allocator ) );
-
-    // TEST 1.2: linear_allocator_free frees all memory currently allocated by the allocator.
-    EXPECT_EQ ( 0 , allocator.allocated );
-
-    // TEST 2: linear_allocator_free handles invalid arguments.
-    
-    linear_allocator_destroy ( &allocator );
-
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
-
-    // TEST 2.1: linear_allocator_free fails if no allocator is provided.
-    EXPECT_NOT ( linear_allocator_free ( 0 ) );
-
-    // TEST 2.2: linear_allocator_free fails if the provided allocator is uninitialized.
-    EXPECT_NOT ( linear_allocator_free ( &allocator ) );
+    // TEST 2: linear_allocator_free frees all memory currently allocated by the allocator.
+    EXPECT_EQ ( 0 , linear_allocator_allocated ( allocator ) );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
+
+    linear_allocator_destroy ( &allocator );
 
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );

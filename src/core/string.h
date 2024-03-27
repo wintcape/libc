@@ -11,7 +11,7 @@
 
 /** @brief Defines the maximum size (in bytes) for a local string buffer. */
 #define STACK_STRING_MAX_SIZE \
-    KIBIBYTES ( 32 )
+    KiB ( 32 )
 
 // (see string_i64 and string_u64).
 #define STRING_INTEGER_MAX_LENGTH 65 /** @brief Maximum stringified integer length. */

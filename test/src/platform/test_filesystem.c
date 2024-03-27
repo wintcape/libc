@@ -622,7 +622,7 @@ test_file_read_line
     file_amount_allocated = memory_amount_allocated ( MEMORY_TAG_FILE );
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
-    const u64 max_line_length = MEGABYTES ( 1 );
+    const u64 max_line_length = MB ( 1 );
     const u64 line_count = 100;
     file_t file;
     u64 written;
@@ -923,7 +923,7 @@ test_file_read_all
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
-    const u64 filesize = MEBIBYTES ( 100 );
+    const u64 filesize = MiB ( 100 );
     file_t file;
     u64 read;
     u64 written;
@@ -1001,18 +1001,10 @@ test_file_read_all
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
 
     // Generate 1.00 GiB of random binary data to be used for populating the test file with content.
-    do
-    {
-        f64 display_amount;
-        const char* display_unit = string_bytesize ( filesize , &display_amount );
-        LOGDEBUG ( "Generating %.2f %s of random binary data to be used for stress-testing file I/O operations. . ." , &display_amount , display_unit );
-    }
-    while ( 0 );
     for ( u64 i = 0; i < filesize / sizeof ( u64 ); ++i )
     {
         ( ( u64* ) string_in )[ i ] = random64 ();
     }
-    LOGDEBUG ( "  Done." );
 
     // Populate the file with 1.00 GiB of random binary data.
     EXPECT ( file_write ( &file , filesize , string_in , &written ) );
@@ -1100,7 +1092,7 @@ test_file_read_and_write_large_file
     string_amount_allocated = memory_amount_allocated ( MEMORY_TAG_STRING );
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
-    const u64 buffer_size = GIBIBYTES ( 1 );
+    const u64 buffer_size = GiB ( 1 );
     char* in_buffer = string_allocate ( buffer_size );
     char* out_buffer = string_allocate ( buffer_size );
     file_t file;
@@ -1109,31 +1101,16 @@ test_file_read_and_write_large_file
     u64 old_file_position;
 
     // Generate 1.00 GiB of random binary data to be used for populating the test file with content.
-    do
-    {
-        f64 display_amount;
-        const char* display_unit = string_bytesize ( buffer_size , &display_amount );
-        LOGDEBUG ( "Generating %.2f %s of random binary data to be used for stress-testing file I/O operations. . ." , &display_amount , display_unit );
-    }
-    while ( 0 );
     for ( u64 i = 0; i < buffer_size / sizeof ( u64 ); ++i )
     {
         ( ( u64* ) in_buffer )[ i ] = random64 ();
     }
-    LOGDEBUG ( "  Done." );
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
     // Write a 6.00 GiB temporary file to disk.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_WRITE , &file ) );
-    do
-    {
-        f64 display_amount;
-        const char* display_unit = string_bytesize ( buffer_size * 6, &display_amount );
-        LOGDEBUG ( "Writing a %.2f %s file to disk on the host platform. . ." , &display_amount , display_unit );
-    }
-    while ( 0 );
     for ( u8 i = 0; i < 6; ++i )
     {
         // Preserve file position prior to the test.
@@ -1150,16 +1127,14 @@ test_file_read_and_write_large_file
         EXPECT_EQ ( old_file_position + buffer_size , file_position_get ( &file ) );
         EXPECT_EQ ( file_position_get ( &file ) , file_size ( &file ) );
     }
-    LOGDEBUG ( "  Done." );
 
     // TEST 4: File size is correct.
-    EXPECT ( file_size ( &file ) >= GIBIBYTES ( 6 ) );
+    EXPECT ( file_size ( &file ) >= GiB ( 6 ) );
 
     file_close ( &file );
 
     // Read 6.00 GiB back from the file and validate the file content that was written is correct.
     EXPECT ( file_open ( FILE_NAME_TEST_OUT_FILE , FILE_MODE_READ , &file ) );
-    LOGDEBUG ( "Reading it back into program memory and validating the file content. . ." );
     for ( u8 i = 0; i < 6; ++i )
     {
         // Preserve file position prior to the test.
@@ -1182,8 +1157,6 @@ test_file_read_and_write_large_file
 
     // TEST 9: The file position is at the end of the file.
     EXPECT_EQ ( file_size ( &file ) , file_position_get ( &file ) );
-
-    LOGDEBUG ( "  Done." );
 
     file_close ( &file );
 

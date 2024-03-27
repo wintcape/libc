@@ -23,11 +23,13 @@ static const char* memory_tags[ MEMORY_TAG_COUNT ] = { "UNKNOWN"
                                                      , "STRING"
                                                      , "HASHTABLE"
                                                      , "QUEUE"
+                                                     , "FREELIST"
                                                      , "LINEAR_ALLOCATOR"
                                                      , "DYNAMIC_ALLOCATOR"
                                                      , "THREAD"
                                                      , "MUTEX"
                                                      , "FILE"
+                                                     , "LOGGER"
                                                      , "APPLICATION"
                                                      };
 
@@ -49,18 +51,16 @@ stat_t;
 /** @brief Type definition for memory subsystem state. */
 typedef struct
 {
-    bool                initialized;
+    bool                    initialized;
 
-    stat_t              stat;
+    stat_t                  stat;
     
-    u64                 allocator_capacity;
-    dynamic_allocator_t allocator;
-    void*               allocator_start;
+    dynamic_allocator_t*    allocator;
 
-    u64                 capacity;
-    void*               memory;
+    u64                     capacity;
+    void*                   memory;
 
-    mutex_t             allocation_mutex;
+    mutex_t                 allocation_mutex;
 }
 state_t;
 
@@ -80,8 +80,10 @@ memory_startup
 
     const u64 state_memory_requirement = sizeof ( state_t );
     u64 allocator_memory_requirement = 0;
-    dynamic_allocator_init ( capacity , &allocator_memory_requirement , 0 , 0 );
-    const u64 memory_requirement = state_memory_requirement + allocator_memory_requirement;
+    dynamic_allocator_create ( capacity , &allocator_memory_requirement , 0 , 0 );
+    const u64 memory_requirement = state_memory_requirement
+                                 + allocator_memory_requirement
+                                 ;
 
     f64 amount;
     const char* unit = string_bytesize ( memory_requirement , &amount );
@@ -97,16 +99,19 @@ memory_startup
 
     state = memory;
     ( *state ).initialized = false;
-    ( *state ).allocator_capacity = allocator_memory_requirement;
-    ( *state ).allocator_start = memory + state_memory_requirement;
-    ( *state ).capacity = capacity;
+
     memory_clear ( &( *state ).stat , sizeof ( stat_t ) );
 
-    if ( !dynamic_allocator_init ( capacity
-                                 , &( *state ).allocator_capacity
-                                 , ( *state ).allocator_start
-                                 , &( *state ).allocator
-                                 ))
+    ( *state ).memory = ( void* )( ( ( u64 ) memory )
+                                 + state_memory_requirement
+                                 );
+    ( *state ).capacity = capacity;
+
+    if ( !dynamic_allocator_create ( ( *state ).capacity
+                                   , 0
+                                   , ( *state ).memory
+                                   , &( *state ).allocator
+                                   ))
     {
         LOGFATAL ( "memory_startup: Failed to initialize internal allocator." );
         return false;
@@ -138,7 +143,7 @@ memory_shutdown
 
     mutex_destroy ( &( *state ).allocation_mutex );
 
-    dynamic_allocator_clear ( &( *state ).allocator );
+    dynamic_allocator_destroy ( &( *state ).allocator );
 
     if ( ( *state ).stat.allocation_count != ( *state ).stat.free_count )
     {
@@ -185,7 +190,7 @@ memory_allocate_aligned
             LOGFATAL ( "memory_allocate: Could not obtain mutex lock. Aborting operation." );
             return 0;
         }
-        memory = dynamic_allocator_allocate_aligned ( &( *state ).allocator
+        memory = dynamic_allocator_allocate_aligned ( ( *state ).allocator
                                                     , size
                                                     , alignment
                                                     );
@@ -245,7 +250,7 @@ memory_free_aligned
             LOGFATAL ( "memory_free: Could not obtain mutex lock. Heap corruption is likely." );
             return;
         }
-        bool success = dynamic_allocator_free_aligned ( &( *state ).allocator
+        bool success = dynamic_allocator_free_aligned ( ( *state ).allocator
                                                       , memory
                                                       );
         if ( success )

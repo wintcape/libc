@@ -11,12 +11,25 @@
 
 #include "math/math.h"
 
-void*
+array_t*
 _array_create
 (   ARRAY_FIELD initial_capacity
 ,   ARRAY_FIELD stride
 )
 {
+    if ( !initial_capacity || !stride )
+    {
+        if ( !initial_capacity )
+        {
+            LOGERROR ( "_array_create: Value of initial_capacity argument must be non-zero." );
+        }
+        if ( !stride )
+        {
+            LOGERROR ( "_array_create: Value of stride argument must be non-zero." );
+        }
+        return 0;
+    }
+    
     const u64 header_size = ARRAY_FIELD_COUNT * sizeof ( u64 );
     const u64 content_size = initial_capacity * stride;
     const u64 size = header_size + content_size;
@@ -28,30 +41,29 @@ _array_create
     array[ ARRAY_FIELD_LENGTH ]   = 0;
     array[ ARRAY_FIELD_STRIDE ]   = stride;
 
-    return ( void* )( array + ARRAY_FIELD_COUNT );
+    return array + ARRAY_FIELD_COUNT;
 }
 
 void
 _array_destroy
-(   void* array
+(   array_t* array
 )
 {
     if ( !array )
     {
         return;
     }
-    
     memory_free ( ( ( u64* ) array ) - ARRAY_FIELD_COUNT
                 , array_size ( array )
                 , MEMORY_TAG_ARRAY
                 );
 }
 
-void*
+array_t*
 _array_create_from
-(   void*       array_
-,   ARRAY_FIELD stride
+(   const void* array_
 ,   ARRAY_FIELD length
+,   ARRAY_FIELD stride
 )
 {
     const u64 capacity = length * stride;
@@ -61,23 +73,23 @@ _array_create_from
     return array;
 }
 
-void*
-_array_copy
-(   void* src
+array_t*
+__array_copy
+(   const array_t* src
 )
 {
     const u64 length = array_length ( src );
     const u64 stride = array_stride ( src );
     void* copy = _array_create ( length , stride );
-    memory_copy ( copy , src , length );
+    array_copy ( src , length , stride , copy );
     _array_field_set ( copy , ARRAY_FIELD_LENGTH , length );
     return copy;
 }
 
 u64
 _array_field_get
-(   const void* array
-,   ARRAY_FIELD field
+(   const array_t*  array
+,   ARRAY_FIELD     field
 )
 {
     const u64* header = ( ( u64* ) array ) - ARRAY_FIELD_COUNT;
@@ -86,7 +98,7 @@ _array_field_get
 
 void
 _array_field_set
-(   void*       array
+(   array_t*    array
 ,   ARRAY_FIELD field
 ,   u64         value
 )
@@ -97,7 +109,7 @@ _array_field_set
 
 u64
 _array_size
-(   const void* array
+(   const array_t* array
 )
 {
     u64* header = ( ( u64* ) array ) - ARRAY_FIELD_COUNT;
@@ -108,29 +120,30 @@ _array_size
     return header_size + content_size;
 }
 
-void*
+array_t*
 _array_resize
-(   void*   old_array
-,   u64     minimum_capacity
+(   array_t*    old_array
+,   ARRAY_FIELD minimum_capacity
 )
 {
-    const u64 length = array_length ( old_array );
+    if ( minimum_capacity == array_capacity ( old_array ) )
+    {
+        return old_array;
+    }
+
+    const u64 length = MIN ( array_length ( old_array ) , minimum_capacity );
     const u64 stride = array_stride ( old_array );
 
-    void* new_array = _array_create ( ARRAY_SCALE_FACTOR ( minimum_capacity )
-                                    , stride
-                                    );
+    void* new_array = _array_create ( minimum_capacity , stride );
     memory_copy ( new_array , old_array , length * stride );
     _array_field_set ( new_array , ARRAY_FIELD_LENGTH , length );
-
     _array_destroy ( old_array );
-    
     return new_array;
 }
 
-void*
+array_t*
 _array_push
-(   void*       array
+(   array_t*    array
 ,   const void* src
 )
 {
@@ -139,26 +152,25 @@ _array_push
 
     if ( length >= array_capacity ( array ) )
     {
-        array = _array_resize ( array , length );
+        array = array_resize ( array , length );
     }
 
     const u64 dst = ( ( u64 ) array ) + length * stride;
     memory_copy ( ( void* ) dst , src , stride );
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length + 1 );
-
     return array;
 }
 
-void
+bool
 _array_pop
-(   void* array
-,   void* dst
+(   array_t*    array
+,   void*       dst
 )
 {
     if ( !array_length ( array ) )
     {
         LOGWARN ( "_array_pop: Array is empty." );
-        return;
+        return false;
     }
 
     const u64 length = array_length ( array ) - 1;
@@ -170,11 +182,12 @@ _array_pop
         memory_copy ( dst , ( void* ) src , stride );
     }
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
+    return true;
 }
 
-void*
+array_t*
 _array_insert
-(   void*       array
+(   array_t*    array
 ,   u64         index
 ,   const void* src
 )
@@ -192,7 +205,7 @@ _array_insert
     
     if ( length >= array_capacity ( array ) )
     {
-        array = _array_resize ( array , length );
+        array = array_resize ( array , length );
     }
     
     const u64 dst = ( ( u64 ) array );
@@ -202,15 +215,14 @@ _array_insert
                 );
     memory_copy ( ( void* )( dst + index * stride ) , src , stride );
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length + 1 );
-
     return array;
 }
 
-void*
+array_t*
 _array_remove
-(   void*   array
-,   u64     index
-,   void*   dst
+(   array_t*    array
+,   u64         index
+,   void*       dst
 )
 {
     if ( !array_length ( array ) )
@@ -240,89 +252,5 @@ _array_remove
                 , ( length - index ) * stride
                 );
     _array_field_set ( array , ARRAY_FIELD_LENGTH , length );
-
-    return array;
-}
-
-void*
-_array_reverse
-(   void*       array
-,   const u64   array_stride
-,   const u64   array_length
-)
-{
-    if ( !array_stride || array_length < 2 )
-    {
-        return array;
-    }
-
-    const u64 array_ = ( ( u64 ) array );
-    void* swap = memory_allocate ( array_stride , MEMORY_TAG_ARRAY );
-    u64 i;
-    u64 j;
-    for ( i = 0 , j = array_length - 1; i < j; ++i , --j )
-    {
-        memory_copy ( swap
-                    , ( void* )( array_ + i * array_stride )
-                    , array_stride
-                    );
-        memory_copy ( ( void* )( array_ + i * array_stride )
-                    , ( void* )( array_ + j * array_stride )
-                    , array_stride
-                    );
-        memory_copy ( ( void* )( array_ + j * array_stride )
-                    , swap
-                    , array_stride
-                    );
-    }
-    memory_free ( swap , array_stride , MEMORY_TAG_ARRAY );
-
-    return array;
-}
-
-void*
-_array_shuffle
-(   void*   array
-,   u64     array_stride
-,   u64     array_length
-)
-{
-    if ( !array_stride || array_length < 2 )
-    {
-        return array;
-    }
-
-    const u64 array_ = ( ( u64 ) array );
-    void* swap = memory_allocate ( array_stride , MEMORY_TAG_ARRAY );
-    for ( u64 i = 0; i < array_length - 1; ++i )
-    {
-        u64 j = random2 ( 0 , i );
-        memory_copy ( swap
-                    , ( void* )( array_ + i * array_stride )
-                    , array_stride
-                    );
-        memory_copy ( ( void* )( array_ + i * array_stride )
-                    , ( void* )( array_ + j * array_stride )
-                    , array_stride
-                    );
-        memory_copy ( ( void* )( array_ + j * array_stride )
-                    , swap
-                    , array_stride
-                    );
-    }
-    memory_free ( swap , array_stride , MEMORY_TAG_ARRAY );
-
-    return array;
-}
-
-void*
-_array_sort
-(   void*                   array
-,   u64                     array_stride
-,   u64                     array_length
-,   comparator_function_t   comparator
-)
-{
-    platform_array_sort ( array , array_stride , array_length , comparator );
     return array;
 }

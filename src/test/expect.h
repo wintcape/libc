@@ -57,7 +57,7 @@
         const char* __file__ = __FILE__;                                    \
         const u64 __line__ = __LINE__;                                      \
         LOGERROR ( "--> Expected something other than %i, tested %i.\n"     \
-                   "            in file:\t%s:."                             \
+                   "            in file:\t%s:%i."                           \
                  , (expected) , (actual) , __file__ , __line__              \
                  );                                                         \
         return false;                                                       \

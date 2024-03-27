@@ -136,8 +136,9 @@ test_array_create_and_destroy
     array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
     global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
-    f32 fs[ 16 ] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
-    array = array_create_from ( f32 , fs , 16 );
+    u64 fs_length = 16;
+    f32 fs[] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+    array = array_create_from ( f32 , fs , fs_length );
 
     // Verify there was no memory error prior to the test.
     EXPECT_NEQ ( 0 , array );
@@ -167,7 +168,32 @@ test_array_create_and_destroy
     EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 4: array_destroy handles invalid argument.
+    // TEST 4: array_create handles invalid arguments.
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // TEST 4.1: array_create logs an error and fails if provided capacity is invalid.
+    EXPECT_EQ ( 0 , _array_create ( 0 , 1 ) );
+
+    // TEST 4.2: array_create logs an error and fails if provided stride is invalid.
+    EXPECT_EQ ( 0 , _array_create ( 1 , 0 ) );
+
+    // TEST 4.3: array_create does not allocate memory on failure.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TEST 5: array_destroy handles invalid argument.
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
     // TEST 4.1: array_destroy does not modify the global allocator state if no array is provided.
     array_destroy ( 0 );
@@ -177,6 +203,152 @@ test_array_create_and_destroy
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
+
+    // Verify the test allocated and freed all of its memory properly.
+    EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+    EXPECT_EQ ( global_allocation_count , MEMORY_ALLOCATION_COUNT );
+
+    return true;
+}
+
+u8
+test_array_resize
+( void )
+{
+    u64 global_amount_allocated;
+    u64 array_amount_allocated;
+    u64 global_allocation_count;
+
+    u64 global_amount_allocated_;
+    u64 array_amount_allocated_;
+    u64 global_allocation_count_;
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count = MEMORY_ALLOCATION_COUNT;
+
+    const u64 array_in_length = 16;
+    const u64 array_out_length = 9;
+    const i32 array_in[] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 };
+    const i32 array_out[] = { -8 , -7 , -6 , -5 , -4 , -3 , -2 , -1 , 0 };
+    i32* array = array_create_from ( i32 , array_in , array_in_length );
+    i32* array_copy = array_create_from ( i32 , array_in , array_in_length );
+    i32* array_;
+
+    // Verify there was no memory error prior to the test.
+    EXPECT_NEQ ( 0 , array );
+    EXPECT_NEQ ( 0 , array_copy );
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Start test.
+
+    // TEST 1: array_resize does not reallocate if provided capacity is the same as the array capacity.
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    array_ = array;
+    array = _array_resize ( array , array_capacity ( array_copy ) );
+
+    // TEST 1.1: array_resize returns the same address for the array.
+    EXPECT_EQ ( array_ , array );
+
+    // TEST 1.2: array_resize did not modify the array fields.
+    EXPECT_EQ ( array_capacity ( array_copy ) , array_capacity ( array ) );
+    EXPECT_EQ ( array_length ( array_copy ) , array_length ( array ) );
+    EXPECT_EQ ( array_stride ( array_copy ) , array_stride ( array ) );
+
+    // TEST 1.3: array_resize did not modify the array content.
+    EXPECT ( memory_equal ( array , array_copy , array_capacity ( array ) ) );
+
+    // TEST 1.4: array_resize did not allocate memory.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TEST 2: array_resize increases the capacity of the array if the provided capacity is larger than the array capacity.
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    array_ = array;
+    array = _array_resize ( array , array_capacity ( array_copy ) * 2 );
+
+    // TEST 2.1: array_resize returns a new array.
+    EXPECT_NEQ ( array_ , array );
+
+    // TEST 2.2: array_resize resized the array to the correct capacity.
+    EXPECT_EQ ( array_capacity ( array_copy ) * 2 , array_capacity ( array ) );
+
+    // TEST 2.3: array_resize correctly copied other array fields.
+    EXPECT_EQ ( array_length ( array_copy ) , array_length ( array ) );
+    EXPECT_EQ ( array_stride ( array_copy ) , array_stride ( array ) );
+
+    // TEST 2.4: array_resize correctly copied array content.
+    EXPECT ( memory_equal ( array , array_copy , array_length ( array ) * array_stride ( array ) ) );
+
+    // TEST 2.5: array_resize initialized bytes between the array length and new capacity to 0.
+    for ( u64 i = array_length ( array ); i < array_capacity ( array ); ++i )
+    {
+        EXPECT_EQ ( 0 , array[ i ] );
+    }
+
+    // TEST 2.6: array_resize performed net-zero memory allocations (as many allocations as frees).
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TEST 2.7: array_resize allocated the correct number of bytes with the correct memory tag.
+    EXPECT_EQ ( global_amount_allocated_ + array_size ( array ) - array_size ( array_copy ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( array_amount_allocated_ + array_size ( array ) - array_size ( array_copy ) , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+
+    // TEST 3: array_resize truncates the array if the provided capacity is smaller than the array length.
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    array_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ARRAY );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    array_ = array;
+    array = _array_resize ( array , array_out_length );
+
+    // TEST 3.1: array_resize returns a new array.
+    EXPECT_NEQ ( array_ , array );
+
+    // TEST 3.2: array_resize resized the array to the correct capacity.
+    EXPECT_EQ ( array_out_length , array_capacity ( array ) );
+
+    // TEST 3.3: array_resize truncated the array.
+    EXPECT_EQ ( array_out_length , array_length ( array ) );
+
+    // TEST 3.4: array_resize did not modify the other array fields.
+    EXPECT_EQ ( array_stride ( array_copy ) , array_stride ( array ) );
+
+    // TEST 3.5: array_resize correctly copied the array content.
+    EXPECT ( memory_equal ( array , array_out , array_length ( array ) * array_stride ( array ) ) );
+    
+    // TEST 3.6: array_resize initialized bytes between the array length and new capacity to 0.
+    for ( u64 i = array_length ( array ); i < array_capacity ( array ); ++i )
+    {
+        EXPECT_EQ ( 0 , array[ i ] );
+    }
+
+    // TEST 3.7: array_resize performed net-zero memory allocations (as many allocations as frees).
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+
+    // TODO: TEST 3.8: array_resize allocated the correct number of bytes with the correct memory tag.
+    //EXPECT_EQ ( global_amount_allocated_ - ??? , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    //EXPECT_EQ ( array_amount_allocated_ - ??? , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
+
+    // End test.
+    ////////////////////////////////////////////////////////////////////////////
+
+    array_destroy ( array );
+    array_destroy ( array_copy );
 
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -201,9 +373,11 @@ test_array_push_and_pop
 
     const i16 to_push = 437;
     const u64 max_op = 100000;
-
     i16* array = array_create_new ( i16 );
     i16* old_memory = memory_allocate ( sizeof ( i16 ) * max_op , MEMORY_TAG_ARRAY );
+    i16* array_;
+    u64 old_length;
+    i16 popped;
 
     // Verify there was no memory error prior to the test.
     EXPECT_NEQ ( 0 , array );
@@ -214,18 +388,14 @@ test_array_push_and_pop
 
     // TEST 1: array_push.
 
-    LOGDEBUG ( "Appending %i elements to an array. . ." , max_op );
-
     for ( u64 i = 0; i < max_op; ++i )
     {
         // Copy the array state prior to the operation being tested.
         const u64 old_length = array_length ( array );
         memory_copy ( old_memory , array , old_length * array_stride ( array ) );
 
-        array_push ( array , to_push );
-
         // Verify there was no memory error prior to the test.
-        EXPECT_NEQ ( 0 , array );
+        EXPECT_NEQ ( 0 , array_push ( array , to_push ) );
 
         // TEST 1.1: array_push increases the length of the array by 1.
         EXPECT_EQ ( old_length + 1 , array_length ( array ) );
@@ -237,14 +407,7 @@ test_array_push_and_pop
         EXPECT ( memory_equal ( array , old_memory , old_length ) );
     }
 
-    LOGDEBUG ( "  Done." );
-
     // TEST 2: array_pop.
-
-    LOGDEBUG ( "Removing them. . ." );
-
-    u64 old_length;
-    i16 popped;
 
     while ( array_length ( array ) > 1 )
     {
@@ -252,42 +415,41 @@ test_array_push_and_pop
         old_length = array_length ( array );
         memory_copy ( old_memory , array , old_length );
 
-        popped = 0;
-        array_pop ( array , &popped );
-
         // Verify there was no memory error prior to the test.
-        EXPECT_NEQ ( 0 , array );
+        popped = 0;
 
-        // TEST 2.1: array_pop decreases the length of the array by 1.
+        // TEST 2.1: array_pop succeeds.
+        array_ = array;
+        EXPECT ( array_pop ( array , &popped ) );
+
+        // TEST 2.2: array_pop did not modify the array address.
+        EXPECT_EQ ( array_ , array );
+
+        // TEST 2.3: array_pop decreases the length of the array by 1.
         EXPECT_EQ ( old_length - 1 , array_length ( array ) );
 
-        // TEST 2.2: array_pop copies the last element of the array into the provided output buffer.
+        // TEST 2.4: array_pop copies the last element of the array into the provided output buffer.
         EXPECT_EQ ( to_push , popped );
 
-        // TEST 2.3: array_pop leaves the rest of the array unmodified.
+        // TEST 2.5: array_pop leaves the rest of the array unmodified.
         EXPECT ( memory_equal ( array , old_memory , array_length ( array ) ) );
     }
 
-    // TEST 2.4: array_pop succeeds when no output buffer is provided.
-    array_pop ( array , 0 );
+    // TEST 2.6: array_pop succeeds when no output buffer is provided.
+    EXPECT_NEQ ( 0 , array_pop ( array , 0 ) );
 
-    LOGDEBUG ( "  Done." );
-
-    // TEST 3: array_pop succeeds on empty array.
-
-    // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array );
+    // TEST 3: array_pop fails on empty array.
 
     // Verify the array is empty prior to the test.
     EXPECT_EQ ( 0 , array_length ( array ) );
 
-    // TEST 3.1: array_pop warns when the array is empty.
+    // TEST 3.1: array_pop warns and fails when the array is empty.
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     popped = 0;
-    i16* array_ = array;
-    array_pop ( array , &popped );
+    array_ = array;
+    EXPECT_NOT ( array_pop ( array , &popped ) );
 
-    // TEST 3.2: array_pop does not perform memory allocation if the array is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
+    // TEST 3.2: array_pop did not modify the array address.
     EXPECT_EQ ( array_ , array );
     
     // TEST 3.3: array_pop does not modify array length if the array is empty.
@@ -330,6 +492,8 @@ test_array_insert_and_remove
     i64* array1 = array_create_new ( i64 );
     i64* array2 = array_create_new ( i64 );
     i64* array;
+    i64 removed1;
+    i64 removed2;
 
     // Verify there was no memory error prior to the test.
     EXPECT_NEQ ( 0 , array1 );
@@ -341,22 +505,18 @@ test_array_insert_and_remove
     // TEST 1: array_insert handles invalid arguments.
 
     // TEST 1.1: array_insert logs an error if the index is invalid.
+    // TEST 1.2: array_insert does not perform memory allocation if the index is invalid.
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     array = array1;
-    array_insert ( array1 , array_length ( array1 ) + 1 , to_insert[ 0 ] );
-
-    // TEST 1.2: array_insert does not perform memory allocation if the index is invalid.
-    EXPECT_EQ ( array , array1 );
+    EXPECT_EQ ( array , array_insert ( array1 , array_length ( array1 ) + 1 , to_insert[ 0 ] ) );
 
     // TEST 1.3: array_insert does not modify array length if the index is invalid.
     EXPECT_EQ ( 0 , array_length ( array1 ) );
 
     // TEST 2: array_insert.
 
-    array_insert ( array1 , array_length ( array1 ) , to_insert[ 0 ] );
-
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_insert ( array1 , array_length ( array1 ) , to_insert[ 0 ] ) );
 
     // TEST 2.1: array_insert increases array length by 1.
     EXPECT_EQ ( 1 , array_length ( array1 ) );
@@ -364,10 +524,8 @@ test_array_insert_and_remove
     // TEST 2.2: array_insert inserts the correct element at the correct index.
     EXPECT_EQ ( to_insert[ 0 ] , array1[ 0 ] );
     
-    array_insert ( array1 , array_length ( array1 ) , to_insert[ 2 ] );
-
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_insert ( array1 , array_length ( array1 ) , to_insert[ 2 ] ) );
 
     // TEST 2.3: array_insert increases array length by 1.
     EXPECT_EQ ( 2 , array_length ( array1 ) );
@@ -375,10 +533,8 @@ test_array_insert_and_remove
     // TEST 2.4: array_insert inserts the correct element at the correct index.
     EXPECT_EQ ( to_insert[ 2 ] , array1[ 1 ] );
 
-    array_insert ( array1 , array_length ( array1 ) , to_insert[ 3 ] );
-
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_insert ( array1 , array_length ( array1 ) , to_insert[ 3 ] ) );
 
     // TEST 2.5: array_insert increases array length by 1.
     EXPECT_EQ ( 3 , array_length ( array1 ) );
@@ -386,10 +542,8 @@ test_array_insert_and_remove
     // TEST 2.6: array_insert inserts the correct element at the correct index.
     EXPECT_EQ ( to_insert[ 3 ] , array1[ 2 ] );
 
-    array_insert ( array1 , 1 , to_insert[ 1 ] );
-
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_insert ( array1 , 1 , to_insert[ 1 ] ) );
 
     // TEST 2.7: Multiple subsequent invocations of array_insert result in the correct output array data and length.
     EXPECT_EQ ( 4 , array_length ( array1 ) );
@@ -406,17 +560,12 @@ test_array_insert_and_remove
     
     // TEST 3: array_remove handles invalid arguments.
 
-    i64 removed1;
-    i64 removed2;
-
     // TEST 3.1: array_remove logs an error if the index is invalid.
+    // TEST 3.2: array_remove does not perform memory allocation if the index is invalid* (current implementation doesn't allocate in general either, but I don't need to test for that).
     LOGWARN ( "The following error is intentionally triggered by a test:" );
     array = array1;
     removed1 = 0;
-    array_remove ( array1 , array_length ( array1 ) , &removed1 );
-
-    // TEST 3.2: array_remove does not perform memory allocation if the index is invalid* (current implementation doesn't allocate in general either, but I don't need to test for that).
-    EXPECT_EQ ( array , array1 );
+    EXPECT_EQ ( array , array_remove ( array1 , array_length ( array1 ) , &removed1 ) );
 
     // TEST 3.3: array_remove does not modify array length if the index is invalid.
     EXPECT_EQ ( 4 , array_length ( array1 ) );
@@ -427,10 +576,8 @@ test_array_insert_and_remove
     // TEST 3.5: array_remove does not modify any array data if the index is invalid.
     EXPECT ( memory_equal ( array1 , array2 , array_stride ( array1 ) * array_length ( array1 ) ) );
     
-    array_remove ( array1 , array_length ( array1 ) - 1 , &removed1 );
-
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_remove ( array1 , array_length ( array1 ) - 1 , &removed1 ) );
 
     // TEST 3.6: array_remove decreases array length by 1.
     EXPECT_EQ ( 3 , array_length ( array1 ) );
@@ -442,20 +589,18 @@ test_array_insert_and_remove
     EXPECT ( memory_equal ( array1 , to_insert , 3 * sizeof ( i64 ) ) );
 
     // TEST 3.9: array_remove yields the same results as array_pop when removing from the end of the array.
-    array_pop ( array2 , &removed2 );
+    EXPECT_NEQ ( 0 , array_pop ( array2 , &removed2 ) );
     EXPECT_EQ ( array_length ( array2 ) , array_length ( array1 ) );
     EXPECT ( memory_equal ( array1 , array2 , array_stride ( array1 ) * array_length ( array1 ) ) );
 
     // Add the removed element back to the array again prior to the test.
-    array_push ( array1 , removed1 );
+    EXPECT_NEQ ( 0 , array_push ( array1 , removed1 ) );
     EXPECT_NEQ ( 0 , array1 );
     EXPECT_EQ ( 4 , array_length ( array1 ) );
     EXPECT ( memory_equal ( array1 , to_insert , 4 * sizeof ( i64 ) ) );
 
-    array_remove ( array1 , 2 , &removed1 );
-
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_remove ( array1 , 2 , &removed1 ) );
 
     // TEST 3.10: array_remove decreases array length by 1.
     EXPECT_EQ ( 3 , array_length ( array1 ) );
@@ -465,11 +610,9 @@ test_array_insert_and_remove
 
     // TEST 3.12: array_remove removes the array element and leaves the remaining array data unmodified.
     EXPECT ( memory_equal ( array1 , remove1 , array_stride ( array1 ) * array_length ( array1 ) ) );
-    
-    array_remove ( array1 , 1 , &removed1 );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_remove ( array1 , 1 , &removed1 ) );
 
     // TEST 3.13: array_remove decreases array length by 1.
     EXPECT_EQ ( 2 , array_length ( array1 ) );
@@ -479,11 +622,9 @@ test_array_insert_and_remove
 
     // TEST 3.15: array_remove removes the array element and leaves the remaining array data unmodified.
     EXPECT ( memory_equal ( array1 , remove2 , array_stride ( array1 ) * array_length ( array1 ) ) );
-    
-    array_remove ( array1 , 0 , &removed1 );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_remove ( array1 , 0 , &removed1 ) );
 
     // TEST 3.16: array_remove decreases array length by 1.
     EXPECT_EQ ( 1 , array_length ( array1 ) );
@@ -493,11 +634,9 @@ test_array_insert_and_remove
 
     // TEST 3.18: array_remove removes the array element and leaves the remaining array data unmodified.
     EXPECT ( memory_equal ( array1 , remove3 , array_stride ( array1 ) * array_length ( array1 ) ) );
-    
-    array_remove ( array1 , 0 , 0 );
-    
+
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , array1 );
+    EXPECT_NEQ ( 0 , array_remove ( array1 , 0 , 0 ) );
 
     // TEST 3.19: array_remove decreases array length by 1.
     EXPECT_EQ ( 0 , array_length ( array1 ) );
@@ -505,13 +644,11 @@ test_array_insert_and_remove
     // TEST 4: array_remove handles invalid aruments.
 
     // TEST 4.1: array_remove warns when the array is empty.
+    // TEST 4.2: array_remove does not perform memory allocation if the array is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     removed1 = 0;
     array = array1;
-    array_remove ( array1 , 0 , &removed1 );
-
-    // TEST 4.2: array_remove does not perform memory allocation if the array is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
-    EXPECT_EQ ( array , array1 );
+    EXPECT_EQ ( array , array_remove ( array1 , 0 , &removed1 ) );
 
     // TEST 4.3: array_remove does not modify array length if the array is empty.
     EXPECT_EQ ( 0 , array_length ( array1 ) );
@@ -547,11 +684,10 @@ test_array_insert_and_remove_random
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 max_op = 10000;
-
-    LOGDEBUG ( "Inserting %i elements into an array at random indices. . ." , max_op );
-
     i32* array = array_create_new ( i32 );
     i32* old_memory = memory_allocate ( sizeof ( i32 ) * max_op , MEMORY_TAG_ARRAY );
+    u64 old_length;
+    i32 removed;
 
     // Verify there was no memory error prior to the test.
     EXPECT_NEQ ( 0 , array );
@@ -592,14 +728,6 @@ test_array_insert_and_remove_random
             EXPECT ( memory_equal ( &array[ insert_index + 1 ] , &old_memory[ insert_index ] , ( old_length - insert_index ) * array_stride ( array ) ) );
         }
     }
-
-    LOGDEBUG ( "  Done." );
-
-    LOGDEBUG ( "Removing them in random order. . ." );
-
-    u64 old_length;
-    i32 removed;
-
     while ( array_length ( array ) > 1 )
     {
         // Copy the array state prior to performing the operation.
@@ -663,8 +791,6 @@ test_array_insert_and_remove_random
     memory_free ( old_memory , sizeof ( i32 ) * max_op , MEMORY_TAG_ARRAY );
     array_destroy ( array );
 
-    LOGDEBUG ( "  Done." );
-
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( array_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ARRAY ) );
@@ -690,20 +816,20 @@ test_array_reverse
 
     // TEST 1: array_reverse does not fail on an empty array.
     memory_copy ( array , array_empty , sizeof ( array_empty ) );
-    _array_reverse ( array , array_stride , 0 );
+    array_reverse ( array , 0 , array_stride , 0 );
     EXPECT ( memory_equal ( array , array_empty , sizeof ( array_empty ) ) );
 
     // TEST 2: array_reverse does not fail on a single-element array.
     memory_copy ( array , array_single_element , sizeof ( array_single_element ) );
-    _array_reverse ( array , array_stride , 1 );
+    array_reverse ( array , 1 , array_stride , 0 );
     EXPECT ( memory_equal ( array , array_single_element , sizeof ( array_single_element ) ) );
 
     // TEST 3: array_reverse correctly reverses an input array with more than one element.
     memory_copy ( array , array_in , sizeof ( array_in ) );
-    _array_reverse ( array , array_stride , array_length );
+    array_reverse ( array , array_length , array_stride , 0 );
     EXPECT ( memory_equal ( array , array_out , sizeof ( array_out ) ) );
     // (reverse it again)
-    _array_reverse ( array , array_stride , array_length );
+    array_reverse ( array , array_length , array_stride , 0 );
     EXPECT ( memory_equal ( array , array_in , sizeof ( array_in ) ) );
 
     // End test.
@@ -726,18 +852,16 @@ test_array_sort
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
     const u64 stride = sizeof ( i32 );
-    const u64 length = 10000000;
-
-    LOGDEBUG ( "Sorting an array of %i integers multiple times. . ." , length );
-
+    const u64 length = 1000000;
     const i32 array_empty[] = {};
     const i32 array_single_element[] = { 1 };
     const i32 array_all_elements_equal[] = { 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 , 99 };
-    i32* array_sorted = _array_create ( length , stride );
-    i32* array_unsorted = _array_create ( length , stride );
-    i32* array_reverse_order = _array_create ( length , stride );
-    i32* array = _array_create ( length , stride );
-    i32 array_element;
+    i32* array_sorted = memory_allocate ( length * stride , MEMORY_TAG_ARRAY );
+    i32* array_unsorted = memory_allocate ( length * stride , MEMORY_TAG_ARRAY );
+    i32* array_reverse_order = memory_allocate ( length * stride , MEMORY_TAG_ARRAY );
+    i32* array = memory_allocate ( length * stride , MEMORY_TAG_ARRAY );
+    u64 i;
+    u64 j;
 
     // Verify there was no memory error prior to the test.
     EXPECT_NEQ ( 0 , array_sorted );
@@ -746,62 +870,61 @@ test_array_sort
     EXPECT_NEQ ( 0 , array );
 
     // Populate the arrays to compare against.
-    array_element = -50000;
-    for ( u64 i = 0; i < length; ++i )
+    for ( i = 0 , j = -50000; i < length; ++i , ++j )
     {
-        array_push ( array_sorted , array_element );
-        array_element += 1;
+        array_sorted[ i ] = j;
     }
     for ( u64 i = 0; i < length; ++i )
     {
-        array_element = array_sorted[ length - 1 - i ];
-        array_push ( array_reverse_order , array_element );
+        array_reverse_order[ i ] = array_sorted[ length - 1 - i ];
     }
-    memory_copy ( array_unsorted , array_sorted , stride * length );
-    array_shuffle ( array_unsorted );
+    array_copy ( array_sorted , length , stride , array_unsorted );
+    array_shuffle ( array_unsorted , length , stride , 0 );
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    // TEST 1: array_sort does not fail on an empty array.
+    // TEST 1: array_sort does not fail if value of length argument is zero.
     memory_copy ( array , array_empty , sizeof ( array_empty ) );
-    _array_sort ( array , stride , 0 , test_array_sort_compare );
+    array_sort ( array , 0 , stride , test_array_sort_compare );
     EXPECT ( memory_equal ( array , array_empty , sizeof ( array_empty ) ) );
 
-    // TEST 2: array_sort does not modify a single-element array.
+    // TEST 2: array_sort does not fail if value of stride argument is zero.
+    array_sort ( array , length , 0 , test_array_sort_compare );
+    EXPECT ( memory_equal ( array , array_empty , sizeof ( array_empty ) ) );
+
+    // TEST 3: array_sort does not modify a single-element array.
     memory_copy ( array , array_single_element , sizeof ( array_single_element ) );
-    _array_sort ( array , stride , 1 , test_array_sort_compare );
+    array_sort ( array , stride , 1 , test_array_sort_compare );
     EXPECT ( memory_equal ( array , array_single_element , sizeof ( array_single_element ) ) );
 
-    // TEST 3: array_sort does not modify an array where every element is equal.
+    // TEST 4: array_sort does not modify an array where every element is equal.
     memory_copy ( array , array_all_elements_equal , sizeof ( array_all_elements_equal ) );
-    _array_sort ( array , stride , sizeof ( array_all_elements_equal ) / stride , test_array_sort_compare );
+    array_sort ( array , stride , sizeof ( array_all_elements_equal ) / stride , test_array_sort_compare );
     EXPECT ( memory_equal ( array , array_all_elements_equal , sizeof ( array_all_elements_equal ) ) );
 
-    // TEST 4: array_sort does not modify an array that is already sorted.
+    // TEST 5: array_sort does not modify an array that is already sorted.
     memory_copy ( array , array_sorted , stride * length );
-    _array_sort ( array , stride , length , test_array_sort_compare );
+    array_sort ( array , stride , length , test_array_sort_compare );
     EXPECT ( memory_equal ( array , array_sorted , stride * length ) );
 
-    // TEST 5: array_sort successfully sorts a random array.
+    // TEST 6: array_sort successfully sorts a random array.
     memory_copy ( array , array_unsorted , stride * length );
-    _array_sort ( array , stride , length , test_array_sort_compare );
+    array_sort ( array , stride , length , test_array_sort_compare );
     EXPECT ( memory_equal ( array , array_sorted , stride * length ) );
 
-    // TEST 6: array_sort successfully sorts an array which is in reverse order.
+    // TEST 7: array_sort successfully sorts an array which is in reverse order.
     memory_copy ( array , array_reverse_order , stride * length );
-    _array_sort ( array , stride , length , test_array_sort_compare );
+    array_sort ( array , stride , length , test_array_sort_compare );
     EXPECT ( memory_equal ( array , array_sorted , stride * length ) );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
 
-    array_destroy ( array );
-    array_destroy ( array_sorted );
-    array_destroy ( array_unsorted );
-    array_destroy ( array_reverse_order );
-
-    LOGDEBUG ( "  Done." );
+    memory_free ( array , length * stride , MEMORY_TAG_ARRAY );
+    memory_free ( array_sorted , length * stride , MEMORY_TAG_ARRAY );
+    memory_free ( array_unsorted , length * stride , MEMORY_TAG_ARRAY );
+    memory_free ( array_reverse_order , length * stride , MEMORY_TAG_ARRAY );
 
     // Verify the test allocated and freed all of its memory properly.
     EXPECT_EQ ( global_amount_allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
@@ -816,9 +939,10 @@ test_register_array
 ( void )
 {
     test_register ( test_array_create_and_destroy , "Allocating memory for a resizable array data structure." );
+    test_register ( test_array_resize , "Testing array 'resize' operation." );
     test_register ( test_array_push_and_pop , "Testing array 'push' and 'pop' operations." );
     test_register ( test_array_insert_and_remove , "Testing array 'insert' and 'remove' operations." );
     test_register ( test_array_insert_and_remove_random , "Testing array 'insert' and 'remove' operations with random indices and elements." );
-    test_register ( test_array_reverse , "Testing array in-place 'reverse' operation." );
+    test_register ( test_array_reverse , "Testing array 'reverse' operation." );
     test_register ( test_array_sort , "Testing array in-place 'sort' operation." );
 }

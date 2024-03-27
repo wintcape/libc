@@ -135,8 +135,8 @@ platform_string_length_clamped
 void
 platform_array_sort
 (   void*                   array
-,   u64                     array_stride
 ,   u64                     array_length
+,   u64                     array_stride
 ,   comparator_function_t   comparator
 )
 {

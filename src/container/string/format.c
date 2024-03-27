@@ -93,7 +93,7 @@ typedef struct
 }
 string_format_specifier_t;
 
-/** @brief Type definition for an internal state. */
+/** @brief Type definition for internal state. */
 typedef struct
 {
     const char* format;
@@ -190,7 +190,7 @@ u64 _string_format_parse_argument_address ( state_t* state , const string_format
 u64 _string_format_parse_argument_character ( state_t* state , const string_format_specifier_t* format_specifier , const char arg );
 u64 _string_format_parse_argument_string ( state_t* state , const string_format_specifier_t* format_specifier , const char* arg );
 u64 _string_format_parse_argument_resizable_string ( state_t* state , const string_format_specifier_t* format_specifier , const char* arg );
-u64 _string_format_parse_argument_array ( state_t* state , const string_format_specifier_t* format_specifier , const void* array );
+u64 _string_format_parse_argument_array ( state_t* state , const string_format_specifier_t* format_specifier , const array_t* arg );
 u64 _string_format_parse_argument_queue ( state_t* state , const string_format_specifier_t* format_specifier , const queue_t* arg );
 
 /**
@@ -1328,19 +1328,23 @@ u64
 _string_format_parse_argument_array
 (   state_t*                            state
 ,   const string_format_specifier_t*    format_specifier
-,   const void*                         arg
+,   const array_t*                      arg
 )
 {
     const u64 old_length = string_length ( ( *state ).string );
+    const u64 array_length = array_length ( arg );
+    const u64 array_stride = array_stride ( arg );
 
     _string_push ( ( *state ).string , "{ " );
 
-    for ( u64 i = 0; i < array_length ( arg ); ++i )
+    for ( u64 i = 0; i < array_length; ++i )
     {
         _string_push ( ( *state ).string , "`" );
 
         // Retrieve the array element address.
-        const void* element = ( const void* )( ( ( u64 ) arg ) + i * array_stride ( arg ) );
+        const void* element = ( const void* )( ( ( u64 ) arg )
+                                             + i * array_stride
+                                             );
         
         // Attempt to parse address value according to the format specifier and array stride.
         // TODO: Improve this. Fails if array stride does not correspond to provided format specifier.
@@ -1349,7 +1353,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_RAW:
             {
                 u64 value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( u8 ):  value = *( ( u8* ) element )  ;break;
                     case sizeof ( u16 ): value = *( ( u16* ) element ) ;break;
@@ -1371,7 +1375,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_INTEGER:
             {
                 i64 value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( i8 ):  value = *( ( i8* ) element )  ;break;
                     case sizeof ( i16 ): value = *( ( i16* ) element ) ;break;
@@ -1386,7 +1390,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT:
             {
                 f64 value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1399,7 +1403,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL:
             {
                 f64 value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1412,7 +1416,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:
             {
                 f64 value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1425,7 +1429,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY:
             {
                 f64 value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1438,7 +1442,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_ADDRESS:
             {
                 void* value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( void* ): value = *( ( void** ) element );break;
                     default:               value = 0                      ;break;
@@ -1450,7 +1454,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_STRING:
             {
                 char* value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( char* ): value = *( ( char** ) element );break;
                     default:               value = 0                      ;break;
@@ -1462,7 +1466,7 @@ _string_format_parse_argument_array
             case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:
             {
                 char* value;
-                switch ( array_stride ( arg ) )
+                switch ( array_stride )
                 {
                     case sizeof ( char* ): value = *( ( char** ) element );break;
                     default:               value = 0                      ;break;
@@ -1477,7 +1481,7 @@ _string_format_parse_argument_array
         }
 
         _string_push ( ( *state ).string
-                     , ( i < array_length ( arg ) - 1 ) ? "`, " : "`"
+                     , ( i < array_length - 1 ) ? "`, " : "`"
                      );
     }
 
@@ -1494,24 +1498,28 @@ _string_format_parse_argument_queue
 )
 {
     const u64 old_length = string_length ( ( *state ).string );
+    const u64 queue_length = queue_length ( arg );
+    const u64 queue_stride = queue_stride ( arg );
 
     _string_push ( ( *state ).string , "{ " );
 
-    for ( u64 i = 0; i < ( *arg ).length; ++i )
+    for ( u64 i = 0; i < queue_length ( arg ); ++i )
     {
         _string_push ( ( *state ).string , "`" );
 
-        // Retrieve the array element address.
-        const void* element = ( const void* )( ( ( u64 )( ( *arg ).memory ) ) + i * ( *arg ).stride );
+        // Retrieve the queue element address.
+        const void* element = ( const void* )( ( ( u64 ) arg )
+                                             + i * queue_stride
+                                             );
         
-        // Attempt to parse address value according to the format specifier and array stride.
+        // Attempt to parse address value according to the format specifier and queue stride.
         // TODO: Improve this. Fails if array stride does not correspond to provided format specifier.
         switch ( ( *format_specifier ).tag )
         {
             case STRING_FORMAT_SPECIFIER_RAW:
             {
                 u64 value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( u8 ):  value = *( ( u8* ) element )  ;break;
                     case sizeof ( u16 ): value = *( ( u16* ) element ) ;break;
@@ -1533,7 +1541,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_INTEGER:
             {
                 i64 value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( i8 ):  value = *( ( i8* ) element )  ;break;
                     case sizeof ( i16 ): value = *( ( i16* ) element ) ;break;
@@ -1548,7 +1556,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT:
             {
                 f64 value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1561,7 +1569,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT_SHOW_FRACTIONAL:
             {
                 f64 value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1574,7 +1582,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT_ABBREVIATED:
             {
                 f64 value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1587,7 +1595,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_FLOATING_POINT_FRACTIONAL_ONLY:
             {
                 f64 value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( f32 ): value = *( ( f32* ) element ) ;break;
                     case sizeof ( f64 ): value = *( ( f64* ) element ) ;break;
@@ -1600,7 +1608,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_ADDRESS:
             {
                 void* value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( void* ): value = *( ( void** ) element );break;
                     default:               value = 0                      ;break;
@@ -1612,7 +1620,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_STRING:
             {
                 char* value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( char* ): value = *( ( char** ) element );break;
                     default:               value = 0                      ;break;
@@ -1624,7 +1632,7 @@ _string_format_parse_argument_queue
             case STRING_FORMAT_SPECIFIER_RESIZABLE_STRING:
             {
                 char* value;
-                switch ( ( *arg ).stride )
+                switch ( queue_stride )
                 {
                     case sizeof ( char* ): value = *( ( char** ) element );break;
                     default:               value = 0                      ;break;
@@ -1639,7 +1647,7 @@ _string_format_parse_argument_queue
         }
 
         _string_push ( ( *state ).string
-                     , ( i < ( *arg ).length - 1 ) ? "`, " : "`"
+                     , ( i < queue_length - 1 ) ? "`, " : "`"
                      );
     }
 

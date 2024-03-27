@@ -16,6 +16,12 @@ __string_create
 (   ARRAY_FIELD initial_capacity
 )
 {
+    if ( !initial_capacity )
+    {
+        LOGERROR ( "__string_create: Value of initial_capacity argument must be non-zero." );
+        return 0;
+    }
+    
     char* string = array_create ( char , initial_capacity );
     _array_field_set ( string , ARRAY_FIELD_LENGTH , 1 );
     return string;//                                 ^ terminator
@@ -69,10 +75,12 @@ __string_push
 
     if ( new_size >= array_capacity ( string ) )
     {
-        string = _array_resize ( string , new_size );
+        string = array_resize ( string , new_size );
     }
 
-    memory_copy ( ( void* )( ( ( u64 ) string ) + string_length ( string ) * stride )
+    memory_copy ( ( void* )( ( ( u64 ) string )
+                           + string_length ( string ) * stride
+                           )
                 , src
                 , src_length * stride
                 );
@@ -107,10 +115,12 @@ __string_insert
 
     if ( new_size >= array_capacity ( string ) )
     {
-        string = _array_resize ( string , new_size );
+        string = array_resize ( string , new_size );
     }
 
-    memory_move ( ( void* )( ( ( u64 ) string ) + ( index + src_length ) * stride )
+    memory_move ( ( void* )( ( ( u64 ) string )
+                           + ( index + src_length ) * stride
+                           )
                 , ( void* )( ( ( u64 ) string ) + index * stride )
                 , ( old_length - index ) * stride
                 );
@@ -118,7 +128,9 @@ __string_insert
                 , src
                 , src_length * stride
                 );
-    memory_clear ( ( void* )( ( ( u64 ) string ) + ( old_length + src_length ) * stride )
+    memory_clear ( ( void* )( ( ( u64 ) string )
+                            + ( old_length + src_length ) * stride
+                            )
                  , stride
                  ); // Append terminator.
     _array_field_set ( string , ARRAY_FIELD_LENGTH , new_size );

@@ -61,28 +61,39 @@ LOG_LEVEL;
 /**
  * @brief Initializes the logger subsystem.
  * 
- * Call once to get the memory requirement; call a second time passing in a
- * valid memory buffer of the required size.
+ * Call logger_shutdown to terminate.
  * 
- * @param memory_requirement Output buffer to read memory requirement.
- * @param state Pass 0 to read memory requirement. Otherwise, pass a buffer.
+ * If pre-allocating a memory buffer:
+ *   Call once to get the memory requirement; call a second time passing in a
+ *   valid memory buffer of the required size.
+ * 
+ * If using implicit memory allocation:
+ *   Uses dynamic memory allocation (see core/memory.h).
+ * 
+ * @param filepath The filepath to create the log file at. Must be a null-
+ * terminated string.
+ * @param memory_requirement Output buffer to hold the actual number of bytes
+ * required to operate the logging subsystem. Only applicable if pre-allocating
+ * a memory buffer of the required size. Pass 0 to use implicit memory
+ * allocation.
+ * @param memory Optional pre-allocated memory buffer. Only applicable if
+ * memory is being pre-allocated. Pass 0 to read memory requirement; otherwise,
+ * pass a pre-allocated buffer of the required size.
  * @return true on success; false otherwise.
  */
 bool
 logger_startup
-(   u64*    memory_requirement
-,   void*   state
+(   const char* filepath
+,   u64*        memory_requirement
+,   void*       memory
 );
 
 /**
  * @brief Terminates the logger subsystem.
- * 
- * @param state Internal subsystem state.
  */
 void
 logger_shutdown
-(   void* state
-);
+( void );
 
 /**
  * @brief Logs a message according to the logging elevation protocol.

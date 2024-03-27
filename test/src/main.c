@@ -22,45 +22,23 @@
 
 #include "platform/test_filesystem.h"
 
-/** @brief Rough bound on maximum system memory usage. */
+/** @brief Rough bound on maximum system memory usage: 2.50 GiB. */
 #define TEST_MEMORY_REQUIREMENT \
-    GIBIBYTES ( 2.5 )
+    GiB ( 2.5 )
 
-/** @brief Type definition for program state. */
-typedef struct
-{
-    u64     logger_memory_requirement;
-    void*   logger;
-}
-state_t;
+/** @brief Log filepath. */
+#define LOG_FILEPATH "console.log"
 
-/** @brief Program state. */
-static state_t* state;
+/** @brief Colored text. */
+#define COLORED(text) \
+    ANSI_CC ( ANSI_CC_FG_DARK_GREEN ) text ANSI_CC_RESET
 
 int
 main
 ( void )
 {
     memory_startup ( TEST_MEMORY_REQUIREMENT );
-
-    u64 state_memory_requirement = sizeof ( state_t );
-
-    // Query logger memory requirement.
-    u64 logger_memory_requirement;
-    logger_startup ( &logger_memory_requirement , 0 );
-    state_memory_requirement += logger_memory_requirement;
-
-    // Initialize program state.
-    state = memory_allocate ( state_memory_requirement
-                            , MEMORY_TAG_APPLICATION
-                            );
-    ( *state ).logger = ( void* )( ( ( u64 ) state ) + sizeof ( state_t ) );
-    ( *state ).logger_memory_requirement = logger_memory_requirement;
-    
-    // Initialize logger.
-    logger_startup ( &( *state ).logger_memory_requirement
-                   , ( *state ).logger
-                   );
+    logger_startup ( LOG_FILEPATH , 0 , 0 );
 
     // Initialize tests.
     test_startup ();
@@ -76,12 +54,14 @@ main
     // Run tests.
     LOGINFO ( "Running test suite. . ." );
     const bool fail = test_run_all ();
-
-    // Shutdown logger.
-    logger_shutdown ( ( *state ).logger );
-
-    memory_free ( state , state_memory_requirement , MEMORY_TAG_APPLICATION );
+    if ( !fail )
+    {
+        PRINT ( COLORED ( "libc ("PLATFORM_STRING") ver. %i.%i.%i: All tests passed." ) "\n\n"
+              , VERSION_MAJOR , VERSION_MINOR , VERSION_PATCH
+              );
+    }
+    
+    logger_shutdown ();
     memory_shutdown ();
-
     return fail;
 }

@@ -12,7 +12,7 @@ POST := build/.post-macos
 
 ################################################################################
 
-OBJFILES := math.o test.o clock.o memory.o logger.o string_utils.o string.o string_format.o array.o queue.o hashtable.o freelist.o memory_linear_allocator.o memory_dynamic_allocator.o filesystem.o thread.o mutex.o platform.o
+OBJFILES := math.o test.o clock.o memory.o logger.o string_utils.o string.o string_format.o array_utils.o array.o queue.o hashtable.o freelist.o memory_linear_allocator.o memory_dynamic_allocator.o filesystem.o thread.o mutex.o platform.o
 TEST_OBJFILES := test_main.o test_array.o test_queue.o test_hashtable.o test_string.o test_freelist.o test_memory_linear_allocator.o test_memory_dynamic_allocator.o test_filesystem.o
 
 INCFLAGS := $(foreach x,$(INCLUDE), $(addprefix -I,$(x)))
@@ -48,6 +48,7 @@ obj/logger.o: 							src/core/logger.c
 obj/string_utils.o: 					src/core/string.c
 obj/string.o: 							src/container/string.c
 obj/string_format.o:					src/container/string/format.c
+obj/array_utils.o: 						src/core/array.c
 obj/array.o: 							src/container/array.c
 obj/queue.o:							src/container/queue.c
 obj/hashtable.o:						src/container/hashtable.c

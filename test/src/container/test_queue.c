@@ -29,74 +29,76 @@ test_queue_create_and_destroy
     queue_amount_allocated = memory_amount_allocated ( MEMORY_TAG_QUEUE );
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
 
-    queue_t queue;
+    queue_t* queue;
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    // TEST 1: queue_create handles invalid arguments.
-
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
-
-    // TEST 1.1: queue_create fails if no output buffer for queue is provided.
-    EXPECT_NOT ( queue_create ( 10 , 0 ) );
-
-    // TEST 1.2: queue_create fails if provided stride is invalid.
-    EXPECT_NOT ( queue_create ( 0 , &queue ) );
-
-    // TEST 2: queue_create.
+    // TEST 1: queue_create.
 
     // Copy the current global allocator state prior to the test.
     global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
     queue_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_QUEUE );
     global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
-    // TEST 2.1: queue_create succeeds.
-    EXPECT ( queue_create ( 10 , &queue ) );
+    queue = queue_create ( i16 );
 
-    // TEST 2.2: queue_create performed one memory allocation.
+    // Verify there was no memory error prior to the test.
+    EXPECT_NEQ ( 0 , queue );
+
+    // TEST 1.1: queue_create performed one memory allocation.
     EXPECT_EQ ( global_allocation_count_ + 1 , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 2.3: queue_create allocated the correct number of bytes with the correct memory tag.
-    EXPECT_EQ ( global_amount_allocated_ + queue.allocated , memory_amount_allocated ( MEMORY_TAG_ALL ) );
-    EXPECT_EQ ( queue_amount_allocated_ + queue.allocated , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
+    // TEST 1.2: queue_create allocated the correct number of bytes with the correct memory tag.
+    EXPECT_EQ ( global_amount_allocated_ + queue_size ( queue ) , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( queue_amount_allocated_ + queue_size ( queue ) , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
 
-    // TEST 2.4: Queue created via queue_create has access to a valid memory buffer.
-    EXPECT_NEQ ( 0 , queue.memory );
+    // TEST 1.3: Queue created via queue_create has correct stride.
+    EXPECT_EQ ( sizeof ( i16 ) , queue_stride ( queue ) );
 
-    // TEST 2.5: Queue created via queue_create has correct stride.
-    EXPECT_EQ ( 10 , queue.stride );
+    // TEST 1.4: Queue created via queue_create has default capacity.
+    EXPECT_EQ ( QUEUE_DEFAULT_CAPACITY * queue_stride ( queue ) , queue_allocated ( queue ) );
 
-    // TEST 2.6: Queue created via queue_create has default capacity.
-    EXPECT_EQ ( QUEUE_DEFAULT_CAPACITY * queue.stride , queue.allocated );
+    // TEST 1.5: Queue created via queue_create has 0 length.
+    EXPECT_EQ ( 0 , queue_length ( queue ) );
 
-    // TEST 2.7: Queue created via queue_create has 0 length.
-    EXPECT_EQ ( 0 , queue.length );
+    // TEST 2: queue_destroy.
 
-    // TEST 3: queue_destroy.
-
-    // TEST 3.1: queue_destroy restores the global allocator state.
-    queue_destroy ( &queue );
+    // TEST 2.1: queue_destroy restores the global allocator state.
+    queue_destroy ( queue );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
-    // TEST 3.2: queue_destroy clears all queue data structure fields.
-    EXPECT_EQ ( 0 , queue.allocated );
-    EXPECT_EQ ( 0 , queue.length );
-    EXPECT_EQ ( 0 , queue.memory );
-    EXPECT_EQ ( 0 , queue.stride );
+    // TEST 3: queue_create handles invalid arguments.
+
+    LOGWARN ( "The following errors are intentionally triggered by a test:" );
+
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    queue_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_QUEUE );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
+
+    // TEST 3.1: queue_create logs an error and fails if provided capacity is invalid.
+    EXPECT_EQ ( 0 , _queue_create ( 0 , 1 ) );
+
+    // TEST 3.2: queue_create logs an error and fails if provided stride is invalid.
+    EXPECT_EQ ( 0 , _queue_create ( 1 , 0 ) );
+
+    // TEST 3.3: queue_create does not allocate memory on failure.
+    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
+    EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
+    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
 
     // TEST 4: queue_destroy handles invalid argument.
 
-    // TEST 4.1: queue_destroy does not modify the global allocator state if no queue is provided.
-    queue_destroy ( 0 );
-    EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
-    EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
-    EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
+    // Copy the current global allocator state prior to the test.
+    global_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_ALL );
+    queue_amount_allocated_ = memory_amount_allocated ( MEMORY_TAG_QUEUE );
+    global_allocation_count_ = MEMORY_ALLOCATION_COUNT;
 
-    // TEST 4.2: queue_destroy does not modify the global allocator state if the provided queue is uninitialized.
-    queue_destroy ( &queue );
+    // TEST 4.1: queue_destroy does not free memory if no queue is provided.
+    queue_destroy ( 0 );
     EXPECT_EQ ( global_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_ALL ) );
     EXPECT_EQ ( queue_amount_allocated_ , memory_amount_allocated ( MEMORY_TAG_QUEUE ) );
     EXPECT_EQ ( global_allocation_count_ , MEMORY_ALLOCATION_COUNT );
@@ -127,124 +129,86 @@ test_queue_push_and_pop
 
     const u64 op_count = 65536;
     const u32 to_push = random ();
+    queue_t* queue = queue_create ( u32 );
+    queue_t* queue_;
     u32 popped;
-    queue_t queue;
-
-    EXPECT ( queue_create ( sizeof ( to_push ) , &queue ) );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , queue.memory );
+    EXPECT_NEQ ( 0 , queue );
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    // TEST 1: queue_push handles invalid arguments (1).
-
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
-
-    // TEST 1.1: queue_push fails if no queue is provided.
-    EXPECT_NOT ( queue_push ( 0 , &to_push ) );
-
-    // TEST 1.2: queue_push fails if no handle to the data to append is provided.
-    EXPECT_NOT ( queue_push ( &queue , 0 ) );
-
-    // TEST 2: queue_push.
-
-    LOGDEBUG ( "Pushing %i elements onto a queue one-by-one. . ." , op_count );
+    // TEST 1: queue_push.
 
     for ( u64 i = 0; i < op_count; ++i )
     {
-        // TEST 2.1: queue_push succeeds.
-        EXPECT ( queue_push ( &queue , &to_push ) );
-
         // Verify there was no memory error prior to the test.
-        EXPECT_NEQ ( 0 , queue.memory );
+        EXPECT_NEQ ( 0 , queue_push ( queue , &to_push ) );
 
-        // TEST 2.2: queue_push does not modify the queue stride.
-        EXPECT_EQ ( sizeof ( to_push ) , queue.stride );
+        // TEST 1.2: queue_push does not modify the queue stride.
+        EXPECT_EQ ( sizeof ( to_push ) , queue_stride ( queue ) );
 
-        // TEST 2.3: queue_push increases the length of the queue by 1.
-        EXPECT_EQ ( i + 1 , queue.length );
+        // TEST 1.3: queue_push increases the length of the queue by 1.
+        EXPECT_EQ ( i + 1 , queue_length ( queue ) );
 
-        // TEST 2.4: Queue has access to a memory buffer of adequate size.
-        EXPECT ( queue.allocated >= queue.length * queue.stride );
+        // TEST 1.4: Queue has access to a memory buffer of adequate size.
+        EXPECT ( queue_allocated ( queue ) >= queue_length ( queue ) * queue_stride ( queue ) );
 
-        // TEST 2.5: queue_push appends the correct element to the end of the queue.
-        EXPECT ( memory_equal ( ( void* )( ( ( u64 )( queue.memory ) ) + queue.stride * ( queue.length - 1 ) ) , &to_push , queue.stride ) );
+        // TEST 1.5: queue_push appends the correct element to the end of the queue.
+        EXPECT ( memory_equal ( ( void* )( ( ( u64 ) queue ) + queue_stride ( queue ) * ( queue_length ( queue ) - 1 ) ) , &to_push , queue_stride ( queue ) ) );
     }
 
-    // TEST 2.6: Multiple subsequent queue_push invocations result in the correct output queue.
-    for ( u64 i = 0; i < queue.length; ++i )
+    // TEST 1.6: Multiple subsequent queue_push invocations result in the correct output queue.
+    for ( u64 i = 0; i < queue_length ( queue ); ++i )
     {
-        EXPECT ( memory_equal ( ( void* )( ( ( u64 )( queue.memory ) ) + queue.stride * i ) , &to_push , sizeof ( to_push ) ) );
+        EXPECT ( memory_equal ( ( void* )( ( ( u64 ) queue ) + queue_stride ( queue ) * i ) , &to_push , sizeof ( to_push ) ) );
     }
 
-    LOGDEBUG ( "  Done." );
-
-    // TEST 3: queue_pop handles invalid arguments (1).
-
-    // TEST 3.1: queue_pop logs an error and fails if no queue is provided.
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( queue_pop ( 0 , &popped ) );
-
-    // TEST 4: queue_pop.
-
-    LOGDEBUG ( "Popping %i elements off the queue one-by-one. . ." , op_count );
+    // TEST 2: queue_pop.
 
     for ( u64 i = op_count; i > 1; --i )
     {
-        // TEST 4.1: queue_pop succeeds.
-        EXPECT ( queue_pop ( &queue , &popped ) );
+        // TEST 2.1: queue_pop succeeds.
+        queue_ = queue;
+        EXPECT ( queue_pop ( queue , &popped ) );
 
-        // Verify there was no memory error prior to the test.
-        EXPECT_NEQ ( 0 , queue.memory );
+        // TEST 2.2: queue_pop does not modify the queue address.
+        EXPECT_EQ ( queue_ , queue );
 
-        // TEST 4.2: queue_push decreases the length of the queue by 1.
-        EXPECT_EQ ( i - 1 , queue.length );
+        // TEST 2.3: queue_push decreases the length of the queue by 1.
+        EXPECT_EQ ( i - 1 , queue_length ( queue ) );
 
-        // TEST 4.3: queue_push writes the correct element into the output buffer.
+        // TEST 2.4: queue_push writes the correct element into the output buffer.
         EXPECT_EQ ( to_push , popped );
     }
 
-    // TEST 4.4: queue_pop succeeds when no output buffer is provided.
-    queue_pop ( &queue , 0 );
+    // TEST 2.5: queue_pop succeeds when no output buffer is provided.
+    queue_ = queue;
+    EXPECT ( queue_pop ( queue , 0 ) );
 
-    // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , queue.memory );
+    // TEST 2.6: queue_pop does not modify the queue address.
+    EXPECT_EQ ( queue_ , queue );
 
     // Verify the queue is empty prior to the test.
-    EXPECT_EQ ( 0 , queue.length );
+    EXPECT_EQ ( 0 , queue_length ( queue ) );
 
-    // TEST 4.5: queue_pop warns when the queue is empty.
+    // TEST 2.7: queue_pop warns and fails when the queue is empty.
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     popped = 0;
-    void* queue_memory = queue.memory;
-    queue_pop ( &queue , &popped );
+    queue_ = queue;
+    EXPECT_NOT ( queue_pop ( queue , &popped ) );
 
-    // TEST 4.6: queue_pop does not perform memory allocation if the queue is empty* (current implementation doesn't allocate in general either, but I don't need to test for that).
-    EXPECT_EQ ( queue_memory , queue.memory );
+    // TEST 2.8: queue_pop does not modify the queue address.
+    EXPECT_EQ ( queue_ , queue );
     
-    // TEST 4.7: queue_pop does not modify queue length if the queue is empty.
-    EXPECT_EQ ( 0 , queue.length );
+    // TEST 2.9: queue_pop does not modify queue length if the queue is empty.
+    EXPECT_EQ ( 0 , queue_length ( queue ) );
 
-    // TEST 4.8: queue_pop writes nothing to the output buffer if the queue is empty.
+    // TEST 2.10: queue_pop writes nothing to the output buffer if the queue is empty.
     EXPECT_EQ ( 0 , popped );
 
-    LOGDEBUG ( "  Done." );
-
-    queue_destroy ( &queue );
-
-    // TEST 5: queue_push handles invalid arguments (2).
-
-    // TEST 5.1: queue_push logs an error and fails if the provided queue is uninitialized.
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( queue_push ( &queue , &to_push ) );
-
-    // TEST 6: queue_pop handles invalid arguments (2).
-
-    // TEST 6.1: queue_push logs an error and fails if the provided queue is uninitialized.
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( queue_pop ( &queue , &popped ) );
+    queue_destroy ( queue );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////
@@ -271,72 +235,51 @@ test_queue_peek
     global_allocation_count = MEMORY_ALLOCATION_COUNT;
     
     const u64 op_count = 10000;
+    queue_t* queue = queue_create ( u32 );
     u32 to_push;
     u32 popped;
-    queue_t queue;
-
-    EXPECT ( queue_create ( sizeof ( to_push ) , &queue ) );
 
     // Verify there was no memory error prior to the test.
-    EXPECT_NEQ ( 0 , queue.memory );
+    EXPECT_NEQ ( 0 , queue );
 
     // Push random elements onto the queue.
     for ( u64 i = 0; i < op_count; ++i )
     {
         to_push = random ();
-        EXPECT_EQ ( i , queue.length );
-        EXPECT ( queue_push ( &queue , &to_push ) );
+        EXPECT_EQ ( i , queue_length ( queue ) );
 
         // Verify there was no memory error before continuing.
-        EXPECT_NEQ ( 0 , queue.memory );
+        EXPECT_NEQ ( 0 , queue_push ( queue , &to_push ) );
     }
 
     ////////////////////////////////////////////////////////////////////////////
     // Start test.
 
-    // TEST 1: queue_peek handles invalid arguments (1).
-
-    LOGWARN ( "The following errors are intentionally triggered by a test:" );
-
-    // TEST 1.1: queue_peek logs an error and fails if no queue is provided.
-    EXPECT_NOT ( queue_peek ( 0 , &popped ) );
-
-    // TEST 1.2: queue_peek logs an error and fails if no output buffer is provided.
-    EXPECT_NOT ( queue_peek ( &queue , 0 ) );
-
-    // TEST 2: queue_peek.
-
     for ( u64 i = op_count; i; --i )
     {
-        // TEST 2.1: queue_peek with valid arguments.
+        // TEST 1: queue_peek with valid arguments.
         popped = 0;
-        EXPECT ( queue_peek ( &queue , &popped ) );
+        EXPECT ( queue_peek ( queue , &popped ) );
 
-        // TEST 2.2: queue_peek writes the correct value into the output buffer.
-        EXPECT ( memory_equal ( queue.memory , &popped , queue.stride ) );
+        // TEST 2: queue_peek writes the correct value into the output buffer.
+        EXPECT ( memory_equal ( queue , &popped , queue_stride ( queue ) ) );
 
         // Pop the element from the queue.
-        EXPECT ( queue_pop ( &queue , &popped ) );
+        EXPECT ( queue_pop ( queue , &popped ) );
 
         // Verify there was no memory error before continuing.
-        EXPECT_NEQ ( 0 , queue.memory );
+        EXPECT_NEQ ( 0 , queue );
     }
 
-    // TEST 2.3: queue_peek warns when the queue is empty.
+    // TEST 3: queue_peek warns when the queue is empty.
     LOGWARN ( "The following warning is intentionally triggered by a test:" );
     popped = 0;
-    queue_peek ( &queue , &popped );
+    queue_peek ( queue , &popped );
 
-    // TEST 2.4: queue_peek writes nothing to the output buffer if the queue is empty.
+    // TEST 4: queue_peek writes nothing to the output buffer if the queue is empty.
     EXPECT_EQ ( 0 , popped );
 
-    queue_destroy ( &queue );
-
-    // TEST 3: queue_peek handles invalid arguments (2).
-
-    // TEST 3.1: queue_peek logs an error and fails if the provided queue is uninitialized.
-    LOGWARN ( "The following error is intentionally triggered by a test:" );
-    EXPECT_NOT ( queue_peek ( &queue , &popped ) );
+    queue_destroy ( queue );
 
     // End test.
     ////////////////////////////////////////////////////////////////////////////

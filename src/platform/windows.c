@@ -140,8 +140,8 @@ platform_string_length_clamped
 void
 platform_array_sort
 (   void*                   array
-,   u64                     array_stride
 ,   u64                     array_length
+,   u64                     array_stride
 ,   comparator_function_t   comparator
 )
 {
@@ -709,7 +709,7 @@ platform_file_read
     }
 
     // Files >= 4 GiB in size must be read by iteratively invoking ReadFile.
-    const u64 max_read_size = GIBIBYTES ( 4 ) - 1;
+    const u64 max_read_size = GiB ( 4 ) - 1;
 
     size = MIN ( size , ( *file ).size - ( *file ).position );
     u64 total_bytes_read = 0;
@@ -939,7 +939,7 @@ platform_file_read_all
     ( *file ).position = 0;
 
     // Files >= 4 GiB in size must be read by iteratively invoking ReadFile.
-    const u64 max_read_size = GIBIBYTES ( 4 ) - 1;
+    const u64 max_read_size = GiB ( 4 ) - 1;
 
     u64 total_bytes_read = 0;
     do
@@ -1039,7 +1039,7 @@ platform_file_write
 
     // Buffers >= 4 GiB in size must be written by iteratively invoking
     // WriteFile.
-    const u64 max_write_size = GIBIBYTES ( 4 ) - 1;
+    const u64 max_write_size = GiB ( 4 ) - 1;
 
     u64 total_bytes_written = 0;
     while ( total_bytes_written < size )
@@ -1108,7 +1108,7 @@ platform_file_write_line
 
     // Buffers >= 4 GiB in size must be written by iteratively invoking
     // WriteFile.
-    const u64 max_write_size = GIBIBYTES ( 4 ) - 1;
+    const u64 max_write_size = GiB ( 4 ) - 1;
 
     u64 total_bytes_written = 0;
     while ( total_bytes_written < size )

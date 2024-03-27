@@ -232,19 +232,19 @@ string_bytesize
 ,   f64*    amount
 )
 {
-    if ( size >= GIBIBYTES ( 1 ) )
+    if ( size >= GiB ( 1 ) )
     {
-        *amount = ( f64 ) size / GIBIBYTES ( 1 );
+        *amount = ( f64 ) size / GiB ( 1 );
         return "GiB";
     }
-    if ( size >= MEBIBYTES ( 1 ) )
+    if ( size >= MiB ( 1 ) )
     {
-        *amount = ( f64 ) size / MEBIBYTES ( 1 );
+        *amount = ( f64 ) size / MiB ( 1 );
         return "MiB";
     }
-    if ( size >= KIBIBYTES ( 1 ) )
+    if ( size >= KiB ( 1 ) )
     {
-        *amount = ( f64 ) size / KIBIBYTES ( 1 );
+        *amount = ( f64 ) size / KiB ( 1 );
         return "KiB";
     }
     *amount = ( f64 ) size;

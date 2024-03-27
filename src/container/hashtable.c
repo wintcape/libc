@@ -9,6 +9,17 @@
 #include "core/logger.h"
 #include "core/memory.h"
 
+/** @brief Type definition for internal state. */
+typedef struct
+{
+    u64     stride;
+    u32     capacity;
+    bool    pointer;
+    bool    owns_memory;
+    void*   content;
+}
+state_t;
+
 /**
  * @brief Key hash generation.
  * 
@@ -27,67 +38,132 @@ hashtable_create
 (   bool            pointer
 ,   u64             stride
 ,   u32             capacity
-,   void*           memory
-,   hashtable_t*    hashtable
+,   u64*            memory_requirement_
+,   void*           memory_
+,   hashtable_t**   hashtable
 )
 {
-    if ( !hashtable || !capacity || ( !stride && !pointer ) )
+    if ( pointer )
     {
-        if ( !hashtable )
-        {
-            LOGERROR ( "hashtable_create: Missing argument: hashtable (output buffer)." );
-        }
+        stride = sizeof ( void* );
+    }
+    if ( !capacity || !stride )
+    {
         if ( !capacity )
         {
             LOGERROR ( "hashtable_create: Value of capacity argument must be non-zero." );
         }
-        if ( !stride && !pointer )
+        if ( !stride )
         {
             LOGERROR ( "hashtable_create: Value of stride argument must be non-zero." );
         }
         return false;
     }
 
-    ( *hashtable ).capacity = capacity;
-    ( *hashtable ).stride = pointer ? sizeof ( void* ) : stride;
-    ( *hashtable ).pointer = pointer;
-    ( *hashtable ).owns_memory = !memory;
-    
-    const u64 size = ( *hashtable ).capacity * ( *hashtable ).stride;
-
-    if ( memory )
+    const u64 memory_requirement = sizeof ( state_t ) + capacity * stride;
+    if ( memory_requirement_ )
     {
-        ( *hashtable ).memory = memory;
+        *memory_requirement_ = memory_requirement;
+        if ( !memory_ )
+        {
+            return true;
+        }
+    }
+
+    void* memory;
+    if ( memory_ )
+    {
+        memory = memory_;
     }
     else
     {
-        ( *hashtable ).memory = memory_allocate ( size
-                                                , MEMORY_TAG_HASHTABLE
-                                                );
+        memory = memory_allocate ( memory_requirement , MEMORY_TAG_HASHTABLE );
     }
-    
-    memory_clear ( ( *hashtable ).memory , size );
-    
+
+    if ( !hashtable )
+    {
+        LOGERROR ( "hashtable_create: Missing argument: hashtable (output buffer)." );
+        if ( !memory_ )
+        {
+            memory_free ( memory , memory_requirement , MEMORY_TAG_HASHTABLE );
+        }
+        return false;
+    }
+
+    memory_clear ( memory , memory_requirement );
+
+    state_t* state = memory;
+    ( *state ).capacity = capacity;
+    ( *state ).stride = stride;
+    ( *state ).pointer = pointer;
+    ( *state ).owns_memory = !memory_;
+    ( *state ).content = ( void* )( ( ( u64 ) memory ) + sizeof ( state_t ) );
+
+    *hashtable = state;
     return true;
 }
 
 void
 hashtable_destroy
-(   hashtable_t* hashtable
+(   hashtable_t** hashtable
 )
 {
     if ( !hashtable )
     {
         return;
     }
-    if ( ( *hashtable ).owns_memory && ( *hashtable ).memory )
+
+    state_t* state = *hashtable;
+    if ( !state )
     {
-        memory_free ( ( *hashtable ).memory
-                    , ( *hashtable ).stride * ( *hashtable ).capacity
-                    , MEMORY_TAG_HASHTABLE
-                    );
+        return;
     }
-    memory_clear ( hashtable , sizeof ( hashtable_t ) );
+
+    const u64 memory_requirement = sizeof ( state_t ) + ( *state ).capacity
+                                                      * ( *state ).stride
+                                                      ;
+    if ( ( *state ).owns_memory )
+    {
+        memory_free ( state , memory_requirement , MEMORY_TAG_HASHTABLE );
+    }
+    else
+    {
+        memory_clear ( state , memory_requirement );
+    }
+
+    *hashtable = 0;
+}
+
+u64
+hashtable_stride
+(   const hashtable_t* hashtable
+)
+{
+    return ( *( ( state_t* ) hashtable ) ).stride;
+}
+
+u64
+hashtable_capacity
+(   const hashtable_t* hashtable
+)
+{
+    return ( *( ( state_t* ) hashtable ) ).capacity;
+}
+
+bool
+hashtable_pointer
+(   const hashtable_t* hashtable
+)
+{
+    return ( *( ( state_t* ) hashtable ) ).pointer;
+}
+
+bool
+hashtable_owns_memory
+(   const hashtable_t* hashtable
+)
+{
+    return ( *( ( state_t* ) hashtable ) ).owns_memory;
 }
 
 bool
@@ -97,46 +173,30 @@ hashtable_set
 ,   const void*     value
 )
 {
-    if (   !hashtable
-        || !key
-        || !( *hashtable ).memory
-        || ( !value && !( *hashtable ).pointer )
-       )
+    state_t* state = hashtable;
+    if ( !value && !( *state ).pointer )
     {
-        if ( !hashtable )
-        {
-            LOGERROR ( "hashtable_set: Missing argument: hashtable." );
-        }
-        else if ( !( *hashtable ).memory )
-        {
-            LOGERROR ( "hashtable_set: The provided hashtable is uninitialized (%@)."
-                     , hashtable
-                     );
-        }
-        if ( !key )
-        {
-            LOGERROR ( "hashtable_set: Missing argument: key." );
-        }
-        if ( !value && hashtable && !( *hashtable ).pointer )
-        {
-            LOGERROR ( "hashtable_set: Missing argument: value." );
-        }
+        LOGERROR ( "hashtable_set: Missing argument: value." );
         return false;
     }
 
-    const u64 index = hashtable_key_hash ( key , ( *hashtable ).capacity );
-    if ( ( *hashtable ).pointer )
+    const u64 index = hashtable_key_hash ( key , ( *state ).capacity );
+    if ( ( *state ).pointer )
     {
-        memory_copy ( ( *hashtable ).memory + ( *hashtable ).stride * index
+        memory_copy ( ( void* )( ( ( u64 )( ( *state ).content ) )
+                               + index * ( *state ).stride
+                               )
                     , &value
-                    , ( *hashtable ).stride
+                    , ( *state ).stride
                     );
     }
     else
     {
-        memory_copy ( ( *hashtable ).memory + ( *hashtable ).stride * index
+        memory_copy ( ( void* )( ( ( u64 )( ( *state ).content ) )
+                               + index * ( *state ).stride
+                               )
                     , value
-                    , ( *hashtable ).stride
+                    , ( *state ).stride
                     );
     }
     return true;
@@ -149,33 +209,13 @@ hashtable_get
 ,   void*           value
 )
 {
-    if ( !hashtable || !key || !value || !( *hashtable ).memory )
-    {
-        if ( !hashtable )
-        {
-            LOGERROR ( "hashtable_get: Missing argument: hashtable." );
-        }
-        else if ( !( *hashtable ).memory )
-        {
-            LOGERROR ( "hashtable_get: The provided hashtable is uninitialized (%@)."
-                     , hashtable
-                     );
-        }
-        if ( !key )
-        {
-            LOGERROR ( "hashtable_get: Missing argument: key." );
-        }
-        if ( !value )
-        {
-            LOGERROR ( "hashtable_get: Missing argument: value (output buffer)." );
-        }
-        return false;
-    }
-
-    const u64 index = hashtable_key_hash ( key , ( *hashtable ).capacity );
+    state_t* state = hashtable;
+    const u64 index = hashtable_key_hash ( key , ( *state ).capacity );
     memory_copy ( value
-                , ( *hashtable ).memory + ( *hashtable ).stride * index
-                , ( *hashtable ).stride
+                , ( void* )( ( ( u64 )( ( *state ).content ) )
+                           + index * ( *state ).stride
+                           )
+                , ( *state ).stride
                 );
     return true;
 }
@@ -186,36 +226,21 @@ hashtable_fill
 ,   void*           value
 )
 {
-    if ( !hashtable || !value || !( *hashtable ).memory )
-    {
-        if ( !hashtable )
-        {
-            LOGERROR ( "hashtable_fill: Missing argument: hashtable." );
-        }
-        else if ( !( *hashtable ).memory )
-        {
-            LOGERROR ( "hashtable_fill: The provided hashtable is uninitialized (%@)."
-                     , hashtable
-                     );
-        }
-        if ( !value )
-        {
-            LOGERROR ( "hashtable_fill: Missing argument: value." );
-        }
-        return false;
-    }
+    state_t* state = hashtable;
 
-    if ( ( *hashtable ).pointer )
+    if ( ( *state ).pointer )
     {
         LOGERROR ( "hashtable_fill: May not be used on a pointer-valued hashtable." );
         return false;
     }
 
-    for ( u64 i = 0; i < ( *hashtable ).capacity; ++i )
+    for ( u64 i = 0; i < ( *state ).capacity; ++i )
     {
-        memory_copy ( ( *hashtable ).memory + ( ( *hashtable ).stride * i )
+        memory_copy ( ( void* )( ( ( u64 )( ( *state ).content ) )
+                               + i * ( *state ).stride
+                               )
                     , value
-                    , ( *hashtable ).stride
+                    , ( *state ).stride
                     );
     }
     return true;
